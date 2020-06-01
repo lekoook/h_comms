@@ -28,7 +28,7 @@ int main(int argc, char **argv)
         ROS_INFO("X2's Neighbours:");
         for (subt::CommsClient::Neighbor_M::iterator it = neigh.begin(); it != neigh.end(); it++)
         { 
-          ss << it->first << " : " << it->second.first << "," << it->second.second;
+          ss << it->first << " : " << it->second.first << "," << it->second.second  << " ";
           ROS_INFO("%s", ss.str().c_str());
         }
 
