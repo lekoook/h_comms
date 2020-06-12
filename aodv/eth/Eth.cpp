@@ -1,3 +1,4 @@
+#include <cstring>
 #include "Eth.hpp"
 #include "../utilities/serialisers.hpp"
 
