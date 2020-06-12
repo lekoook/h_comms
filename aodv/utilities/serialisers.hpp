@@ -21,6 +21,18 @@ namespace serialisers
     }
 
     /**
+     * @brief Copies a uint16_t value into a uint8_t bytes array.
+     * 
+     * @param dest uint8_t array to store the copied bytes. MUST be at least 2 byte length.
+     * @param src uint16_t value to copy.
+     */
+    void copyU16(uint8_t* dest, uint16_t src)
+    {
+        dest[0] = (uint8_t) ((src >> 8) & 0xff);
+        dest[1] = (uint8_t) (src & 0xff);
+    }
+
+    /**
      * @brief Copies a uint32_t value into a uint8_t bytes array.
      * 
      * @param dest uint8_t array to store the copied bytes. MUST be at least 4 bytes length.
@@ -43,6 +55,20 @@ namespace serialisers
     uint8_t getU8(uint8_t* src)
     {
         return src[0];
+    }
+
+    /**
+     * @brief Retrieves a uint16_t value from a uint8_t bytes array.
+     * 
+     * @param src uint8_t array to retrieve from. MUST be at least 1 byte length.
+     * @return uint16_t value retrieved.
+     */
+    uint16_t getU16(uint8_t* src)
+    {
+        uint16_t val = 0;
+        val |= (src[0] & 0xff) << 8;
+        val |= (src[1] & 0xff);
+        return val;
     }
 
     /**
