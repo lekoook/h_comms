@@ -29,6 +29,18 @@ namespace aodv
         uint16_t length;
 
         /**
+         * @brief payload
+         *
+         */
+        uint8_t *payload;
+
+        /**
+         * @brief crc
+         *
+         */
+        uint32_t crc;
+
+        /**
          * @brief Construct a new object with all members zero initialised.
          * 
          */
@@ -38,7 +50,7 @@ namespace aodv
          * @brief Construct a new Ethernet frame.
          * 
          */
-        Eth(uint8_t dst, uint8_t src, uint16_t length);
+        Eth(uint8_t dst, uint8_t src, uint16_t length, uint8_t *payload, uint32_t crc);
   
         /**
          * @brief Serializes a object into a uint8_t bytes array.
