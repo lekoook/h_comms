@@ -7,8 +7,8 @@ namespace aodv
     {
     }
 
-    Eth::Eth(uint8_t dst, uint8_t src, uint16_t length, uint8_t *payload, uint32_t crc) :
-        dst(dst), src(src), length(length), payload(payload), crc(crc)
+    Eth::Eth(uint8_t dst, uint8_t src, uint16_t length, uint8_t *payload) :
+        dst(dst), src(src), length(length), payload(payload), crc()
     {
     }
 
@@ -19,7 +19,7 @@ namespace aodv
         copyU16(&data[2], length);
         memcpy(&data[4], payload, length);
         copyU32(&data[4+length], crc);
-    }
+    } // TODO calculate crc
     
     void Eth::deserialise(uint8_t data[])
     {
@@ -29,4 +29,9 @@ namespace aodv
         memcpy(payload, &data[4], length);
         crc = getU32(&data[4+length]);
     }
+
+    bool check(uint32_t crc)
+    {
+        return true;
+    } // TODO calculate and check crc
 }
