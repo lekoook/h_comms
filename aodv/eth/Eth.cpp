@@ -1,4 +1,5 @@
 #include "Eth.hpp"
+#include "../utilities/serialisers.hpp"
 
 namespace aodv
 {
@@ -14,20 +15,20 @@ namespace aodv
 
     void Eth::serialise(uint8_t data[])
     {
-        copyU8(&data[0], dst);
-        copyU8(&data[1], src);
-        copyU16(&data[2], length);
+        serialisers::copyU8(&data[0], dst);
+        serialisers::copyU8(&data[1], src);
+        serialisers::copyU16(&data[2], length);
         memcpy(&data[4], payload, length);
-        copyU32(&data[4+length], crc);
+        serialisers::copyU32(&data[4+length], crc);
     } // TODO calculate crc
     
     void Eth::deserialise(uint8_t data[])
     {
-        dst = getU8(&data[0]);
-        src = getU8(&data[1]);
-        length = getU16(&data[2]);
+        dst = serialisers::getU8(&data[0]);
+        src = serialisers::getU8(&data[1]);
+        length = serialisers::getU16(&data[2]);
         memcpy(payload, &data[4], length);
-        crc = getU32(&data[4+length]);
+        crc = serialisers::getU32(&data[4+length]);
     }
 
     bool check(uint32_t crc)
