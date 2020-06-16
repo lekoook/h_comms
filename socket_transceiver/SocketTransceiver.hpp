@@ -1,5 +1,5 @@
-#ifndef SOCKETTESTER_H
-#define SOCKETTESTER_H
+#ifndef SOCKET_TRANSCEIVER_H
+#define SOCKET_TRANSCEIVER_H
 
 #include <iostream>
 #include <stdint.h>
@@ -224,4 +224,4 @@ private:
     }
 };
 
-#endif // SOCKETTESTER_H
+#endif // SOCKET_TRANSCEIVER_H

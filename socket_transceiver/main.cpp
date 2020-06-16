@@ -4,13 +4,14 @@ int main()
 {
     /*
     
-    // For server side:
     SocketTransceiver server(54321);
-    if (!server.init())
+    server.listen();
+    for (int i = 0; i < 5; i++)
     {
-        std::cout << "socket init failed" << std::endl;
+        std::cout << "I'm free to do what I like in the mean time and I do this 5 times." << std::endl;
+        std::this_thread::sleep_for(std::chrono::seconds(1));
     }
-    server.listen(); // blocking
+    server.stopListen(); // should always be called before server gets destroyed.
     
     */
     
@@ -20,10 +21,6 @@ int main()
     
     // For client side:
     SocketTransceiver client(54322); // Notice they use two different ports. This is our 'address'
-    if (!client.init())
-    {
-        std::cout << "socket init failed" << std::endl;
-    }
     uint8_t data[5] = {'h', 'e', 'l', 'l', 'o'};
     client.send(data, 5, 54321); // send to server port (it's 'address').
 
