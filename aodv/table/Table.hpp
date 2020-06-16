@@ -120,17 +120,21 @@ namespace aodv
         Route rread(uint8_t destAddr);
 
         /**
-         * @brief Linear search through table to find the route with a matching destination address.
+         * @brief Replace route at index @param i with new route @param r.
+         * If route does not already exist at index @param i, then a new route @param r is inserted at index @param i.
          *
-         * @param addr destination address
-         * @return route if found, else empty route
+         * Table size is set to @param i.
+         * Note: this makes the table non-contiguous.
+         *
+         * @param i index
+         * @param r new route
          */
-        Route rupdate(uint16_t i, Route r);
+        void rupdate(uint16_t i, Route r);
 
         /**
-         * @brief Appends the route at the end of the table.
+         * @brief Replace the route at index @param i with an empty route.
          *
-         * Does nothing if @param i is less than the table size.
+         * Does nothing if @param i is more than the table size.
          *
          * @param i index
          */
@@ -138,6 +142,7 @@ namespace aodv
 
         /**
          * @brief Clears some routes from the table.
+         * Compacts the table so that this->table is contiguous.
          *
          * An expired routing table entry SHOULD NOT be expunged before (current_time + DELETE_PERIOD) (see section 6.11).
          * Otherwise, the soft state corresponding to the route (e.g., last known hop count) will be lost.
