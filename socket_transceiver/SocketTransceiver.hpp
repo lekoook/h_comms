@@ -8,12 +8,18 @@
 #include <arpa/inet.h>
 #include <string.h>
 #include <thread>
+#include <mutex>
+#include <list>
+
+#include "MsgObserve.hpp"
+#include "MsgTypes.hpp"
+#include "MsgPeeker.hpp"
 
 /**
  * @brief Allows data to be sent and receives (on a separate thread) through a specified port.
  * 
  */
-class SocketTransceiver
+class SocketTransceiver : public IMsgObservable
 {
 public:
     /**
@@ -92,6 +98,60 @@ public:
         sendto(fd, data, len, MSG_CONFIRM, (const struct sockaddr *)&dest, sizeof(dest));
     }
 
+    /// IMsgObservable implementations ///
+
+    void subscribe(IMsgObserver* observer, aodv_msgs::MsgTypes msgType, bool all=false)
+    {
+        if (all)
+        {
+            std::lock_guard<std::mutex> g(mAll);
+            allObservers.push_back(observer);
+            return;
+        }
+
+        if (msgType == aodv_msgs::MsgTypes::Rreq)
+        {
+            std::lock_guard<std::mutex> g(mRreq);
+            rreqObservers.push_back(observer);
+        }
+        else if (msgType == aodv_msgs::MsgTypes::Rrep)
+        {
+            std::lock_guard<std::mutex> g(mRrep);
+            rrepObservers.push_back(observer);
+        }
+        else if (msgType == aodv_msgs::MsgTypes::Rrer)
+        {
+            std::lock_guard<std::mutex> g(mRrer);
+            rrerObservers.push_back(observer);
+        }
+    }
+
+    void unsubscribe(IMsgObserver* observer, aodv_msgs::MsgTypes msgType, bool all=false)
+    {
+        if (all)
+        {
+            std::lock_guard<std::mutex> g(mAll);
+            allObservers.remove(observer);
+            return;
+        }
+
+        if (msgType == aodv_msgs::MsgTypes::Rreq)
+        {
+            std::lock_guard<std::mutex> g(mRreq);
+            rreqObservers.remove(observer);
+        }
+        else if (msgType == aodv_msgs::MsgTypes::Rrep)
+        {
+            std::lock_guard<std::mutex> g(mRrep);
+            rrepObservers.remove(observer);
+        }
+        else if (msgType == aodv_msgs::MsgTypes::Rrer)
+        {
+            std::lock_guard<std::mutex> g(mRrer);
+            rrerObservers.remove(observer);
+        }
+    }
+
 private:
     /// Variable members ///
 
@@ -131,6 +191,16 @@ private:
      * 
      */
     bool listening;
+
+    std::list<IMsgObserver*> allObservers;
+    std::list<IMsgObserver*> rreqObservers;
+    std::list<IMsgObserver*> rrepObservers;
+    std::list<IMsgObserver*> rrerObservers;
+
+    std::mutex mAll;
+    std::mutex mRreq;
+    std::mutex mRrep;
+    std::mutex mRrer;
 
     /// Method members ///
 
@@ -219,7 +289,52 @@ private:
             uint32_t len;
             uint16_t src;
             if (receive(buf, len, src))            
-                printf("received message: \"%s\" with length %u from %u \n", buffer, len, src);
+                notify(buf, len, src);
+        }
+    }
+
+    /// IMsgObservable implementations ///
+    
+    void notify(uint8_t* msg, uint32_t msgLen, uint16_t src)
+    {
+        aodv_msgs::MsgTypes t = msg_peeker::peekType(msg);
+
+        // Notify specific types.
+        // We make a snapshot to prevent the list from being invalidated while notifying.
+        std::list<IMsgObserver*> snaps;
+        if (t == aodv_msgs::MsgTypes::Rreq)
+        {
+            std::lock_guard<std::mutex> g(mRreq);
+            snaps = std::list<IMsgObserver*>(rreqObservers);
+        }
+        else if (t == aodv_msgs::MsgTypes::Rrep)
+        {
+            std::lock_guard<std::mutex> g(mRrep);
+            snaps = std::list<IMsgObserver*>(rrepObservers);
+        }
+        else if (t == aodv_msgs::MsgTypes::Rrer)
+        {
+            std::lock_guard<std::mutex> g(mRrer);
+            snaps = std::list<IMsgObserver*>(rrerObservers);
+        }
+        else
+        {
+            std::cerr << "Unknown message type, not notifying." << std::endl;
+            return;
+        }
+        for (std::list<IMsgObserver*>::iterator it = snaps.begin(); it != snaps.end(); it++)
+        {
+            (*it)->update(msg, msgLen, src);
+        }
+
+        // Notify those who subscribed to all types.
+        {
+            std::lock_guard<std::mutex> g(mAll);
+            snaps = std::list<IMsgObserver*>(allObservers);
+        }
+        for (std::list<IMsgObserver*>::iterator it = snaps.begin(); it != snaps.end(); it++)
+        {
+            (*it)->update(msg, msgLen, src);
         }
     }
 };
