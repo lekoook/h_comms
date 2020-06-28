@@ -66,5 +66,21 @@ namespace aodv
 
     void Table::clear()
     {
+      /* RFC3561: section 6.4 */
+      /* TODO
+      std::time_t ts;
+      for (int i=0; i<this->size; i++) {
+          ts = this->table[i].ts;
+          if (waiting_for_rrep) {
+              if (ts >= std::time(0) + 2 * NET_TRAVERSAL_TIME) {
+                  // TODO expunge
+              }
+          } else {
+              if (ts >= std::time(0) + DELETE_PERIOD) {
+                  // TODO expunge
+              }
+          }
+      }
+      */
     } // TODO check freshness
 }
