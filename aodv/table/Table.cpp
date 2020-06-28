@@ -43,17 +43,22 @@ namespace aodv
         return Route();
     }
 
-    Route Table::rupdate(uint16_t i, Route r)
+    bool Table::rupdate(uint16_t i, Route r)
     {
-        this->table[i] = r;
-        this->size = i;
+        if (i < this->size) {
+            this->table[i] = r;
+            return true;
+        }
+        return false;
     }
 
-    void Table::rdelete(uint16_t i)
+    bool Table::rdelete(uint16_t i)
     {
-        if (i <= this->size) {
+        if (i < this->size) {
             this->table[i] = Route();
+            return true;
         }
+        return false;
     }
 
     void Table::clear()

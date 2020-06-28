@@ -121,28 +121,27 @@ namespace aodv
 
         /**
          * @brief Replace route at index @param i with new route @param r.
-         * If route does not already exist at index @param i, then a new route @param r is inserted at index @param i.
          *
-         * Table size is set to @param i.
-         * Note: this makes the table non-contiguous.
+         * Does nothing except return false if @param i is >= the table size.
          *
          * @param i index
          * @param r new route
+         * @return true if i<size, else false
          */
-        void rupdate(uint16_t i, Route r);
+        bool rupdate(uint16_t i, Route r);
 
         /**
          * @brief Replace the route at index @param i with an empty route.
          *
-         * Does nothing if @param i is more than the table size.
+         * Does nothing except return false if @param i is >= the table size.
          *
          * @param i index
+         * @return true if i<size, else false
          */
-        void rdelete(uint16_t i);
+        bool rdelete(uint16_t i);
 
         /**
          * @brief Clears some routes from the table.
-         * Compacts the table so that this->table is contiguous.
          *
          * An expired routing table entry SHOULD NOT be expunged before (current_time + DELETE_PERIOD) (see section 6.11).
          * Otherwise, the soft state corresponding to the route (e.g., last known hop count) will be lost.
