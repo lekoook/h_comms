@@ -10,6 +10,7 @@ namespace aodv_msgs
         Rreq,
         Rrep,
         Rrer,
+        RrepAck,
         Unknown
     };
 };

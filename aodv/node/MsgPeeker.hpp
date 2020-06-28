@@ -22,6 +22,9 @@ namespace msg_peeker
         case 3:
             return aodv_msgs::MsgTypes::Rrer;
 
+        case 4:
+            return aodv_msgs::MsgTypes::RrepAck;
+
         default:
             std::cerr << "Unknown message type peeked." << std::endl;
             return aodv_msgs::MsgTypes::Unknown; // TODO: What exactly to return here?
