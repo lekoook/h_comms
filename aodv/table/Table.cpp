@@ -32,13 +32,20 @@ namespace aodv
         this->table[this->size++] = r;
     }
 
-    Route Table::rread(uint8_t destAddr)
+    int Table::rsearch(uint8_t destAddr)
     {
         for (int i=0; i<this->size; i++) {
-            Route r = this->table[i];
-            if (r.destAddr == destAddr) {
-                return r;
+            if (this->table[i].destAddr == destAddr) {
+                return i;
             }
+        }
+        return -1;
+    }
+
+    Route Table::rread(uint16_t i)
+    {
+        if (i < this->size) {
+            return this->table[i];
         }
         return Route();
     }

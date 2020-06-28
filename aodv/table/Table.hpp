@@ -112,12 +112,20 @@ namespace aodv
         void rcreate(Route r);
 
         /**
-         * @brief Linear search through table to find the route with a matching destination address.
+         * @brief Linear search through table to find the index with a matching destination address.
          *
          * @param destAddr destination address
-         * @return route if found, else empty route
+         * @return nonnegative index if found, else negative index
          */
-        Route rread(uint8_t destAddr);
+        int rsearch(uint8_t destAddr);
+
+        /**
+         * @brief Get route.
+         *
+         * @param i index
+         * @return route if @param i is < the table size, else empty route
+         */
+        Route rread(uint16_t i);
 
         /**
          * @brief Replace route at index @param i with new route @param r.
