@@ -20,7 +20,7 @@ namespace msg_peeker
             return aodv_msgs::MsgTypes::Rrep;
 
         case 3:
-            return aodv_msgs::MsgTypes::Rrer;
+            return aodv_msgs::MsgTypes::Rerr;
 
         case 4:
             return aodv_msgs::MsgTypes::RrepAck;
