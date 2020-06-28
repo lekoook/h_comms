@@ -3,29 +3,25 @@
 
 namespace aodv
 {
-
-    /**
-     * @brief Construct a new object.
-     * 
-     */
-    Route(uint8_t destAddr, uint32_t destSeq, bool isInvalid, uint8_t hopCount, uint8_t nextHop, uint8_t precursors[], uint64_t lifetime);
-
     Route::Route() :
-        destAddr(), destSeq(), isInvalid(), hopCount(), nextHop(), precursors[](), lifetime()
+        destAddr(), destSeq(), isInvalid(), hopCount(), nextHop(), precursors(), lifetime()
     {
     }
 
-    Route::Route(uint8_t destAddr, uint32_t destSeq, bool isInvalid, uint8_t hopCount, uint8_t nextHop, uint8_t precursors[], uint64_t lifetime) :
-        destAddr(destAddr), destSeq(destSeq), isInvalid(isInvalid), hopCount(hopCount), nextHop(nextHop), precursors[](precursors), lifetime(lifetime)
+    Route::Route(uint8_t destAddr, uint32_t destSeq, bool isInvalid, uint8_t hopCount, uint8_t nextHop, uint8_t precursors[256], uint64_t lifetime) :
+        destAddr(destAddr), destSeq(destSeq), isInvalid(isInvalid), hopCount(hopCount), nextHop(nextHop), precursors(precursors), lifetime(lifetime)
     {
     }
 
-    bool Route::check(uint8_t destAddr);
+    bool Route::check(uint8_t destAddr)
     {
         return this->destAddr == destAddr;
     }
 
-    Table::Table();
+    Table::Table() :
+        table(), size()
+    {
+    }
 
     void Table::rcreate(Route r)
     {
