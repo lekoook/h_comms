@@ -3,12 +3,12 @@
 
 namespace aodv
 {
-  
-        /**
-         * @brief Construct a new object.
-         * 
-         */
-        Route(uint8_t destAddr, uint32_t destSeq, bool isInvalid, uint8_t hopCount, uint8_t nextHop, uint8_t precursors[], uint64_t lifetime);
+
+    /**
+     * @brief Construct a new object.
+     * 
+     */
+    Route(uint8_t destAddr, uint32_t destSeq, bool isInvalid, uint8_t hopCount, uint8_t nextHop, uint8_t precursors[], uint64_t lifetime);
 
     Route::Route() :
         destAddr(), destSeq(), isInvalid(), hopCount(), nextHop(), precursors[](), lifetime()
