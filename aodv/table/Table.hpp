@@ -2,6 +2,7 @@
 #define TABLE_H_
 
 #include "../config.h"
+#include <ctime>
 #include <stdint.h>
 
 namespace aodv
@@ -11,6 +12,12 @@ namespace aodv
     private:
   
     public:
+        /**
+         * @brief timestamp, creation time.
+         * 
+         */
+        std::time_t ts;
+
         /**
          * @brief destination address.
          * 
