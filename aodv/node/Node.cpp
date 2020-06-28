@@ -19,7 +19,15 @@ namespace aodv
     {
     }
 
-    void Node::send(uint8_t* data) {
+    void Node::send(Eth eth) {
+        /* TODO
+         * if (eth.dst == this->addr) {
+         *   if (is data packet) {
+         *     send to application.
+         *   }
+         * }
+         */
+
         /* RFC3561: section 6.1 */
         // TODO prepare RREQ
         this->seq++;
@@ -36,6 +44,8 @@ namespace aodv
         ttl = NET_DIAMETER;
         // TODO wait for RREP
         */
+
+        // TODO serialize eth to uint8_t* data, and send over link
     }
 
     void Node::receive(uint8_t* data)
@@ -173,6 +183,10 @@ namespace aodv
         }
 
         else if (t == aodv_msgs::MsgTypes::RrepAck)
+        {
+        }
+
+        else // TODO not a control packet, must be a data packet.
         {
         }
 

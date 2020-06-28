@@ -9,7 +9,7 @@
 #include "../table/Table.hpp"
 #include "../config.h"
 #include <stdint.h>
-#include <algorithm>
+#include <stack>
 
 namespace aodv
 {
@@ -61,14 +61,14 @@ namespace aodv
         Node(Table table, uint32_t seq, uint32_t id, uint32_t addr);
 
         /**
-         * @brief Send a control packet.
+         * @brief Send a control packet or a data packet.
          *
-         * @param msg packet
+         * @param eth ethernet packet.
          */
-        void send(uint8_t* data);
+        void send(Eth eth);
 
         /**
-         * @brief Receive a control packet.
+         * @brief Receive a control packet or a data packet.
          *
          * @param msg packet
          */
