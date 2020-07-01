@@ -23,10 +23,10 @@ namespace aodv
    * v       v             v
    * (App1)  (App2)  ...   (AppN)   }} --> (stdout)
    * |    ^  |    ^        |    ^
-   * v    |  v    |        v    |
+   * v    |  v    |        v    |   }} Node::send_app, Node::receive_app
    * (Node1) (Node2) ...   (NodeN)
-   * |    ^  |    ^        |    ^
-   * v    |  v    |        v    |
+   * |    ^  |    ^        |    ^   }} made up of |[sends]    ^[recvs]
+   * v    |  v    |        v    |   }}            v           |
    * \/\/\/\/\/\/\/\MESH/\/\/\/\/\
    *
    * The node configurations tell the Sim which @param time to activate events at.
