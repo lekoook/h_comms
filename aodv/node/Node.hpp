@@ -15,6 +15,15 @@ namespace aodv
 {
     class Node
     {
+
+    /**
+     * @brief An array of event.
+     */
+    typedef struct callbackres_t {
+      bool err;
+      Eth eth;
+    } callbackres_t;
+
     private:
         /**
          * @brief Routing table object.
@@ -46,6 +55,20 @@ namespace aodv
          * 
          */
         std::stack<rreqStack_t> rreqStack;
+
+        /**
+         * @brief Send a control packet or a data packet.
+         *
+         * @param eth ethernet packet.
+         */
+        void send(Eth eth);
+
+        /**
+         * @brief Receive a control packet or a data packet.
+         *
+         * @param msg packet
+         */
+        void receive(uint8_t* msg);
   
     public:
         /**
@@ -61,18 +84,12 @@ namespace aodv
         Node(Table table, uint32_t seq, uint32_t id, uint32_t addr);
 
         /**
-         * @brief Send a control packet or a data packet.
+         * @brief App layer send a data packet to node layer.
          *
          * @param eth ethernet packet.
+         * @param cb callback function, app layer receive a data packet from node layer.
          */
-        void send(Eth eth);
-
-        /**
-         * @brief Receive a control packet or a data packet.
-         *
-         * @param msg packet
-         */
-        void receive(uint8_t* msg);
+        void send_data(Eth eth, callbackres_t (*cb)(Eth eth));
     };
 }
 

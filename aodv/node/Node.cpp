@@ -191,4 +191,15 @@ namespace aodv
         }
 
     }
+
+    void Node::send_data(Eth eth, callbackres_t (*cb)(Eth eth)) {
+        // TODO check if dest exists in routing table. Else, send RREQ and wait for RREP.
+        /* TODO
+         * if (RREP timeout) {
+         *     return {true, Eth()};
+         * } else {
+         *     return {false, eth};
+         * }
+         */
+    }
 }
