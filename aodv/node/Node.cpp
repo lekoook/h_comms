@@ -3,12 +3,6 @@
 
 namespace aodv
 {
-    /**
-     * @brief Construct a new object.
-     * 
-     */
-    Node(Table table);
-
     Node::Node() :
         table(), seq(), id(), addr()
     {
@@ -19,7 +13,7 @@ namespace aodv
     {
     }
 
-    void Node::send(Eth eth) {
+    void Node::send(Eth eth, void (*f)(uint8_t* msg))
         /* TODO
          * if (eth.dst == this->addr) {
          *   if (is data packet) {
@@ -48,7 +42,7 @@ namespace aodv
         // TODO serialize eth to uint8_t* data, and send over link
     }
 
-    void Node::receive(uint8_t* data)
+    void receive(uint8_t* (*f)())
     {
         aodv::Eth eth;
         aodv_msgs::Rreq rreq;
@@ -59,6 +53,7 @@ namespace aodv
         bool isInvalid;
         uint64_t lifetime;
 
+        uint8_t* data = f();
         eth.deserialise(data);
         uint8_t* payload = eth.payload;
         uint8_t ttl = *payload; // assume TTL is head of payload // TODO do something with ttl

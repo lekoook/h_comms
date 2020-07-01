@@ -60,15 +60,16 @@ namespace aodv
          * @brief Send a control packet or a data packet.
          *
          * @param eth ethernet packet.
+         * @param f method that sends on link level.
          */
-        void send(Eth eth);
+        void send(Eth eth, void (*f)(uint8_t* msg));
 
         /**
          * @brief Receive a control packet or a data packet.
          *
-         * @param msg packet
+         * @param f method that receives on link level.
          */
-        void receive(uint8_t* msg);
+        void receive(uint8_t* (*f)());
   
     public:
         /**
