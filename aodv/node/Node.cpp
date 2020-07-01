@@ -4,12 +4,12 @@
 namespace aodv
 {
     Node::Node() :
-        table(), seq(), id(), addr()
+        table(), seq(), id(), addr(), rreqStack(), send_app(), receive_app()
     {
     }
 
-    Node::Node(Table table, uint32_t seq, uint32_t id, uint32_t addr) :
-        table(table), seq(seq), id(id), addr(addr)
+    Node::Node(Table table, uint32_t seq, uint32_t id, uint32_t addr, void (*send_app)(Eth eth), Eth (*receive_app)()) :
+        table(table), seq(seq), id(id), addr(addr), send_app(send_app), receive_app(receive_app)
     {
     }
 

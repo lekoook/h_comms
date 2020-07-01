@@ -57,6 +57,20 @@ namespace aodv
         std::stack<rreqStack_t> rreqStack;
 
         /**
+         * @brief method that sends data to app level.
+         *
+         * @param eth ethernet packet.
+         */
+        void send_app(Eth eth);
+
+        /**
+         * @brief method that receives data from app level.
+         *
+         * @return eth ethernet packet.
+         */
+        Eth receive_app();
+
+        /**
          * @brief Send a control packet or a data packet.
          *
          * @param eth ethernet packet.
