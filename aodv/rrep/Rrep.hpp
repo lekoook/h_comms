@@ -9,13 +9,13 @@ namespace aodv_msgs
      * @brief Repair flag mask.
      * 
      */
-    const uint8_t REPR_F_MASK = 0b00000010u;
+    const uint8_t RREP_REPR_F_MASK = 0b00000010u;
 
     /**
      * @brief Acknowledgement flag mask.
      * 
      */
-    const uint8_t ACK_F_MASK = 0b00000001u;
+    const uint8_t RREP_ACK_F_MASK = 0b00000001u;
 
     /**
      * @brief Byte length of a RREP message.

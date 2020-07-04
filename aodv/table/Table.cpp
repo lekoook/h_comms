@@ -9,8 +9,9 @@ namespace aodv
     }
 
     Route::Route(uint8_t destAddr, uint32_t destSeq, bool isInvalid, uint8_t hopCount, uint8_t nextHop, uint8_t precursors[256], uint64_t lifetime) :
-        ts(std::time(0)), destAddr(destAddr), destSeq(destSeq), isInvalid(isInvalid), hopCount(hopCount), nextHop(nextHop), precursors(precursors), lifetime(lifetime)
+        ts(std::time(0)), destAddr(destAddr), destSeq(destSeq), isInvalid(isInvalid), hopCount(hopCount), nextHop(nextHop), lifetime(lifetime)
     {
+        // TODO copy precursor
     }
 
     bool Route::check(uint8_t destAddr)

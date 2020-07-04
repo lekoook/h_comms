@@ -38,7 +38,7 @@
 static void             init_crc32_tab( void );
 
 static bool             crc_tab32_init          = false;
-static uint32_t		crc_tab32[256];
+//static uint32_t		crc_tab32[256];
 
 /*
  * uint32_t crc_32( const unsigned char *input_str, size_t num_bytes );

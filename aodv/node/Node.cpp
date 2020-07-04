@@ -3,17 +3,18 @@
 
 namespace aodv
 {
-    Node::Node() :
-        table(), seq(), id(), addr(), rreqStack(), send_app(), receive_app()
+    Node::Node()
     {
     }
 
     Node::Node(Table table, uint32_t seq, uint32_t id, uint32_t addr, void (*send_app)(Eth eth), Eth (*receive_app)()) :
-        table(table), seq(seq), id(id), addr(addr), send_app(send_app), receive_app(receive_app)
+        table(table), seq(seq), id(id), addr(addr)//, send_app(send_app), receive_app(receive_app)
     {
+        // TODO initialise the function pointers properly
     }
 
     void Node::send(Eth eth, void (*f)(uint8_t* msg))
+    {
         /* TODO
          * if (eth.dst == this->addr) {
          *   if (is data packet) {
@@ -42,12 +43,12 @@ namespace aodv
         // TODO serialize eth to uint8_t* data, and send over link
     }
 
-    void receive(uint8_t* (*f)())
+    void Node::receive(uint8_t* (*f)())
     {
         aodv::Eth eth;
         aodv_msgs::Rreq rreq;
         aodv_msgs::Rrep rrep;
-        aodv_msgs::Rerr rerr;
+        //aodv_msgs::Rerr rerr;
         aodv_msgs::RrepAck rrepAck;
         Route row;
         bool isInvalid;
@@ -77,13 +78,13 @@ namespace aodv
                 return;
             }
         }
-        else if (t == aodv_msgs::MsgTypes::Rerr)
-        {
-            rerr.deserialise(msg);
-            if ((int)rerr.destSeq - (int)this->seq < 0) {
-                return;
-            }
-        }
+        // else if (t == aodv_msgs::MsgTypes::Rerr)
+        // {
+        //     rerr.deserialise(msg);
+        //     if ((int)rerr.destSeq - (int)this->seq < 0) {
+        //         return;
+        //     }
+        // }
         
         if (t == aodv_msgs::MsgTypes::Rreq)
         {
@@ -116,7 +117,9 @@ namespace aodv
                             */
                         }
                         // TODO get nextHop
+                        uint8_t nextHop;
                         // TODO get precursors from Rreq
+                        uint8_t precursors[256];
                         lifetime = ACTIVE_ROUTE_TIMEOUT;
                         table.rupdate(i, Route(rreq.destAddr, rreq.destSeq, isInvalid, rreq.hopCount, nextHop, precursors, lifetime));
                     }
@@ -124,8 +127,11 @@ namespace aodv
                 } else { // create route to destination
                     isInvalid = false; // TODO check if sequence number is invalid
                     // TODO get nextHop
+                    uint8_t nextHop;
                     // TODO get precursors from Rreq
+                    uint8_t precursors[256];
                     lifetime = ACTIVE_ROUTE_TIMEOUT;
+                    
                     table.rcreate(Route(rreq.destAddr, rreq.destSeq, isInvalid, rreq.hopCount, nextHop, precursors, lifetime));
 
                     /* RFC3561: section 6.3 */
@@ -170,12 +176,12 @@ namespace aodv
             // TODO same as section 6.2 for Rreq
         }
 
-        else if (t == aodv_msgs::MsgTypes::Rerr)
-        {
-            /* RFC3561: section 6.1 */
-            // in response to a lost or expired link to the next hop towards that destination.
-            // TODO The node determines which destinations use a particular next hop by consulting its routing table.  In this case, for each destination that uses the next hop, the node increments the sequence number and marks the route as invalid (see also sections 6.11, 6.12).
-        }
+        // else if (t == aodv_msgs::MsgTypes::Rerr)
+        // {
+        //     /* RFC3561: section 6.1 */
+        //     // in response to a lost or expired link to the next hop towards that destination.
+        //     // TODO The node determines which destinations use a particular next hop by consulting its routing table.  In this case, for each destination that uses the next hop, the node increments the sequence number and marks the route as invalid (see also sections 6.11, 6.12).
+        // }
 
         else if (t == aodv_msgs::MsgTypes::RrepAck)
         {
