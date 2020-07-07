@@ -48,7 +48,7 @@ namespace aodv
         aodv::Eth eth;
         aodv_msgs::Rreq rreq;
         aodv_msgs::Rrep rrep;
-        //aodv_msgs::Rerr rerr;
+        aodv_msgs::Rerr rerr;
         aodv_msgs::RrepAck rrepAck;
         Route row;
         bool isInvalid;
@@ -78,13 +78,13 @@ namespace aodv
                 return;
             }
         }
-        // else if (t == aodv_msgs::MsgTypes::Rerr)
-        // {
-        //     rerr.deserialise(msg);
-        //     if ((int)rerr.destSeq - (int)this->seq < 0) {
-        //         return;
-        //     }
-        // }
+        else if (t == aodv_msgs::MsgTypes::Rerr)
+        {
+            rerr.deserialise(msg);
+            if ((int)rerr.destSeq - (int)this->seq < 0) {
+                return;
+            }
+        }
         
         if (t == aodv_msgs::MsgTypes::Rreq)
         {
@@ -176,12 +176,12 @@ namespace aodv
             // TODO same as section 6.2 for Rreq
         }
 
-        // else if (t == aodv_msgs::MsgTypes::Rerr)
-        // {
-        //     /* RFC3561: section 6.1 */
-        //     // in response to a lost or expired link to the next hop towards that destination.
-        //     // TODO The node determines which destinations use a particular next hop by consulting its routing table.  In this case, for each destination that uses the next hop, the node increments the sequence number and marks the route as invalid (see also sections 6.11, 6.12).
-        // }
+        else if (t == aodv_msgs::MsgTypes::Rerr)
+        {
+            /* RFC3561: section 6.1 */
+            // in response to a lost or expired link to the next hop towards that destination.
+            // TODO The node determines which destinations use a particular next hop by consulting its routing table.  In this case, for each destination that uses the next hop, the node increments the sequence number and marks the route as invalid (see also sections 6.11, 6.12).
+        }
 
         else if (t == aodv_msgs::MsgTypes::RrepAck)
         {
