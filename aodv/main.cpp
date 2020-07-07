@@ -2,7 +2,6 @@
 
 int main() {
   uint8_t numNodes = 2;
-  aodv::Sim sim;
   aodv::config_t configs[] =
     {
      {2,
@@ -17,6 +16,6 @@ int main() {
       }
      },
     };
-  sim = aodv::Sim::Sim(numNodes, configs);
+  aodv::Sim sim = aodv::Sim::Sim(numNodes, configs);
   sim.start();
 }
