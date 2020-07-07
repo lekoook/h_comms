@@ -2,21 +2,21 @@
 
 int main() {
   uint8_t numNodes = 2;
-  Sim::Sim sim;
-  Sim::config_t configs[] =
+  aodv::Sim sim;
+  aodv::config_t configs[] =
     {
      {2,
       {
-       {0, Eth::Eth()},
-       {1, Eth::Eth()},
+       {0, aodv::Eth::Eth()},
+       {1, aodv::Eth::Eth()},
       }
      },
      {1,
       {
-       {1, Eth::Eth()},
+       {1, aodv::Eth::Eth()},
       }
      },
     };
-  sim = Sim::Sim(numNodes, configs);
+  sim = aodv::Sim::Sim(numNodes, configs);
   sim.start();
 }
