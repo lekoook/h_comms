@@ -6,16 +6,16 @@ int main() {
     {
      {2,
       {
-       {0, aodv::Eth::Eth()},
-       {1, aodv::Eth::Eth()},
+       {0, aodv::Eth()},
+       {1, aodv::Eth()},
       }
      },
      {1,
       {
-       {1, aodv::Eth::Eth()},
+       {1, aodv::Eth()},
       }
      },
     };
-  aodv::Sim sim = aodv::Sim::Sim(numNodes, configs);
+  aodv::Sim sim = aodv::Sim(numNodes, configs);
   sim.start();
 }
