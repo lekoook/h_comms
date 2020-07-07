@@ -9,6 +9,24 @@ namespace aodv
 {
 
   /**
+   * @brief Defined for both app sending to node, and app receiving from node.
+   * Sending: app triggers an event originating at the node with @param src of @param eth.
+   * Receiving: node with @param src of @param eth sends @param eth back to app.
+   */
+  typedef struct event_t {
+    int time;
+    Eth eth;
+  } event_t;
+
+  /**
+   * @brief An array of event.
+   */
+  typedef struct config_t {
+    int numEvents;
+    event_t events[];
+  } config_t;
+
+  /**
    * @brief Interface to mesh topology of nodes.
    *
    * __Architecture__:
@@ -34,24 +52,6 @@ namespace aodv
   class Sim
   {
     const static int LIM_NODES = 256;
-
-    /**
-     * @brief Defined for both app sending to node, and app receiving from node.
-     * Sending: app triggers an event originating at the node with @param src of @param eth.
-     * Receiving: node with @param src of @param eth sends @param eth back to app.
-     */
-    typedef struct event_t {
-      int time;
-      Eth eth;
-    } event_t;
-
-    /**
-     * @brief An array of event.
-     */
-    typedef struct config_t {
-      int numEvents;
-      event_t events[];
-    } config_t;
 
   private:
     /**
