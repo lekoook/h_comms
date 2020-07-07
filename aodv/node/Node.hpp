@@ -3,6 +3,7 @@
 
 #include "MsgPeeker.hpp"
 #include "../eth/Eth.hpp"
+#include "../rerr/Rerr.hpp"
 #include "../rrep/Rrep.hpp"
 #include "../rrep_ack/RrepAck.hpp"
 #include "../rreq/Rreq.hpp"
