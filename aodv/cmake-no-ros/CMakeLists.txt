@@ -23,7 +23,7 @@ add_library(rrep_ack ../rrep_ack/RrepAck.cpp ../rrep_ack/RrepAck.hpp)
 add_library(rreq ../rreq/Rreq.cpp ../rreq/Rreq.hpp)
 add_library(sim ../utilities/Sim.cpp ../utilities/Sim.hpp)
 add_library(table ../table/Table.cpp ../table/Table.hpp)
-#add_library(serialisers ../utilities/serialisers.hpp)
+add_library(serialisers ../utilities/serialisers.cpp ../utilities/serialisers.hpp)
 
 add_executable(aodv ../main.cpp)
 
@@ -35,6 +35,7 @@ target_link_libraries(aodv
   rrep
   rrep_ack
   rreq
+  serialisers
   sim
   table
 )
