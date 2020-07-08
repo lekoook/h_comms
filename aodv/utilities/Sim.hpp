@@ -4,6 +4,8 @@
 #include "../node/Node.hpp"
 #include <stdint.h>
 #include <queue>
+#include <string>
+#include <iostream>
 
 namespace aodv
 {
