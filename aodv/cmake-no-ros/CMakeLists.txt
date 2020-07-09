@@ -17,6 +17,7 @@ include_directories(
 add_library(eth ../eth/Eth.cpp ../eth/Eth.hpp)
 add_library(crc ../lib/crc32.c)
 add_library(node ../node/Node.cpp ../node/Node.hpp)
+add_library(msg_peeker ../node/MsgPeeker.cpp ../node/MsgPeeker.hpp)
 add_library(rerr ../rerr/Rerr.cpp ../rerr/Rerr.hpp)
 add_library(rrep ../rrep/Rrep.cpp ../rrep/Rrep.hpp)
 add_library(rrep_ack ../rrep_ack/RrepAck.cpp ../rrep_ack/RrepAck.hpp)
@@ -27,15 +28,41 @@ add_library(serialisers ../utilities/serialisers.cpp ../utilities/serialisers.hp
 
 add_executable(aodv ../main.cpp)
 
-target_link_libraries(aodv
+target_link_libraries(sim
   eth
-  crc
   node
-  rerr
-  rrep
-  rrep_ack
-  rreq
+)
+
+target_link_libraries(eth
   serialisers
-  sim
+  parson
+)
+
+target_link_libraries(rreq
+  serialisers
+)
+
+target_link_libraries(rrep
+  serialisers
+)
+
+target_link_libraries(rerr
+  serialisers
+)
+
+target_link_libraries(rrep_ack
+  serialisers
+)
+
+target_link_libraries(node
   table
+  rreq
+  rrep
+  rerr
+  rrep_ack
+  msg_peeker
+)
+
+target_link_libraries(aodv
+  sim
 )
