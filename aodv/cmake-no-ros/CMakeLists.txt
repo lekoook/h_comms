@@ -35,7 +35,6 @@ target_link_libraries(sim
 
 target_link_libraries(eth
   serialisers
-  parson
 )
 
 target_link_libraries(rreq
