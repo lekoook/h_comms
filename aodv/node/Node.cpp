@@ -172,6 +172,58 @@ namespace aodv
             minimalLifetime = std::time(0) + 2*NET_TRAVERSAL_TIME + 2*row.hopCount*NODE_TRAVERSAL_TIME;
             row.lifetime = std::max(row.lifetime, minimalLifetime);
             */
+
+            /* RFC3561: section 6.6 */
+            // TODO probably need to shift this inside one of the earlier blocks
+            bool hasActiveRouteToDestination = false;
+            int isearch = table.rsearch(rreq.destAddr);
+            if (isearch > 0) { // update route to destination
+                hasActiveRouteToDestination = true; // TODO verify if this is enough to be active route
+                row = table.rread(isearch);
+            }
+            if (!(rreq.destAddr == this->addr
+                || hasActiveRouteToDestination)) {
+                if (eth.ttl > 1) {
+                    // update RREQ
+                    eth.ttl = eth.ttl - 1;
+                    rreq.hopCount = rreq.hopCount + 1; // account for the new hop through the intermediate node
+                    // TODO rreq.destSeq = std::max(rreq.destSeq, destination sequence value currently maintained by the node for the requested destination);
+                    // the forwarding node MUST NOT modify its maintained value for the destination sequence number, even if the value received in the incoming RREQ is larger than the value currently maintained by the forwarding node.
+                    // TODO broadcast RREQ
+                }
+            } else {
+                rrep = aodv_msgs::Rrep();
+                rrep.destAddr = rreq.destAddr;
+                rrep.srcAddr = rreq.srcAddr;
+                // TODO unicast to the next hop toward the originator of the RREQ, as indicated by the route table entry for that originator.
+
+                if (this->addr == rreq.destAddr) { /* RFC3561: section 6.6.1 */
+                    if (rreq.destSeq == this->seq + 1) {
+                        this->seq = this->seq + 1;
+                    }
+                    rrep.destSeq = this->seq;
+                    rrep.hopCount = 0;
+                    rrep.lifetime = MY_ROUTE_TIMEOUT;
+                } else { /* RFC3561: section 6.6.2 */
+                    // TODO row = forward route entry;
+                    rrep.destSeq = row.destSeq;
+                    // TODO update forward route entry by placing the last hop node into the precursor list for the forward route entry
+                    // TODO update node route entry for the node originating the RREQ by placing the next hop towards the destination in the precursor list for the reverse route entry
+                    // TODO rrep.hopCount = distance in hops from the destination;
+                    // TODO rrep.lifetime = row.lifetime - std::time(0);
+                    if (rreq.flags & aodv_msgs::GRAT_F_MASK) { /* RFC3561: section 6.6.3 */
+                        // TODO row = forward route entry;
+                        rrep.hopCount = row.hopCount;
+                        rrep.destAddr = rreq.srcAddr;
+                        rrep.destSeq = rreq.srcSeq;
+                        rrep.srcAddr = rreq.destAddr;
+                        rrep.lifetime = row.lifetime;
+                        // TODO unicast gratuitous RREP to destination node
+                    }
+                }
+
+                // discard RREQ
+            }
         }
 
         else if (t == aodv_msgs::MsgTypes::Rrep)
