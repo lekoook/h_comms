@@ -36,7 +36,7 @@ namespace aodv
          * An invalid route is used to store previously valid route information for an extended period of time.
          * An invalid route cannot be used to forward data packets, but it can provide information useful for route repairs, and also for future RREQ messages.
          */
-        bool isInvalid;
+        bool validSequenceNumber;
 
         /* TODO other flags */
 
@@ -79,7 +79,7 @@ namespace aodv
          * @brief Construct a new object.
          * 
          */
-        Route(uint8_t destAddr, uint32_t destSeq, bool isInvalid, uint8_t hopCount, uint8_t nextHop, uint8_t precursors[], uint64_t lifetime);
+        Route(uint8_t destAddr, uint32_t destSeq, bool validSequenceNumber, uint8_t hopCount, uint8_t nextHop, uint8_t precursors[], uint64_t lifetime);
 
         /**
          * @brief Check expected destAddr with actual destAddr.

@@ -4,12 +4,12 @@
 namespace aodv
 {
     Route::Route() :
-        ts(std::time(0)), destAddr(), destSeq(), isInvalid(), hopCount(), nextHop(), precursors(), lifetime()
+        ts(std::time(0)), destAddr(), destSeq(), validSequenceNumber(), hopCount(), nextHop(), precursors(), lifetime()
     {
     }
 
-    Route::Route(uint8_t destAddr, uint32_t destSeq, bool isInvalid, uint8_t hopCount, uint8_t nextHop, uint8_t precursors[256], uint64_t lifetime) :
-        ts(std::time(0)), destAddr(destAddr), destSeq(destSeq), isInvalid(isInvalid), hopCount(hopCount), nextHop(nextHop), lifetime(lifetime)
+    Route::Route(uint8_t destAddr, uint32_t destSeq, bool validSequenceNumber, uint8_t hopCount, uint8_t nextHop, uint8_t precursors[256], uint64_t lifetime) :
+        ts(std::time(0)), destAddr(destAddr), destSeq(destSeq), validSequenceNumber(validSequenceNumber), hopCount(hopCount), nextHop(nextHop), lifetime(lifetime)
     {
         // TODO copy precursor
     }

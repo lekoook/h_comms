@@ -51,7 +51,7 @@ namespace aodv
         aodv_msgs::Rerr rerr;
         aodv_msgs::RrepAck rrepAck;
         Route row;
-        bool isInvalid;
+        bool validSequenceNumber;
         uint64_t lifetime;
 
         uint8_t* data = f();
@@ -101,8 +101,8 @@ namespace aodv
                     uint16_t i = isearch;
                     row = table.rread(i);
                     if (rreq.destSeq > row.destSeq || ((rreq.destSeq > row.destSeq) && (rreq.hopCount+1 < row.hopCount))) { // TODO || sequence number is unknown
-                        isInvalid = false; // TODO check if sequence number is invalid
-                        if (isInvalid) {
+                        validSequenceNumber = false; // TODO check if sequence number is invalid
+                        if (validSequenceNumber) {
                             /* RFC3561: section 6.4 */
                             /* TODO
                             ttl = rreq.hopCount + TTL_INCREMENT;
@@ -121,18 +121,18 @@ namespace aodv
                         // TODO get precursors from Rreq
                         uint8_t precursors[256];
                         lifetime = ACTIVE_ROUTE_TIMEOUT;
-                        table.rupdate(i, Route(rreq.destAddr, rreq.destSeq, isInvalid, rreq.hopCount, nextHop, precursors, lifetime));
+                        table.rupdate(i, Route(rreq.destAddr, rreq.destSeq, validSequenceNumber, rreq.hopCount, nextHop, precursors, lifetime));
                     }
 
                 } else { // create route to destination
-                    isInvalid = false; // TODO check if sequence number is invalid
+                    validSequenceNumber = false; // TODO check if sequence number is invalid
                     // TODO get nextHop
                     uint8_t nextHop;
                     // TODO get precursors from Rreq
                     uint8_t precursors[256];
                     lifetime = ACTIVE_ROUTE_TIMEOUT;
                     
-                    table.rcreate(Route(rreq.destAddr, rreq.destSeq, isInvalid, rreq.hopCount, nextHop, precursors, lifetime));
+                    table.rcreate(Route(rreq.destAddr, rreq.destSeq, validSequenceNumber, rreq.hopCount, nextHop, precursors, lifetime));
 
                     /* RFC3561: section 6.3 */
                     // TODO set unknown sequence number flag if destination sequence number is unknown
