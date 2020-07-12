@@ -58,6 +58,12 @@ namespace aodv
         //std::stack<rreqStack_t> rreqStack;
 
         /**
+         * @brief precursor list.
+         * 
+         */
+        uint8_t precursors[256];
+
+        /**
          * @brief method that sends data to app level.
          *
          * @param eth ethernet packet.
@@ -97,7 +103,7 @@ namespace aodv
          * @brief Construct a new object.
          * 
          */
-        Node(Table table, uint32_t seq, uint32_t id, uint32_t addr, void (*send_app)(Eth eth), Eth (*receive_app)());
+        Node(Table table, uint32_t seq, uint32_t id, uint32_t addr, uint8_t precursors[], void (*send_app)(Eth eth), Eth (*receive_app)());
 
         /**
          * @brief App layer send a data packet to node layer.

@@ -95,6 +95,6 @@ namespace aodv
     std::string open = "(";
     std::string sep = ",";
     std::string close = ")";
-    std::cout << open << eth.dst << sep << eth.src << sep << eth.length << close << std::endl;
+    std::cout << open << eth.ttl << sep << eth.dst << sep << eth.src << sep << eth.length << close << std::endl;
   }
 }

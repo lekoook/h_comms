@@ -16,6 +16,12 @@ namespace aodv
   
     public:
         /**
+         * @brief time to live
+         * 
+         */
+        uint8_t ttl;
+  
+        /**
          * @brief destination address
          * 
          */
@@ -49,7 +55,7 @@ namespace aodv
          * @brief Construct a new Ethernet frame.
          * 
          */
-        Eth(uint8_t dst, uint8_t src, uint16_t length, uint8_t *payload);
+        Eth(uint8_t ttl, uint8_t dst, uint8_t src, uint16_t length, uint8_t *payload);
   
         /**
          * @brief Serializes a object into a uint8_t bytes array.
