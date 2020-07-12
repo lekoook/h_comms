@@ -152,10 +152,25 @@ namespace aodv
 
             /* RFC3561: section 6.5 */
             /* TODO
-            std::time_t std::time(0)
-            rreq->srcAddr
-            rreq->id
-            rreqStack.push();
+            if (node has received a RREQ with the same Originator IP Address and RREQ ID within at least the last PATH_DISCOVERY_TIME) {
+                silently discard the newly received RREQ.
+                return;
+            }
+            */
+            rreq.hopCount = rreq.hopCount + 1; // account for the new hop through the intermediate node
+            /* TODO
+            row = ...; // searches for a reverse route to the Originator IP Address (see section 6.2), using longest-prefix matching.
+            if (If need be) {
+                the route is created, or updated using the Originator Sequence Number from the RREQ in its routing table.
+            }
+            if (rreq.srcAddr > row.destAddr) {
+                row.destAddr = req.srcAddr;
+            }
+            row.validSequenceNumber = true;
+            row.nextHop = eth.src;
+            row.hopCount = rreq.hopCount;
+            minimalLifetime = std::time(0) + 2*NET_TRAVERSAL_TIME + 2*row.hopCount*NODE_TRAVERSAL_TIME;
+            row.lifetime = std::max(row.lifetime, minimalLifetime);
             */
         }
 

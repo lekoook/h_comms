@@ -10,7 +10,6 @@
 #include "../table/Table.hpp"
 #include "../config.h"
 #include <stdint.h>
-#include <stack>
 
 namespace aodv
 {
@@ -50,13 +49,6 @@ namespace aodv
          */
         uint32_t addr = 0;
   
-        /**
-         * @brief processing stack.
-         * // RFC3561: section 6.5
-         * 
-         */
-        //std::stack<rreqStack_t> rreqStack;
-
         /**
          * @brief precursor list.
          * 
