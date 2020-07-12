@@ -97,8 +97,7 @@ namespace aodv
             } else {
                 int isearch = table.rsearch(rreq.destAddr);
                 if (isearch > 0) { // update route to destination
-                    uint16_t i = isearch;
-                    row = table.rread(i);
+                    row = table.rread(isearch);
                     if (rreq.destSeq > row.destSeq || ((rreq.destSeq > row.destSeq) && (rreq.hopCount+1 < row.hopCount))) { // TODO || sequence number is unknown
                         validSequenceNumber = false; // TODO check if sequence number is invalid
                         if (validSequenceNumber) {
@@ -119,7 +118,7 @@ namespace aodv
                         // TODO get precursors from Rreq
                         uint8_t precursors[256];
                         lifetime = ACTIVE_ROUTE_TIMEOUT;
-                        table.rupdate(i, Route(rreq.destAddr, rreq.destSeq, validSequenceNumber, rreq.hopCount, nextHop, precursors, lifetime));
+                        table.rupdate(isearch, Route(rreq.destAddr, rreq.destSeq, validSequenceNumber, rreq.hopCount, nextHop, precursors, lifetime));
                     }
 
                 } else { // create route to destination
