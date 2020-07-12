@@ -29,16 +29,17 @@ namespace aodv
         // TODO originate RREQ
 
         /* RFC3561: section 6.4 */
-        /* TODO
-        ttl = TTL_START;
-        while (ttl < TTL_THRESHOLD) {
-            uint8_t timeout = RING_TRAVERSAL_TIME;
+        // When it is desired to have all retries traverse the entire ad hoc network, this can be achieved by configuring TTL_START and TTL_INCREMENT both to be the same value as NET_DIAMETER.
+        eth.ttl = TTL_START;
+        while (eth.ttl < TTL_THRESHOLD) {
+            // TODO broadcast RREQ
+            const uint8_t RING_TRAVERSAL_TIME = 2 * NODE_TRAVERSAL_TIME * (eth.ttl + TIMEOUT_BUFFER);
+            uint16_t timeout = RING_TRAVERSAL_TIME;
             // TODO wait for RREP
-            ttl += TTL_INCREMENT;
+            eth.ttl += TTL_INCREMENT;
         }
-        ttl = NET_DIAMETER;
+        eth.ttl = NET_DIAMETER;
         // TODO wait for RREP
-        */
 
         // TODO serialize eth to uint8_t* data, and send over link
     }
@@ -56,9 +57,7 @@ namespace aodv
 
         uint8_t* data = f();
         eth.deserialise(data);
-        uint8_t* payload = eth.payload;
-        uint8_t ttl = *payload; // assume TTL is head of payload // TODO do something with ttl
-        uint8_t* msg = payload + 1;
+        uint8_t* msg = eth.payload;
         aodv_msgs::MsgTypes t = msg_peeker::peekType(msg);
 
         /* RFC3561: section 6.1 */
@@ -104,17 +103,16 @@ namespace aodv
                         validSequenceNumber = false; // TODO check if sequence number is invalid
                         if (validSequenceNumber) {
                             /* RFC3561: section 6.4 */
-                            /* TODO
-                            ttl = rreq.hopCount + TTL_INCREMENT;
-                            while (ttl < TTL_THRESHOLD) {
-                                uint8_t timeout = RING_TRAVERSAL_TIME;
+                            eth.ttl = rreq.hopCount + TTL_INCREMENT;
+                            while (eth.ttl < TTL_THRESHOLD) {
+                                const uint8_t RING_TRAVERSAL_TIME = 2 * NODE_TRAVERSAL_TIME * (eth.ttl + TIMEOUT_BUFFER);
+                                uint16_t timeout = RING_TRAVERSAL_TIME;
                                 // TODO wait for RREP
-                                ttl += TTL_INCREMENT;
+                                eth.ttl += TTL_INCREMENT;
                             }
-                            ttl = NET_DIAMETER;
-                            uint8_t timeout = NET_TRAVERSAL_TIME;
+                            eth.ttl = NET_DIAMETER;
+                            uint16_t timeout = NET_TRAVERSAL_TIME;
                             // TODO wait for RREP
-                            */
                         }
                         // TODO get nextHop
                         uint8_t nextHop;

@@ -20,7 +20,6 @@ const uint8_t TIMEOUT_BUFFER = 2;
 const uint8_t TTL_START = 1;
 const uint8_t TTL_INCREMENT = 2;
 const uint8_t TTL_THRESHOLD = 7;
-const uint8_t TTL_VALUE = 0; // TODO // the value of the TTL field in the IP header while the expanding ring search is being performed.
 const uint8_t K = 5; // K = 5 is recommended.
 
 // Derived constants
@@ -30,7 +29,6 @@ const uint16_t MY_ROUTE_TIMEOUT = 2 * ACTIVE_ROUTE_TIMEOUT;
 const uint16_t NET_TRAVERSAL_TIME = 2 * NODE_TRAVERSAL_TIME * NET_DIAMETER;
 const uint8_t NEXT_HOP_WAIT = NODE_TRAVERSAL_TIME + 10;
 const uint16_t PATH_DISCOVERY_TIME = 2 * NET_TRAVERSAL_TIME;
-const uint8_t RING_TRAVERSAL_TIME = 2 * NODE_TRAVERSAL_TIME * (TTL_VALUE + TIMEOUT_BUFFER);
 const uint16_t BLACKLIST_TIMEOUT = RREQ_RETRIES * NET_TRAVERSAL_TIME;
 
 #endif // CONFIG_H_
