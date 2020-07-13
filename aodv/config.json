@@ -1,0 +1,11 @@
+{
+    [
+        [
+            {"time": 0, "eth": {"ttl": 1, "dst": 1, "src": 0, "payload": ""}},
+            {"time": 1, "eth": {"ttl": 1, "dst": 1, "src": 0, "payload": ""}},
+        ],
+        [
+            {"time": 1, "eth": {"ttl": 1, "dst": 0, "src": 1, "payload": ""}},
+        ],
+    ]
+}

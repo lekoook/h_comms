@@ -19,6 +19,7 @@ add_library(eth ../eth/Eth.cpp ../eth/Eth.hpp)
 add_library(crc ../lib/crc32.c)
 add_library(node ../node/Node.cpp ../node/Node.hpp)
 add_library(msg_peeker ../node/MsgPeeker.cpp ../node/MsgPeeker.hpp)
+add_library(parson ../lib/parson.c ../lib/parson.h)
 add_library(rerr ../rerr/Rerr.cpp ../rerr/Rerr.hpp)
 add_library(rrep ../rrep/Rrep.cpp ../rrep/Rrep.hpp)
 add_library(rrep_ack ../rrep_ack/RrepAck.cpp ../rrep_ack/RrepAck.hpp)
@@ -32,6 +33,7 @@ add_executable(aodv ../main.cpp)
 target_link_libraries(sim
   eth
   node
+  parson
 )
 
 target_link_libraries(eth
