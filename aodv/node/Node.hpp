@@ -13,6 +13,12 @@
 
 namespace aodv
 {
+    /**
+     * @brief Address on which broadcasts are made.
+     * 
+     */
+    const uint8_t BROADCAST_ADDR = 0;
+
     class Node
     {
     private:
