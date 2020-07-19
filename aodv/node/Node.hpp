@@ -95,7 +95,7 @@ namespace aodv
          * @brief Send payload with this-addr as origin address.
          *
          */
-        void originate_payload(uint16_t length, uint8_t* payload, void (*send_link)(uint8_t* msg));
+        void originate_payload(uint8_t dst, uint16_t length, uint8_t* payload, void (*send_link)(uint8_t* msg));
 
         /**
          * @brief Send a control packet or a data packet.

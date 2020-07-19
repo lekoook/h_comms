@@ -21,10 +21,9 @@ namespace aodv
         return rreq;
     }
 
-    void Node::originate_payload(uint16_t length, uint8_t* payload, void (*send_link)(uint8_t* msg))
+    void Node::originate_payload(uint8_t dst, uint16_t length, uint8_t* payload, void (*send_link)(uint8_t* msg))
     {
         uint8_t ttl = 0; //TODO
-        uint8_t dst = 0; // TODO
         aodv::Eth eth = aodv::Eth(ttl, dst, this->addr, length, payload);
         uint8_t msg[aodv::ETH_NONPAYLOAD_LEN + eth.length];
         eth.serialise(msg);
@@ -67,7 +66,7 @@ namespace aodv
                 this->bufferedRreqId = rreq.id;
                 this->bufferedRreqAddr = rreq.srcAddr;
 
-                originate_payload(length, payload, send_link);
+                originate_payload(aodv::BROADCAST_ADDR, length, payload, send_link);
             }
 
             /* RFC3561: section 6.4 */
@@ -175,7 +174,7 @@ namespace aodv
                 uint16_t length = aodv_msgs::RREQ_LEN;
                 uint8_t payload[length];
                 rreq.serialise(payload);
-                originate_payload(length, payload, send_link);
+                originate_payload(aodv::BROADCAST_ADDR, length, payload, send_link);
             }
         }
         
