@@ -53,6 +53,24 @@ namespace aodv
         uint8_t precursors[256];
 
         /**
+         * @brief Buffered timeout.
+         * 
+         */
+        std::time_t bufferedTimeout;
+        
+        /**
+         * @brief Buffered RREQ identifier.
+         * 
+         */
+        uint32_t bufferedRreqId = 0; // TODO assume 0 is an invalid id
+
+        /**
+         * @brief Buffered address.
+         * 
+         */
+        uint32_t bufferedRreqAddr = aodv::BROADCAST_ADDR;
+
+        /**
          * @brief method that sends data to app level.
          *
          * @param eth ethernet packet.

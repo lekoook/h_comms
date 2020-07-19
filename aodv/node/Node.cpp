@@ -60,6 +60,13 @@ namespace aodv
                 uint16_t length = aodv_msgs::RREQ_LEN;
                 uint8_t payload[length];
                 rreq.serialise(payload);
+
+                /* RFC3561: section 6.3 */
+                // before broadcasting the RREQ, the originating node buffers rreq.id and rreq.addr for PATH_DISCOVERY_TIME
+                this->bufferedTimeout = std::time(0) + PATH_DISCOVERY_TIME;
+                this->bufferedRreqId = rreq.id;
+                this->bufferedRreqAddr = rreq.srcAddr;
+
                 originate_payload(length, payload, send_link);
             }
 
@@ -132,6 +139,20 @@ namespace aodv
             rrepAck.deserialise(payload);
         }
         else {// TODO not a control packet, must be a data packet.
+        }
+
+        /* RFC3561: section 6.3 */
+        // before broadcasting the RREQ, the originating node buffers rreq.id and rreq.addr for PATH_DISCOVERY_TIME
+        // In this way, when the node receives the packet again from its neighbors, it will not reprocess and re-forward the packet.
+        if (t == aodv_msgs::MsgTypes::Rreq) {
+            if (this->bufferedTimeout < std::time(0)) {
+                if ((this->bufferedRreqId == this->id) && (this->bufferedRreqAddr == this->addr)) {
+                    return;
+                }
+            } else {
+                this->bufferedRreqId = 0; // TODO assume 0 is an invalid id
+                this->bufferedRreqAddr = aodv::BROADCAST_ADDR;
+            }
         }
 
         // If received a control packet
@@ -211,7 +232,6 @@ namespace aodv
                     rreq.id = this->id + 1;
                     rreq.hopCount = 0;
 
-                    // TODO buffer this->id and this->addr for PATH_DISCOVERY_TIME
                     // TODO [belongs elsewhere] any generation of a RREP by an intermediate node (as in section 6.6) for delivery to the originating node SHOULD be accompanied by some action that notifies the destination about a route back to the originating node. The originating node selects this mode of operation in the intermediate nodes by setting the ’G’ flag.
 
                     // TODO wait for RREP, if route not received within some time, broadcast another RREQ satisfying some conditions
