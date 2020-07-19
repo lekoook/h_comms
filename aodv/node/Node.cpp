@@ -13,7 +13,7 @@ namespace aodv
         // TODO initialise the function pointers properly
     }
 
-    void Node::send(Eth eth, void (*f)(uint8_t* msg))
+    void Node::send(Eth eth, void (*send_link)(uint8_t* msg))
     {
         if (eth.dst == this->addr) {
             /* TODO
@@ -51,7 +51,7 @@ namespace aodv
                 aodv::Eth eth2 = aodv::Eth(ttl, dst, this->addr, length, payload);
                 uint8_t msg[aodv::ETH_NONPAYLOAD_LEN + eth2.length];
                 eth2.serialise(msg);
-                f(msg);
+                send_link(msg);
             }
 
             /* RFC3561: section 6.4 */
@@ -71,7 +71,7 @@ namespace aodv
         }
     }
 
-    void Node::receive(uint8_t* (*f)())
+    void Node::receive(uint8_t* (*receive_link)(), void (*send_link)(uint8_t* msg))
     {
         aodv::Eth eth;
         aodv_msgs::Rreq rreq;
@@ -82,7 +82,7 @@ namespace aodv
         bool validSequenceNumber;
         uint64_t lifetime;
 
-        uint8_t* data = f();
+        uint8_t* data = receive_link();
         eth.deserialise(data);
         uint8_t* payload = eth.payload;
         aodv_msgs::MsgTypes t = msg_peeker::peekType(payload);
@@ -118,7 +118,10 @@ namespace aodv
             if (rreq.destAddr == this->addr) {
                 /* RFC3561: section 6.1 */
                 // TODO prepare RREP
+
+                // MUST update its own sequence number
                 this->seq = std::max(this->seq, rreq.destSeq);
+
                 // TODO originate RREP
 
             } else {
@@ -150,9 +153,7 @@ namespace aodv
 
                 } else { // create route to destination
                     validSequenceNumber = false; // TODO check if sequence number is invalid
-                    // TODO get nextHop
-                    uint8_t nextHop;
-                    // TODO get precursors from Rreq
+                    uint8_t nextHop = 0; // TODO get nextHop
                     uint8_t precursors[256];
                     lifetime = ACTIVE_ROUTE_TIMEOUT;
                     
