@@ -67,6 +67,19 @@ namespace aodv
         Eth receive_app();
 
         /**
+         * @brief Prepare rreq.
+         *
+         * @return rreq rreq.
+         */
+        aodv_msgs::Rreq prepare_rreq(uint8_t dst, uint8_t src);
+
+        /**
+         * @brief Send payload with this-addr as origin address.
+         *
+         */
+        void originate_payload(uint16_t length, uint8_t* payload, void (*send_link)(uint8_t* msg));
+
+        /**
          * @brief Send a control packet or a data packet.
          *
          * @param eth ethernet packet.

@@ -13,6 +13,24 @@ namespace aodv
         // TODO initialise the function pointers properly
     }
 
+    aodv_msgs::Rreq Node::prepare_rreq(uint8_t dst, uint8_t src)
+    {
+        aodv_msgs::Rreq rreq = aodv_msgs::Rreq();
+        rreq.destAddr = dst;
+        rreq.srcAddr = src;
+        return rreq;
+    }
+
+    void Node::originate_payload(uint16_t length, uint8_t* payload, void (*send_link)(uint8_t* msg))
+    {
+        uint8_t ttl = 0; //TODO
+        uint8_t dst = 0; // TODO
+        aodv::Eth eth = aodv::Eth(ttl, dst, this->addr, length, payload);
+        uint8_t msg[aodv::ETH_NONPAYLOAD_LEN + eth.length];
+        eth.serialise(msg);
+        send_link(msg);
+    }
+
     void Node::send(Eth eth, void (*send_link)(uint8_t* msg))
     {
         if (eth.dst == this->addr) {
@@ -33,25 +51,16 @@ namespace aodv
                 /* RFC3561: section 6.1 */
 
                 // prepare RREQ
-                aodv_msgs::Rreq rreq = aodv_msgs::Rreq();
-                rreq.destAddr = eth.dst;
-                rreq.srcAddr = eth.src;
+                aodv_msgs::Rreq rreq = prepare_rreq(eth.dst, eth.src);
 
                 // MUST increment its own sequence number
                 this->seq++;
 
                 // originate RREQ
-                // construct eth2 with rreq as payload
-                // eth2.dst is nextHop.
-                uint8_t ttl = 0; //TODO
-                uint8_t dst = 0; // TODO
                 uint16_t length = aodv_msgs::RREQ_LEN;
                 uint8_t payload[length];
                 rreq.serialise(payload);
-                aodv::Eth eth2 = aodv::Eth(ttl, dst, this->addr, length, payload);
-                uint8_t msg[aodv::ETH_NONPAYLOAD_LEN + eth2.length];
-                eth2.serialise(msg);
-                send_link(msg);
+                originate_payload(length, payload, send_link);
             }
 
             /* RFC3561: section 6.4 */
