@@ -57,29 +57,29 @@ namespace aodv
 
         uint8_t* data = f();
         eth.deserialise(data);
-        uint8_t* msg = eth.payload;
-        aodv_msgs::MsgTypes t = msg_peeker::peekType(msg);
+        uint8_t* payload = eth.payload;
+        aodv_msgs::MsgTypes t = msg_peeker::peekType(payload);
 
         /* RFC3561: section 6.1 */
         // In order to ascertain that information about a destination is not stale, the node compares its current numerical value for the sequence number with that obtained from the incoming AODV message.  This comparison MUST be done using signed 32-bit arithmetic, this is necessary to accomplish sequence number rollover.
         // If the result of subtracting the currently stored sequence number from the value of the incoming sequence number is less than zero, then the information related to that destination in the AODV message MUST be discarded.
         if (t == aodv_msgs::MsgTypes::Rreq)
         {
-            rreq.deserialise(msg);
+            rreq.deserialise(payload);
             if ((int)rreq.destSeq - (int)this->seq < 0) {
                 return;
             }
         }
         else if (t == aodv_msgs::MsgTypes::Rrep)
         {
-            rrep.deserialise(msg);
+            rrep.deserialise(payload);
             if ((int)rrep.destSeq - (int)this->seq < 0) {
                 return;
             }
         }
         else if (t == aodv_msgs::MsgTypes::Rerr)
         {
-            rerr.deserialise(msg);
+            rerr.deserialise(payload);
             if ((int)rerr.destSeq - (int)this->seq < 0) {
                 return;
             }
