@@ -10,6 +10,7 @@
 #include "../table/Table.hpp"
 #include "../config.h"
 #include <stdint.h>
+#include <queue>
 
 namespace aodv
 {
@@ -69,6 +70,12 @@ namespace aodv
          * 
          */
         uint32_t bufferedRreqAddr = aodv::BROADCAST_ADDR;
+
+        /**
+         * @brief FIFO buffer for data packets.
+         * 
+         */
+        std::queue<Eth> fifo;
 
         /**
          * @brief method that sends data to app level.

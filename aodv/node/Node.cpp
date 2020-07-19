@@ -344,8 +344,9 @@ namespace aodv
         {
         }
 
-        else // TODO not a control packet, must be a data packet.
+        else // not a control packet, must be a data packet.
         {
+            this->fifo.push(eth);
         }
 
     }
