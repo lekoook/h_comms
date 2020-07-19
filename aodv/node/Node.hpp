@@ -15,15 +15,6 @@ namespace aodv
 {
     class Node
     {
-
-    /**
-     * @brief An array of event.
-     */
-    typedef struct callbackres_t {
-      bool err;
-      Eth eth;
-    } callbackres_t;
-
     private:
         /**
          * @brief Routing table object.
@@ -96,14 +87,6 @@ namespace aodv
          * 
          */
         Node(Table table, uint32_t seq, uint32_t id, uint32_t addr, uint8_t precursors[], void (*send_app)(Eth eth), Eth (*receive_app)());
-
-        /**
-         * @brief App layer send a data packet to node layer.
-         *
-         * @param eth ethernet packet.
-         * @param cb callback function, app layer receive a data packet from node layer.
-         */
-        void send_data(Eth eth, callbackres_t (*cb)(Eth eth));
     };
 }
 
