@@ -99,9 +99,14 @@ namespace aodv
         /* RFC3561: section 6.1 */
         // In order to ascertain that information about a destination is not stale, the node compares its current numerical value for the sequence number with that obtained from the incoming AODV message.  This comparison MUST be done using signed 32-bit arithmetic, this is necessary to accomplish sequence number rollover.
         // If the result of subtracting the currently stored sequence number from the value of the incoming sequence number is less than zero, then the information related to that destination in the AODV message MUST be discarded.
+
+        /* RFC3561: section 6.3 */
+        // A node disseminates a RREQ when it determines that it needs a route to a destination and does not have one available.
+        uint8_t destToWhichNeedRoute = aodv::BROADCAST_ADDR;
         if (t == aodv_msgs::MsgTypes::Rreq)
         {
             rreq.deserialise(payload);
+            destToWhichNeedRoute = rreq.destAddr;
             if ((int)rreq.destSeq - (int)this->seq < 0) {
                 return;
             }
@@ -109,6 +114,7 @@ namespace aodv
         else if (t == aodv_msgs::MsgTypes::Rrep)
         {
             rrep.deserialise(payload);
+            destToWhichNeedRoute = rrep.destAddr;
             if ((int)rrep.destSeq - (int)this->seq < 0) {
                 return;
             }
@@ -116,8 +122,39 @@ namespace aodv
         else if (t == aodv_msgs::MsgTypes::Rerr)
         {
             rerr.deserialise(payload);
+            destToWhichNeedRoute = rerr.destAddr;
             if ((int)rerr.destSeq - (int)this->seq < 0) {
                 return;
+            }
+        }
+        else if (t == aodv_msgs::MsgTypes::RrepAck)
+        {
+            rrepAck.deserialise(payload);
+        }
+        else {// TODO not a control packet, must be a data packet.
+        }
+
+        // If received a control packet
+        if ((t == aodv_msgs::MsgTypes::Rreq)
+            || (t == aodv_msgs::MsgTypes::Rrep)
+            || (t == aodv_msgs::MsgTypes::Rerr)
+            || (t == aodv_msgs::MsgTypes::RrepAck))
+        {
+            /* RFC3561: section 6.3 */
+            // A node disseminates a RREQ when it determines that it needs a route to a destination and does not have one available.
+            if (destToWhichNeedRoute != aodv::BROADCAST_ADDR) {
+
+                // prepare RREQ
+                aodv_msgs::Rreq rreq = prepare_rreq(eth.dst, eth.src);
+
+                // MUST increment its own sequence number
+                this->seq++;
+
+                // originate RREQ
+                uint16_t length = aodv_msgs::RREQ_LEN;
+                uint8_t payload[length];
+                rreq.serialise(payload);
+                originate_payload(length, payload, send_link);
             }
         }
         
