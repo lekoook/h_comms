@@ -15,33 +15,60 @@ namespace aodv
 
     void Node::send(Eth eth, void (*f)(uint8_t* msg))
     {
-        /* TODO
-         * if (eth.dst == this->addr) {
-         *   if (is data packet) {
-         *     send to application.
-         *   }
-         * }
-         */
+        if (eth.dst == this->addr) {
+            /* TODO
+             *   if (is data packet) {
+             *     send to application.
+             *   }
+             */
 
-        /* RFC3561: section 6.1 */
-        // TODO prepare RREQ
-        this->seq++;
-        // TODO originate RREQ
+        } else {
+            // Packet not meant for this node, forward to next node.
+            if ( // eth.dst exists in routing table
+                 0) {
+                // TODO
+            } else {
+                // eth.dst does not exist in routing table
 
-        /* RFC3561: section 6.4 */
-        // When it is desired to have all retries traverse the entire ad hoc network, this can be achieved by configuring TTL_START and TTL_INCREMENT both to be the same value as NET_DIAMETER.
-        eth.ttl = TTL_START;
-        while (eth.ttl < TTL_THRESHOLD) {
-            // TODO broadcast RREQ
-            const uint8_t RING_TRAVERSAL_TIME = 2 * NODE_TRAVERSAL_TIME * (eth.ttl + TIMEOUT_BUFFER);
-            uint16_t timeout = RING_TRAVERSAL_TIME;
+                /* RFC3561: section 6.1 */
+
+                // prepare RREQ
+                aodv_msgs::Rreq rreq = aodv_msgs::Rreq();
+                rreq.destAddr = eth.dst;
+                rreq.srcAddr = eth.src;
+
+                // MUST increment its own sequence number
+                this->seq++;
+
+                // originate RREQ
+                // construct eth2 with rreq as payload
+                // eth2.dst is nextHop.
+                uint8_t ttl = 0; //TODO
+                uint8_t dst = 0; // TODO
+                uint16_t length = aodv_msgs::RREQ_LEN;
+                uint8_t payload[length];
+                rreq.serialise(payload);
+                aodv::Eth eth2 = aodv::Eth(ttl, dst, this->addr, length, payload);
+                uint8_t msg[aodv::ETH_NONPAYLOAD_LEN + eth2.length];
+                eth2.serialise(msg);
+                f(msg);
+            }
+
+            /* RFC3561: section 6.4 */
+            // When it is desired to have all retries traverse the entire ad hoc network, this can be achieved by configuring TTL_START and TTL_INCREMENT both to be the same value as NET_DIAMETER.
+            eth.ttl = TTL_START;
+            while (eth.ttl < TTL_THRESHOLD) {
+                // TODO broadcast RREQ
+                const uint8_t RING_TRAVERSAL_TIME = 2 * NODE_TRAVERSAL_TIME * (eth.ttl + TIMEOUT_BUFFER);
+                uint16_t timeout = RING_TRAVERSAL_TIME;
+                // TODO wait for RREP
+                eth.ttl += TTL_INCREMENT;
+            }
+            eth.ttl = NET_DIAMETER;
             // TODO wait for RREP
-            eth.ttl += TTL_INCREMENT;
-        }
-        eth.ttl = NET_DIAMETER;
-        // TODO wait for RREP
 
-        // TODO serialize eth to uint8_t* data, and send over link
+            // TODO serialize eth to uint8_t* data, and send over link
+        }
     }
 
     void Node::receive(uint8_t* (*f)())
