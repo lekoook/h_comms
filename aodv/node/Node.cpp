@@ -13,7 +13,24 @@ namespace aodv
         // TODO initialise the function pointers properly
     }
 
-    void Node::send(Eth eth, void (*f)(uint8_t* msg))
+    aodv_msgs::Rreq Node::prepare_rreq(uint8_t dst, uint8_t src)
+    {
+        aodv_msgs::Rreq rreq = aodv_msgs::Rreq();
+        rreq.destAddr = dst;
+        rreq.srcAddr = src;
+        return rreq;
+    }
+
+    void Node::originate_payload(uint8_t dst, uint16_t length, uint8_t* payload, void (*send_link)(uint8_t* msg))
+    {
+        uint8_t ttl = 0; //TODO
+        aodv::Eth eth = aodv::Eth(ttl, dst, this->addr, length, payload);
+        uint8_t msg[aodv::ETH_NONPAYLOAD_LEN + eth.length];
+        eth.serialise(msg);
+        send_link(msg);
+    }
+
+    void Node::send(Eth eth, void (*send_link)(uint8_t* msg))
     {
         if (eth.dst == this->addr) {
             /* TODO
@@ -33,25 +50,23 @@ namespace aodv
                 /* RFC3561: section 6.1 */
 
                 // prepare RREQ
-                aodv_msgs::Rreq rreq = aodv_msgs::Rreq();
-                rreq.destAddr = eth.dst;
-                rreq.srcAddr = eth.src;
+                aodv_msgs::Rreq rreq = prepare_rreq(eth.dst, eth.src);
 
-                // MUST increment node sequence number
+                // MUST increment its own sequence number
                 this->seq++;
 
                 // originate RREQ
-                // construct eth2 with rreq as payload
-                // eth2.dst is nextHop.
-                uint8_t ttl = 0; //TODO
-                uint8_t dst = 0; // TODO
                 uint16_t length = aodv_msgs::RREQ_LEN;
                 uint8_t payload[length];
                 rreq.serialise(payload);
-                aodv::Eth eth2 = aodv::Eth(ttl, dst, this->addr, length, payload);
-                uint8_t msg[aodv::ETH_NONPAYLOAD_LEN + eth2.length];
-                eth2.serialise(msg);
-                f(msg);
+
+                /* RFC3561: section 6.3 */
+                // before broadcasting the RREQ, the originating node buffers rreq.id and rreq.addr for PATH_DISCOVERY_TIME
+                this->bufferedTimeout = std::time(0) + PATH_DISCOVERY_TIME;
+                this->bufferedRreqId = rreq.id;
+                this->bufferedRreqAddr = rreq.srcAddr;
+
+                originate_payload(aodv::BROADCAST_ADDR, length, payload, send_link);
             }
 
             /* RFC3561: section 6.4 */
@@ -71,7 +86,7 @@ namespace aodv
         }
     }
 
-    void Node::receive(uint8_t* (*f)())
+    void Node::receive(uint8_t* (*receive_link)(), void (*send_link)(uint8_t* msg))
     {
         aodv::Eth eth;
         aodv_msgs::Rreq rreq;
@@ -82,7 +97,7 @@ namespace aodv
         bool validSequenceNumber;
         uint64_t lifetime;
 
-        uint8_t* data = f();
+        uint8_t* data = receive_link();
         eth.deserialise(data);
         uint8_t* payload = eth.payload;
         aodv_msgs::MsgTypes t = msg_peeker::peekType(payload);
@@ -90,9 +105,14 @@ namespace aodv
         /* RFC3561: section 6.1 */
         // In order to ascertain that information about a destination is not stale, the node compares its current numerical value for the sequence number with that obtained from the incoming AODV message.  This comparison MUST be done using signed 32-bit arithmetic, this is necessary to accomplish sequence number rollover.
         // If the result of subtracting the currently stored sequence number from the value of the incoming sequence number is less than zero, then the information related to that destination in the AODV message MUST be discarded.
+
+        /* RFC3561: section 6.3 */
+        // A node disseminates a RREQ when it determines that it needs a route to a destination and does not have one available.
+        uint8_t destToWhichNeedRoute = aodv::BROADCAST_ADDR;
         if (t == aodv_msgs::MsgTypes::Rreq)
         {
             rreq.deserialise(payload);
+            destToWhichNeedRoute = rreq.destAddr;
             if ((int)rreq.destSeq - (int)this->seq < 0) {
                 return;
             }
@@ -100,6 +120,7 @@ namespace aodv
         else if (t == aodv_msgs::MsgTypes::Rrep)
         {
             rrep.deserialise(payload);
+            destToWhichNeedRoute = rrep.destAddr;
             if ((int)rrep.destSeq - (int)this->seq < 0) {
                 return;
             }
@@ -107,8 +128,53 @@ namespace aodv
         else if (t == aodv_msgs::MsgTypes::Rerr)
         {
             rerr.deserialise(payload);
+            destToWhichNeedRoute = rerr.destAddr;
             if ((int)rerr.destSeq - (int)this->seq < 0) {
                 return;
+            }
+        }
+        else if (t == aodv_msgs::MsgTypes::RrepAck)
+        {
+            rrepAck.deserialise(payload);
+        }
+        else {// TODO not a control packet, must be a data packet.
+        }
+
+        /* RFC3561: section 6.3 */
+        // before broadcasting the RREQ, the originating node buffers rreq.id and rreq.addr for PATH_DISCOVERY_TIME
+        // In this way, when the node receives the packet again from its neighbors, it will not reprocess and re-forward the packet.
+        if (t == aodv_msgs::MsgTypes::Rreq) {
+            if (this->bufferedTimeout < std::time(0)) {
+                if ((this->bufferedRreqId == this->id) && (this->bufferedRreqAddr == this->addr)) {
+                    return;
+                }
+            } else {
+                this->bufferedRreqId = 0; // TODO assume 0 is an invalid id
+                this->bufferedRreqAddr = aodv::BROADCAST_ADDR;
+            }
+        }
+
+        // If received a control packet
+        if ((t == aodv_msgs::MsgTypes::Rreq)
+            || (t == aodv_msgs::MsgTypes::Rrep)
+            || (t == aodv_msgs::MsgTypes::Rerr)
+            || (t == aodv_msgs::MsgTypes::RrepAck))
+        {
+            /* RFC3561: section 6.3 */
+            // A node disseminates a RREQ when it determines that it needs a route to a destination and does not have one available.
+            if (destToWhichNeedRoute != aodv::BROADCAST_ADDR) {
+
+                // prepare RREQ
+                aodv_msgs::Rreq rreq = prepare_rreq(eth.dst, eth.src);
+
+                // MUST increment its own sequence number
+                this->seq++;
+
+                // originate RREQ
+                uint16_t length = aodv_msgs::RREQ_LEN;
+                uint8_t payload[length];
+                rreq.serialise(payload);
+                originate_payload(aodv::BROADCAST_ADDR, length, payload, send_link);
             }
         }
         
@@ -118,7 +184,10 @@ namespace aodv
             if (rreq.destAddr == this->addr) {
                 /* RFC3561: section 6.1 */
                 // TODO prepare RREP
+
+                // MUST update its own sequence number
                 this->seq = std::max(this->seq, rreq.destSeq);
+
                 // TODO originate RREP
 
             } else {
@@ -150,9 +219,7 @@ namespace aodv
 
                 } else { // create route to destination
                     validSequenceNumber = false; // TODO check if sequence number is invalid
-                    // TODO get nextHop
-                    uint8_t nextHop;
-                    // TODO get precursors from Rreq
+                    uint8_t nextHop = 0; // TODO get nextHop
                     uint8_t precursors[256];
                     lifetime = ACTIVE_ROUTE_TIMEOUT;
                     
@@ -164,7 +231,6 @@ namespace aodv
                     rreq.id = this->id + 1;
                     rreq.hopCount = 0;
 
-                    // TODO buffer this->id and this->addr for PATH_DISCOVERY_TIME
                     // TODO [belongs elsewhere] any generation of a RREP by an intermediate node (as in section 6.6) for delivery to the originating node SHOULD be accompanied by some action that notifies the destination about a route back to the originating node. The originating node selects this mode of operation in the intermediate nodes by setting the ’G’ flag.
 
                     // TODO wait for RREP, if route not received within some time, broadcast another RREQ satisfying some conditions
@@ -278,8 +344,9 @@ namespace aodv
         {
         }
 
-        else // TODO not a control packet, must be a data packet.
+        else // not a control packet, must be a data packet.
         {
+            this->fifo.push(eth);
         }
 
     }
