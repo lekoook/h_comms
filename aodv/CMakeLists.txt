@@ -7,6 +7,7 @@ find_package(catkin REQUIRED COMPONENTS
   std_msgs
   nav_msgs
   message_generation
+  subt_communication_broker
 )
 
 ## Generate messages in the 'msg' folder
@@ -55,7 +56,7 @@ add_library(rrep rrep/Rrep.cpp rrep/Rrep.hpp)
 add_library(rrep_ack rrep_ack/RrepAck.cpp rrep_ack/RrepAck.hpp)
 add_library(rreq rreq/Rreq.cpp rreq/Rreq.hpp)
 add_library(table table/Table.cpp table/Table.hpp)
-#add_library(serialisers utilities/serialisers.hpp)
+add_library(serialisers utilities/serialisers.cpp utilities/serialisers.hpp)
 
 add_executable(aodv_node src/main.cpp)
 
@@ -68,5 +69,21 @@ target_link_libraries(aodv_node
   rrep_ack
   rreq
   table
+  serialisers
   ${catkin_LIBRARIES}
 )
+
+#add_executable(sim_node main.cpp)
+
+#target_link_libraries(sim_node
+#  eth
+#  crc
+#  node
+# rerr
+#  rrep
+#  rrep_ack
+#  rreq
+#  table
+#  serialisers
+#  ${catkin_LIBRARIES}
+#)
