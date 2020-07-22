@@ -20,3 +20,11 @@ add_executable(aodv ../main.cpp)
 target_link_libraries(eth
   serialisers
 )
+
+target_link_libraries(node
+  eth
+)
+
+target_link_libraries(aodv
+  node
+)
