@@ -4,6 +4,7 @@
 #include "../eth/Eth.hpp"
 #include <stdint.h>
 #include <queue>
+#include <string>
 
 namespace aodv
 {
@@ -87,6 +88,26 @@ namespace aodv
          * 
          */
         Node(uint32_t seq, uint32_t id, uint32_t addr, void (*send_app)(Eth eth), Eth (*receive_app)());
+  
+        /**
+         * @brief Represent an arbitrary uint8_t buffer as a string.
+         * Transform each uint8_t with the bits: abcdefgh, into these 10 bits: 1abcd1efgh.
+         * Concatenate all bits from all uint8_t, then add a terminating '\0'.
+         * 
+         * @param b uint8_t buffer.
+         * @param l length of uint8_t buffer.
+         * @return string representation.
+         */
+        std::string uint8_to_string(uint8_t b[], std::string::size_type l);
+  
+        /**
+         * @brief Parse represented string as an arbitrary uint8_t buffer.
+         * Inverse of uint8_to_string(uint8_t b[], std::string::size_type l).
+         * 
+         * @param b uint8_t buffer.
+         * @param s string.
+         */
+        void string_to_uint8(uint8_t b[], std::string s);
     };
 }
 
