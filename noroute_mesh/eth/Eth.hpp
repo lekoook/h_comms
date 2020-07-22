@@ -9,7 +9,7 @@ namespace aodv
      * @brief Byte length of the non-payload part of a Eth.
      * 
      */
-    const uint8_t ETH_NONPAYLOAD_LEN = 9;
+    const uint8_t ETH_NONPAYLOAD_LEN = 13;
 
     class Eth
     {
@@ -22,10 +22,10 @@ namespace aodv
   
     public:
         /**
-         * @brief time to live
+         * @brief sequence number
          * 
          */
-        uint8_t ttl;
+        uint32_t seq;
   
         /**
          * @brief destination address
@@ -61,7 +61,7 @@ namespace aodv
          * @brief Construct a new Ethernet frame.
          * 
          */
-        Eth(uint8_t ttl, uint8_t dst, uint8_t src, uint16_t length, uint8_t *payload);
+        Eth(uint32_t seq, uint8_t dst, uint8_t src, uint16_t length, uint8_t *payload);
   
         /**
          * @brief Serializes a object into a uint8_t bytes array.

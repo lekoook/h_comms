@@ -15,8 +15,7 @@ namespace aodv
 
     void Node::originate_payload(uint8_t dst, uint16_t length, uint8_t* payload, void (*send_link)(uint8_t* msg))
     {
-        uint8_t ttl = 0; //TODO
-        aodv::Eth eth = aodv::Eth(ttl, dst, this->addr, length, payload);
+        aodv::Eth eth = aodv::Eth(this->seq, dst, this->addr, length, payload);
         uint8_t msg[aodv::ETH_NONPAYLOAD_LEN + eth.length];
         eth.serialise(msg);
         send_link(msg);
