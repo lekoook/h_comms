@@ -13,15 +13,16 @@ namespace aodv
         // TODO initialise the function pointers properly
     }
 
-    void Node::originate_payload(uint8_t dst, uint16_t length, uint8_t* payload, void (*send_link)(uint8_t* msg))
+    void Node::originate_payload(uint8_t dst, uint16_t length, uint8_t* payload, void (*send_link)(std::string msg))
     {
         aodv::Eth eth = aodv::Eth(this->seq, dst, this->addr, length, payload);
-        uint8_t msg[aodv::ETH_NONPAYLOAD_LEN + eth.length];
+        length = aodv::ETH_NONPAYLOAD_LEN + eth.length;
+        uint8_t msg[length];
         eth.serialise(msg);
-        send_link(msg);
+        send_link(this->uint8_to_string(msg, length));
     }
 
-    void Node::send(Eth eth, void (*send_link)(uint8_t* msg))
+    void Node::send(Eth eth, void (*send_link)(std::string msg))
     {
         if (eth.dst == this->addr) {
             /* TODO
@@ -42,12 +43,14 @@ namespace aodv
         }
     }
 
-    void Node::receive(uint8_t* (*receive_link)(), void (*send_link)(uint8_t* msg))
+    void Node::receive(std::string (*receive_link)(), void (*send_link)(std::string msg))
     {
         aodv::Eth eth;
 
-        uint8_t* data = receive_link();
-        eth.deserialise(data);
+        std::string data = receive_link();
+        uint8_t msg[data.length()];
+        this->string_to_uint8(msg, data);
+        eth.deserialise(msg);
         uint8_t* payload = eth.payload;
     }
 
