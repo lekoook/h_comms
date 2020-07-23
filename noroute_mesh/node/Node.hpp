@@ -91,7 +91,18 @@ namespace aodv
   
         /**
          * @brief Represent an arbitrary uint8_t buffer as a string.
-         * Transform each uint8_t with the bits: abcdefgh, into these 10 bits: 1abcd1efgh.
+         * Intersperse a new bit set as 1, every 7 bits in the buffer.
+         * Transform first uint8_t with the bits: abcdefgh, into these 9 bits: abcdefg1h.
+         * Transform the next uint8_t with the bits: abcdefgh, into these 9 bits: abcdef1gh.
+         * Continuing the pattern,
+         * abcde1fgh
+         * abcd1efgh
+         * abc1defgh
+         * ab1cdefgh
+         * a1bcdefgh
+         * 1abcdefg1
+         * habcdef1g.
+         * 
          * Concatenate all bits from all uint8_t, then add a terminating '\0'.
          * 
          * @param b uint8_t buffer.
