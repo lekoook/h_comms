@@ -36,24 +36,16 @@ namespace aodv
         uint32_t addr = 0;
 
         /**
-         * @brief FIFO buffer for data packets.
+         * @brief FIFO buffer for data packets from app to node.
          * 
          */
-        std::queue<Eth> fifo;
+        std::queue<Eth> fifoFromApp;
 
         /**
-         * @brief method that sends data to app level.
-         *
-         * @param eth ethernet packet.
+         * @brief FIFO buffer for data packets from node to app.
+         * 
          */
-        void send_app(Eth eth);
-
-        /**
-         * @brief method that receives data from app level.
-         *
-         * @return eth ethernet packet.
-         */
-        Eth receive_app();
+        std::queue<Eth> fifoToApp;
 
         /**
          * @brief Send payload with this-addr as origin address.

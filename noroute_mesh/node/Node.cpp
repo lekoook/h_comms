@@ -7,10 +7,9 @@ namespace aodv
     {
     }
 
-    Node::Node(uint32_t seq, uint32_t id, uint32_t addr, void (*send_app)(Eth eth), Eth (*receive_app)()) :
-        seq(seq), id(id), addr(addr)//, send_app(send_app), receive_app(receive_app)
+    Node::Node(uint32_t seq, uint32_t id, uint32_t addr) :
+        seq(seq), id(id), addr(addr)
     {
-        // TODO initialise the function pointers properly
     }
 
     void Node::originate_payload(uint8_t dst, uint16_t length, uint8_t* payload, void (*send_link)(std::string msg))
@@ -24,10 +23,22 @@ namespace aodv
 
     void Node::send(Eth eth, void (*send_link)(std::string msg))
     {
+    }
+
+    void Node::receive(std::string (*receive_link)(), void (*send_link)(std::string msg))
+    {
+        aodv::Eth eth;
+
+        std::string data = receive_link();
+        uint8_t msg[data.length()];
+        this->string_to_uint8(msg, data);
+        eth.deserialise(msg);
+        uint8_t* payload = eth.payload;
+
         if (eth.dst == this->addr) {
             /* TODO
              *   if (is data packet) {
-             *     send to application.
+             *     fifoToApp.push(eth);
              *   }
              */
 
@@ -41,17 +52,6 @@ namespace aodv
             }
 
         }
-    }
-
-    void Node::receive(std::string (*receive_link)(), void (*send_link)(std::string msg))
-    {
-        aodv::Eth eth;
-
-        std::string data = receive_link();
-        uint8_t msg[data.length()];
-        this->string_to_uint8(msg, data);
-        eth.deserialise(msg);
-        uint8_t* payload = eth.payload;
     }
 
     std::string Node::uint8_to_string(uint8_t b[], std::string::size_type l)
