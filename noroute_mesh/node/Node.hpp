@@ -51,7 +51,7 @@ namespace aodv
          * @brief Send payload with this-addr as origin address.
          *
          */
-        void originate_payload(uint8_t dst, uint16_t length, uint8_t* payload, void (*send_link)(std::string msg));
+        void originate_payload(uint8_t dst, uint16_t length, uint8_t* payload, std::string addr, void (*send_link)(std::string msg, std::string addr));
 
         /**
          * @brief Send a control packet or a data packet.
@@ -59,14 +59,14 @@ namespace aodv
          * @param eth ethernet packet.
          * @param send_link method that sends on link level.
          */
-        void send(Eth eth, void (*send_link)(std::string msg));
+        void send(Eth eth, std::string addr, void (*send_link)(std::string msg, std::string addr));
 
         /**
          * @brief Receive a control packet or a data packet.
          *
          * @param receive_link method that receives on link level.
          */
-        void receive(std::string (*receive_link)(), void (*send_link)(std::string msg));
+        void receive(std::string (*receive_link)(), std::string send_addr, void (*send_link)(std::string msg, std::string addr));
   
     public:
         /**

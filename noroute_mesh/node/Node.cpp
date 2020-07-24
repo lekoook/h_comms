@@ -12,20 +12,20 @@ namespace aodv
     {
     }
 
-    void Node::originate_payload(uint8_t dst, uint16_t length, uint8_t* payload, void (*send_link)(std::string msg))
+    void Node::originate_payload(uint8_t dst, uint16_t length, uint8_t* payload, std::string addr, void (*send_link)(std::string msg, std::string addr))
     {
         aodv::Eth eth = aodv::Eth(this->seq, dst, this->addr, length, payload);
         length = aodv::ETH_NONPAYLOAD_LEN + eth.length;
         uint8_t msg[length];
         eth.serialise(msg);
-        send_link(this->uint8_to_string(msg, length));
+        send_link(this->uint8_to_string(msg, length), addr);
     }
 
-    void Node::send(Eth eth, void (*send_link)(std::string msg))
+    void Node::send(Eth eth, std::string addr, void (*send_link)(std::string msg, std::string addr))
     {
     }
 
-    void Node::receive(std::string (*receive_link)(), void (*send_link)(std::string msg))
+    void Node::receive(std::string (*receive_link)(), std::string send_addr, void (*send_link)(std::string msg, std::string addr))
     {
         aodv::Eth eth;
 
