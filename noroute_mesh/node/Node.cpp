@@ -22,7 +22,7 @@ namespace aodv
         uint16_t length = aodv::ETH_NONPAYLOAD_LEN + eth.payloadLength;
         uint8_t msg[length];
         eth.serialise(msg);
-        send_link(this->uint8_to_string(msg, length), eth.src);
+        send_link(this->uint8_to_string(msg, length), this->broadcastAddr);
     }
 
     void Node::receive(std::string (*receive_link)(), std::string send_addr, void (*send_link)(std::string msg, std::string addr))
