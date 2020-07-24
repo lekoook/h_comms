@@ -3,7 +3,8 @@
 
 namespace aodv
 {
-    Node::Node()
+    Node::Node() :
+        seq(), id(), addr(), broadcastAddr()
     {
     }
 
