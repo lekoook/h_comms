@@ -5,6 +5,7 @@
 #include <stdint.h>
 #include <queue>
 #include <string>
+#include <unordered_map>
 
 namespace aodv
 {
@@ -48,11 +49,17 @@ namespace aodv
         std::string broadcastAddr;
 
         /**
+        * @brief Address on which broadcasts are made.
+        * 
+        */
+        std::unordered_map<std::string, uint32_t> table;
+
+        /**
          * @brief Receive a control packet or a data packet.
          *
          * @param receive_link method that receives on link level.
          */
-        void receive(std::string (*receive_link)(), std::string send_addr, void (*send_link)(std::string msg, std::string addr));
+        void receive(std::string (*receive_link)(), void (*send_link)(std::string msg, std::string addr));
   
     public:
         /**

@@ -25,7 +25,7 @@ namespace aodv
         send_link(this->uint8_to_string(msg, length), this->broadcastAddr);
     }
 
-    void Node::receive(std::string (*receive_link)(), std::string send_addr, void (*send_link)(std::string msg, std::string addr))
+    void Node::receive(std::string (*receive_link)(), void (*send_link)(std::string msg, std::string addr))
     {
         aodv::Eth eth;
 
@@ -33,24 +33,22 @@ namespace aodv
         uint8_t msg[data.length()];
         this->string_to_uint8(msg, data);
         eth.deserialise(msg);
-        uint8_t* payload = eth.payload;
 
         if (eth.dst == this->addr) {
-            /* TODO
-             *   if (is data packet) {
-             *     fifoToApp.push(eth);
-             *   }
-             */
-
+             fifoToApp.push(eth);
         } else {
-            // Packet not meant for this node, forward to next node.
-            if ( // eth.dst exists in routing table
-                 0) {
-                // TODO
+            auto search = this->table.find(eth.src);
+            if (search == this->table.end()) {
+                // Packet does not exist in table.
+                this->table[eth.src] = eth.seq;
+                this->send(eth, send_link);
             } else {
-                // eth.dst does not exist in routing table
+                if (eth.seq > search->second) {
+                    // Packet is newer than table's packet.
+                    this->table[search->first] = eth.seq;
+                    this->send(eth, send_link);
+                }
             }
-
         }
     }
 
