@@ -79,7 +79,7 @@ namespace aodv
          * @brief Construct a new object.
          * 
          */
-        Node(uint32_t seq, uint32_t id, uint32_t addr, void (*send_app)(Eth eth), Eth (*receive_app)());
+        Node(uint32_t seq, uint32_t id, uint32_t addr);
   
         /**
          * @brief Represent an arbitrary uint8_t buffer as a string.
