@@ -8,7 +8,7 @@ namespace aodv
     {
     }
 
-    Node::Node(uint32_t seq, uint32_t id, uint32_t addr, std::string broadcastAddr) :
+    Node::Node(uint32_t seq, uint32_t id, std::string addr, std::string broadcastAddr) :
         seq(seq), id(id), addr(addr), broadcastAddr(broadcastAddr)
     {
     }
@@ -18,7 +18,7 @@ namespace aodv
         // Overwrite seq and src, because this node is originating eth.
         eth.seq = this->seq;
         eth.src = this->addr;
-        uint16_t length = aodv::ETH_NONPAYLOAD_LEN + eth.length;
+        uint16_t length = aodv::ETH_NONPAYLOAD_LEN + eth.payloadLength;
         uint8_t msg[length];
         eth.serialise(msg);
         send_link(this->uint8_to_string(msg, length), eth.src);

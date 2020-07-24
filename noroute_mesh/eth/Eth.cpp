@@ -5,33 +5,55 @@
 namespace aodv
 {
     Eth::Eth() : 
-        seq(), dst(), src(), length(), payload(), crc()
+        seq(), dstLength(), dst(), src(), srcLength(), payloadLength(), payload(), crc()
     {
     }
 
-    Eth::Eth(uint32_t seq, uint8_t dst, uint8_t src, uint16_t length, uint8_t *payload) :
-        seq(seq), dst(dst), src(src), length(length), payload(payload), crc()
+    Eth::Eth(uint32_t seq, uint16_t dstLength, std::string dst, uint16_t srcLength, std::string src, uint16_t payloadLength, uint8_t *payload) :
+        seq(seq), dstLength(dstLength), dst(dst), srcLength(srcLength), src(src), payloadLength(payloadLength), payload(payload), crc()
     {
     }
 
     void Eth::serialise(uint8_t data[])
     {
-        serialisers::copyU32(&data[0], seq);
-        serialisers::copyU8(&data[4], dst);
-        serialisers::copyU8(&data[5], src);
-        serialisers::copyU16(&data[6], length);
-        memcpy(&data[8], payload, length);
-        serialisers::copyU32(&data[8+length], crc);
+        size_t i = 0;
+        serialisers::copyU32(&data[i], seq);
+        i += 4;
+        serialisers::copyU16(&data[i], dstLength);
+        i += 2;
+        memcpy(&data[i], reinterpret_cast<const uint8_t*>(&dst[0]), dstLength);
+        i += dstLength;
+        serialisers::copyU16(&data[i], srcLength);
+        i += 2;
+        memcpy(&data[i], reinterpret_cast<const uint8_t*>(&src[0]), srcLength);
+        i += srcLength;
+        serialisers::copyU16(&data[i], payloadLength);
+        i += 2;
+        memcpy(&data[i], payload, payloadLength);
+        i += payloadLength;
+        serialisers::copyU32(&data[i], crc);
+        i += 4;
     } // TODO calculate crc
     
     void Eth::deserialise(uint8_t data[])
     {
-        seq = serialisers::getU32(&data[0]);
-        dst = serialisers::getU8(&data[4]);
-        src = serialisers::getU8(&data[5]);
-        length = serialisers::getU16(&data[6]);
-        memcpy(payload, &data[8], length);
-        crc = serialisers::getU32(&data[8+length]);
+        size_t i = 0;
+        seq = serialisers::getU32(&data[i]);
+        i += 4;
+        dstLength = serialisers::getU16(&data[i]);
+        i += 2;
+        memcpy(reinterpret_cast<uint8_t*>(&dst[0]), &data[i], dstLength);
+        i += dstLength;
+        srcLength = serialisers::getU16(&data[i]);
+        i += 2;
+        memcpy(reinterpret_cast<uint8_t*>(&src[0]), &data[i], dstLength);
+        i += srcLength;
+        payloadLength = serialisers::getU16(&data[i]);
+        i += 2;
+        memcpy(payload, &data[i], payloadLength);
+        i += payloadLength;
+        crc = serialisers::getU32(&data[i]);
+        i += 4;
     }
 
     bool check(uint32_t crc)

@@ -2,6 +2,7 @@
 #define ETH_H_
 
 #include <stdint.h>
+#include <string>
 
 namespace aodv
 {
@@ -28,22 +29,34 @@ namespace aodv
         uint32_t seq;
   
         /**
+         * @brief dst length
+         * 
+         */
+        uint16_t dstLength;
+  
+        /**
          * @brief destination address
          * 
          */
-        uint8_t dst;
+        std::string dst;
+  
+        /**
+         * @brief src length
+         * 
+         */
+        uint16_t srcLength;
   
         /**
          * @brief source address
          * 
          */
-        uint8_t src;
+        std::string src;
   
         /**
          * @brief payload length
          * 
          */
-        uint16_t length;
+        uint16_t payloadLength;
 
         /**
          * @brief payload
@@ -61,7 +74,7 @@ namespace aodv
          * @brief Construct a new Ethernet frame.
          * 
          */
-        Eth(uint32_t seq, uint8_t dst, uint8_t src, uint16_t length, uint8_t *payload);
+        Eth(uint32_t seq, uint16_t dstLength, std::string dst, uint16_t srcLength, std::string src, uint16_t payloadLength, uint8_t *payload);
   
         /**
          * @brief Serializes a object into a uint8_t bytes array.

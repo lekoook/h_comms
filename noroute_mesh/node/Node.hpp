@@ -27,7 +27,7 @@ namespace aodv
          * @brief address.
          * 
          */
-        uint32_t addr = 0;
+        std::string addr;
 
         /**
          * @brief FIFO buffer for data packets from app to node.
@@ -65,7 +65,7 @@ namespace aodv
          * @brief Construct a new object.
          * 
          */
-        Node(uint32_t seq, uint32_t id, uint32_t addr, std::string broadcastAddr);
+        Node(uint32_t seq, uint32_t id, std::string addr, std::string broadcastAddr);
 
         /**
          * @brief Send a control packet or a data packet with this->seq and this->addr.
