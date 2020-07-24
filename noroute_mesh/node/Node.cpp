@@ -18,6 +18,7 @@ namespace aodv
         // Overwrite seq and src, because this node is originating eth.
         eth.seq = this->seq;
         eth.src = this->addr;
+        this->seq++;
         uint16_t length = aodv::ETH_NONPAYLOAD_LEN + eth.payloadLength;
         uint8_t msg[length];
         eth.serialise(msg);
