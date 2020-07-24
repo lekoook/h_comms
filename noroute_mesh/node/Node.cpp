@@ -7,22 +7,20 @@ namespace aodv
     {
     }
 
-    Node::Node(uint32_t seq, uint32_t id, uint32_t addr) :
-        seq(seq), id(id), addr(addr)
+    Node::Node(uint32_t seq, uint32_t id, uint32_t addr, std::string broadcastAddr) :
+        seq(seq), id(id), addr(addr), broadcastAddr(broadcastAddr)
     {
     }
 
-    void Node::originate_payload(uint8_t dst, uint16_t length, uint8_t* payload, std::string addr, void (*send_link)(std::string msg, std::string addr))
+    void Node::send(Eth eth, void (*send_link)(std::string msg, std::string addr))
     {
-        aodv::Eth eth = aodv::Eth(this->seq, dst, this->addr, length, payload);
-        length = aodv::ETH_NONPAYLOAD_LEN + eth.length;
+        // Overwrite seq and src, because this node is originating eth.
+        eth.seq = this->seq;
+        eth.src = this->addr;
+        uint16_t length = aodv::ETH_NONPAYLOAD_LEN + eth.length;
         uint8_t msg[length];
         eth.serialise(msg);
-        send_link(this->uint8_to_string(msg, length), addr);
-    }
-
-    void Node::send(Eth eth, std::string addr, void (*send_link)(std::string msg, std::string addr))
-    {
+        send_link(this->uint8_to_string(msg, length), eth.src);
     }
 
     void Node::receive(std::string (*receive_link)(), std::string send_addr, void (*send_link)(std::string msg, std::string addr))
