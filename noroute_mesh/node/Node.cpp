@@ -59,7 +59,7 @@ namespace aodv
          * The next uint8_t may have different bits, but is still denoted as: abcdefgh.
          */
         char c;
-        uint8_t s[l*10 + 1]; // + 1 for '\0'
+        uint8_t s[l*10/8 + 1]; // + 1 for '\0'
         std::string::size_type i=0;
         for (; i<l; i+=5) {
             c = 0b10000100u;
