@@ -1,17 +1,25 @@
-#include "node/Node.hpp"
-#include <iostream>
+#include "utilities/Sim.hpp"
 
-int main()
-{
-    //uint8_t b[] = {'\0', '\0', '\0'};
-    uint8_t b[] = {122, 121, 120};
-    aodv::Node n = aodv::Node();
-    std::string s = n.uint8_to_string(b, 3);
-    std::cout << s << std::endl;
+int main() {
+  uint8_t numNodes = 2;
+  int numEvents;
 
-    uint8_t bNew[4];
-    n.string_to_uint8(bNew, s);
-    std::cout << bNew[0] << bNew[1] << bNew[2] << bNew[3] << std::endl;
+  numEvents = 2;
+  aodv::config_t *config1 = (aodv::config_t*)malloc(sizeof(*config1) + numEvents * sizeof(config1->events[0]));
+  config1->numEvents = numEvents;
+  config1->events[0] = {0, aodv::Eth()};
+  config1->events[1] = {1, aodv::Eth()};
 
-    return 0;
+  numEvents = 1;
+  aodv::config_t *config2 = (aodv::config_t*)malloc(sizeof(*config2) + numEvents * sizeof(config2->events[0]));
+  config2->numEvents = numEvents;
+  config2->events[0] = {1, aodv::Eth()};
+
+  aodv::config_t configs[] = {*config1, *config2};
+  aodv::Sim sim = aodv::Sim(numNodes, configs);
+  sim.start();
+
+  for (long unsigned int i=0; i<sizeof(configs)/sizeof(aodv::config_t); i++) {
+    free(&configs[i]);
+  }
 }
