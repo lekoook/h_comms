@@ -97,7 +97,7 @@ namespace aodv
          * @brief Parse represented string as an arbitrary uint8_t buffer.
          * Inverse of uint8_to_string(uint8_t b[], std::string::size_type l).
          * 
-         * @param b uint8_t buffer.
+         * @param b uint8_t buffer. Must have length a multiple of 4.
          * @param s string.
          */
         void string_to_uint8(uint8_t b[], std::string s);

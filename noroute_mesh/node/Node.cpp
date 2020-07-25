@@ -59,27 +59,32 @@ namespace aodv
          * The next uint8_t may have different bits, but is still denoted as: abcdefgh.
          */
         char c;
-        uint8_t s[l*10/8 + 1]; // + 1 for '\0'
+        uint8_t s[l*5/4 + l%4 + 1]; // + 1 for '\0'
         std::string::size_type i=0;
         for (; i<l; i+=5) {
             c = 0b10000100u;
+            if (i >=l) { b[i] = '\0'; }
             c |= (b[i] >> 4) << 3; // 0b1abcd100
             c |= (b[i] >> 2) & 3; // 0b1abcd1ef
             s[i] = c;
             c = 0b00100001u;
+            if (i+1 >=l) { b[i+1] = '\0'; }
             c |= (b[i] & 3) << 6; // 0bgh100001
             c |= (b[i+1] >> 4) << 1; // 0bgh1abcd1
             s[i+1] = c;
             c = 0b00001000u;
+            if (i+2 >=l) { b[i+2] = '\0'; }
             c |= (b[i+1] & 15) << 4; // 0befgh1000
             c |= b[i+2] >> 5; // 0befgh1abc
             s[i+2] = c;
             c = 0b01000010u;
+            if (i+3 >=l) { b[i+3] = '\0'; }
             c |= ((b[i+2] >> 4) & 1) << 7; // 0bd1000010
             c |= (b[i+2] & 15) << 2; // 0bd1efgh10
             c |= b[i+3] >> 7; // 0bd1efgh1a
             s[i+3] = c;
             c = 0b00010000u;
+            if (i+4 >=l) { b[i+4] = '\0'; }
             c |= ((b[i+3] >> 4) & 7) << 5; // 0bbcd10000
             c |= b[i+3] & 15; // 0bbcd1efgh
             s[i+4] = c;
