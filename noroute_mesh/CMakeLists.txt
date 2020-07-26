@@ -1,5 +1,5 @@
 cmake_minimum_required(VERSION 3.0.2)
-project(aodv)
+project(noroute_mesh)
 
 find_package(catkin REQUIRED COMPONENTS
   roscpp
@@ -11,16 +11,17 @@ find_package(catkin REQUIRED COMPONENTS
 )
 
 ## Generate messages in the 'msg' folder
-# add_message_files(
-#   FILES
-#   Message1.msg
-#   Message2.msg
-# )
+add_message_files(
+    FILES
+    neighb.msg
+    neighbArray.msg
+)
 
 ## Generate services in the 'srv' folder
 add_service_files(
   FILES
   send_map.srv
+  neighbour.srv
 )
 
 ## Generate added messages and services with any dependencies listed here
@@ -43,18 +44,18 @@ include_directories(
   ${catkin_INCLUDE_DIRS}
 )
 
-add_library(eth eth/Eth.cpp eth/Eth.hpp)
-add_library(crc lib/crc32.c)
-add_library(node node/Node.cpp node/Node.hpp)
-add_library(serialisers utilities/serialisers.cpp utilities/serialisers.hpp)
+#add_library(eth2 eth/Eth.cpp eth/Eth.hpp)
+#add_library(crc2 lib/crc32.c)
+#add_library(node2 node/Node.cpp node/Node.hpp)
+#add_library(serialisers2 utilities/serialisers.cpp utilities/serialisers.hpp)
 
-add_executable(aodv_node src/main.cpp)
+add_executable(noroute_mesh_node src/main.cpp)
 
-target_link_libraries(aodv_node
-  eth
-  crc
-  node
-  serialisers
+target_link_libraries(noroute_mesh_node
+  #eth2
+  #crc2
+  #node2
+  #serialisers2
   ${catkin_LIBRARIES}
 )
 
