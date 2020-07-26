@@ -15,6 +15,7 @@ add_library(crc ../lib/crc32.c)
 add_library(node ../node/Node.cpp ../node/Node.hpp)
 add_library(serialisers ../utilities/serialisers.cpp ../utilities/serialisers.hpp)
 add_library(sim ../utilities/Sim.cpp ../utilities/Sim.hpp)
+add_library(parson ../lib/parson.c ../lib/parson.h)
 
 add_executable(aodv ../main.cpp)
 
@@ -28,6 +29,7 @@ target_link_libraries(node
 
 target_link_libraries(sim
   node
+  parson
 )
 
 target_link_libraries(aodv
