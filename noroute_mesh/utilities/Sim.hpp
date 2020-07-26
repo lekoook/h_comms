@@ -42,11 +42,9 @@ namespace aodv
      * |                     |
      * v                     v
      * (Sim                           )
-     * |       |             |
-     * v       v             v
      * (App1)  (App2)  ...   (AppN)   }} --> (stdout)
-     * |    ^  |    ^        |    ^
-     * v    |  v    |        v    |   }} Node::send_app, Node::receive_app
+     * |    ^  |    ^        |    ^   }} made up of |[Node::fifoFromApp]    ^[Node::fifoToApp]
+     * v    |  v    |        v    |   }}            v                       |
      * (Node1) (Node2) ...   (NodeN)
      * |    ^  |    ^        |    ^   }} made up of |[sends]    ^[recvs]
      * v    |  v    |        v    |   }}            v           |
