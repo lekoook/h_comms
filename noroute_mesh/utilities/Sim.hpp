@@ -6,6 +6,7 @@
 #include <queue>
 #include <string>
 #include <iostream>
+#include <algorithm>
 
 namespace aodv
 {
@@ -20,12 +21,14 @@ namespace aodv
         Eth eth;
     } event_t;
 
+    const int LIM_EVENTS = 256;
+
     /**
      * @brief An array of event.
      */
     typedef struct config_t {
         int numEvents;
-        event_t events[];
+        event_t events[LIM_EVENTS];
     } config_t;
 
     /**
