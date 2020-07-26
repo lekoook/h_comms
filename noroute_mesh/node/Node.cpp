@@ -13,6 +13,11 @@ namespace aodv
     {
     }
 
+    std::string Node::getAddr()
+    {
+        return this->addr;
+    }
+
     void Node::send(Eth eth, void (*send_link)(std::string msg, std::string addr))
     {
         // Overwrite seq and src, because this node is originating eth.

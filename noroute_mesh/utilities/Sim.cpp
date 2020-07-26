@@ -44,7 +44,7 @@ namespace aodv
             // TODO deal with receive queues
             /*
               for (int i=0; i<this->numNodes; i++) {
-              this->recvs[i].push(event.eth);
+              this->recvs[this->nodes[i].getAddr()].push(event.eth);
               }
             */
 
@@ -69,25 +69,25 @@ namespace aodv
 
     void Sim::print_send(uint8_t i) {
         std::cout << ">";
-        int size = this->sends[i].size();
+        int size = this->sends[this->nodes[i].getAddr()].size();
         Eth eth;
         for (int i=0; i<size; i++) {
-            eth = this->sends[i].front();
-            this->sends[i].pop();
+            eth = this->sends[this->nodes[i].getAddr()].front();
+            this->sends[this->nodes[i].getAddr()].pop();
             print_eth(eth);
-            this->sends[i].push(eth);
+            this->sends[this->nodes[i].getAddr()].push(eth);
         }
     }
 
     void Sim::print_recv(uint8_t i) {
         std::cout << "<";
-        int size = this->recvs[i].size();
+        int size = this->recvs[this->nodes[i].getAddr()].size();
         Eth eth;
         for (int i=0; i<size; i++) {
-            eth = this->recvs[i].front();
-            this->recvs[i].pop();
+            eth = this->recvs[this->nodes[i].getAddr()].front();
+            this->recvs[this->nodes[i].getAddr()].pop();
             print_eth(eth);
-            this->recvs[i].push(eth);
+            this->recvs[this->nodes[i].getAddr()].push(eth);
         }
     }
 
