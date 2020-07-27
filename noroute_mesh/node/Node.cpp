@@ -1,5 +1,4 @@
 #include "Node.hpp"
-#include <stdint.h>
 
 namespace aodv
 {
@@ -15,19 +14,44 @@ namespace aodv
 
     void Node::send(Eth eth, void (*send_link)(std::string msg, std::string addr))
     {
+        // Where seg is a segment, aodv::MAX_MESSAGE_SIZE == aodv::ETH_NONPAYLOAD_LEN + seg.payloadLength
+        // Where eth is a packet, there are sizeof(typeof(eth.segSeqMax)) segments.
+        // So the maximum eth.payloadLength must be:
+        const uint16_t maxPayloadLength = aodv::MAX_MESSAGE_SIZE - aodv::ETH_NONPAYLOAD_LEN;
+        assert (eth.payloadLength <= sizeof(uint32_t) * maxPayloadLength);
+        eth.segSeqMax = (eth.payloadLength / maxPayloadLength) + ((eth.payloadLength % maxPayloadLength) != 0);
+
         // Overwrite seq and src, because this node is originating eth.
         eth.seq = this->seq;
         eth.src = this->addr;
         this->seq++;
-        uint16_t length = aodv::ETH_NONPAYLOAD_LEN + eth.payloadLength;
+
+        // Split packet into segments.
+        int segSeq=0, p=maxPayloadLength;
+        for (; p<eth.payloadLength; segSeq++,p+=maxPayloadLength) {
+            aodv::Eth seg(eth);
+            seg.payloadLength = maxPayloadLength;
+            seg.segSeq = segSeq;
+
+            uint16_t length = aodv::ETH_NONPAYLOAD_LEN + seg.payloadLength;
+            uint8_t msg[length];
+            seg.serialise(msg);
+            send_link(this->uint8_to_string(msg, length), this->broadcastAddr);
+        }
+
+        aodv::Eth seg(eth);
+        seg.payloadLength = eth.payloadLength - (p - maxPayloadLength);
+        seg.segSeq = segSeq;
+
+        uint16_t length = aodv::ETH_NONPAYLOAD_LEN + seg.payloadLength;
         uint8_t msg[length];
-        eth.serialise(msg);
+        seg.serialise(msg);
         send_link(this->uint8_to_string(msg, length), this->broadcastAddr);
     }
 
     void Node::receive(std::string (*receive_link)(), void (*send_link)(std::string msg, std::string addr))
     {
-        aodv::Eth eth;
+        aodv::Eth eth = aodv::Eth();
 
         std::string data = receive_link();
         uint8_t msg[data.length()];

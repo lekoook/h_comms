@@ -5,12 +5,12 @@
 namespace aodv
 {
     Eth::Eth() : 
-        seq(), dstLength(), dst(), src(), srcLength(), payloadLength(), payload(), crc()
+        seq(), segSeq(), segSeqMax(), dstLength(), dst(), src(), srcLength(), payloadLength(), payload(), crc()
     {
     }
 
-    Eth::Eth(uint32_t seq, uint16_t dstLength, std::string dst, uint16_t srcLength, std::string src, uint16_t payloadLength, uint8_t *payload) :
-        seq(seq), dstLength(dstLength), dst(dst), srcLength(srcLength), src(src), payloadLength(payloadLength), payload(payload), crc()
+    Eth::Eth(uint32_t seq, uint32_t segSeq, uint32_t segSeqMax, uint16_t dstLength, std::string dst, uint16_t srcLength, std::string src, uint16_t payloadLength, uint8_t *payload) :
+        seq(seq), segSeq(segSeq), segSeqMax(segSeqMax), dstLength(dstLength), dst(dst), srcLength(srcLength), src(src), payloadLength(payloadLength), payload(payload), crc()
     {
     }
 
@@ -18,6 +18,10 @@ namespace aodv
     {
         size_t i = 0;
         serialisers::copyU32(&data[i], seq);
+        i += 4;
+        serialisers::copyU32(&data[i], segSeq);
+        i += 4;
+        serialisers::copyU32(&data[i], segSeqMax);
         i += 4;
         serialisers::copyU16(&data[i], dstLength);
         i += 2;
@@ -39,6 +43,10 @@ namespace aodv
     {
         size_t i = 0;
         seq = serialisers::getU32(&data[i]);
+        i += 4;
+        segSeq = serialisers::getU32(&data[i]);
+        i += 4;
+        segSeqMax = serialisers::getU32(&data[i]);
         i += 4;
         dstLength = serialisers::getU16(&data[i]);
         i += 2;

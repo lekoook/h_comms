@@ -3,12 +3,16 @@
 
 #include "../eth/Eth.hpp"
 #include <stdint.h>
+#include <cassert>
 #include <queue>
 #include <string>
 #include <unordered_map>
 
 namespace aodv
 {
+    // Assume send_link has maximum message size of 1500 octets.
+    const uint16_t MAX_MESSAGE_SIZE = 1500;
+
     class Node
     {
     private:
@@ -77,7 +81,7 @@ namespace aodv
         /**
          * @brief Send a control packet or a data packet with this->seq and this->addr.
          *
-         * @param eth ethernet packet.
+         * @param eth ethernet packet. No limit on eth.payloadLength (other than sizeof(eth.payloadLength).
          * @param send_link method that sends on link level.
          */
         void send(Eth eth, void (*send_link)(std::string msg, std::string addr));

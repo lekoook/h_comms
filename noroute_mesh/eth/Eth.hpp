@@ -10,7 +10,7 @@ namespace aodv
      * @brief Byte length of the non-payload part of a Eth.
      * 
      */
-    const uint8_t ETH_NONPAYLOAD_LEN = 13;
+    const uint8_t ETH_NONPAYLOAD_LEN = 21;
 
     class Eth
     {
@@ -27,6 +27,23 @@ namespace aodv
          * 
          */
         uint32_t seq;
+
+        /**
+         * @brief segment sequence number
+         * 
+         */
+        uint32_t segSeq;
+
+        /**
+         * @brief exact maximum segment sequence number.
+         *
+         * There are segSeqMax segments in one packet.
+         * Design choice:
+         *   segSeqMax instead of boolean flag indicating end of all segments in a packet.
+         *   Because segments can arrive out of order, so the amount of memory needed to hold all segments is unknown until the last segment arrives.
+         *   If segSeqMax is in all segments, then the amount of memory needed to hold all segments is known whenever any segment arrives.
+         */
+        uint32_t segSeqMax;
   
         /**
          * @brief dst length
@@ -69,12 +86,12 @@ namespace aodv
          * 
          */
         Eth();
-  
+
         /**
          * @brief Construct a new Ethernet frame.
          * 
          */
-        Eth(uint32_t seq, uint16_t dstLength, std::string dst, uint16_t srcLength, std::string src, uint16_t payloadLength, uint8_t *payload);
+        Eth(uint32_t seq, uint32_t segSeq, uint32_t segSeqMax, uint16_t dstLength, std::string dst, uint16_t srcLength, std::string src, uint16_t payloadLength, uint8_t *payload);
   
         /**
          * @brief Serializes a object into a uint8_t bytes array.
