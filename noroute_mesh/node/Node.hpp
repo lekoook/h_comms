@@ -2,6 +2,7 @@
 #define NODE_H_
 
 #include "../eth/Eth.hpp"
+#include "../include/tl/optional.hpp"
 #include <stdint.h>
 #include <cassert>
 #include <queue>
@@ -10,7 +11,6 @@
 #include <tuple>
 #include <vector>
 #include <cstring>
-#include <optional>
 
 namespace aodv
 {
@@ -85,7 +85,7 @@ namespace aodv
          *
          * @param receive_link method that receives on link level.
          */
-        std::optional<aodv::Eth> Node::receive(std::string data, void (*send_link)(std::string msg, std::string addr));
+        tl::optional<aodv::Eth> receive(std::string data, void (*send_link)(std::string msg, std::string addr));
   
         /**
          * @brief Represent an arbitrary uint8_t buffer as a string.

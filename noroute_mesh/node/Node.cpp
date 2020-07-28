@@ -49,7 +49,7 @@ namespace aodv
         send_link(this->uint8_to_string(msg, length), this->broadcastAddr);
     }
 
-    std::optional<aodv::Eth> Node::receive(std::string data, void (*send_link)(std::string msg, std::string addr))
+    tl::optional<aodv::Eth> Node::receive(std::string data, void (*send_link)(std::string msg, std::string addr))
     {
         aodv::Eth seg = aodv::Eth();
         uint8_t msg[data.length()];
@@ -126,7 +126,7 @@ namespace aodv
             }
         }
 
-        return {}; // return optional object that does not contain a value.
+        return tl::nullopt; // return optional object that does not contain a value.
     }
 
     std::string Node::uint8_to_string(uint8_t b[], std::string::size_type l)
