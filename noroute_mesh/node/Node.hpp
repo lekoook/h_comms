@@ -75,7 +75,7 @@ namespace aodv
          *
          * @param receive_link method that receives on link level.
          */
-        void receive(std::string (*receive_link)(), void (*send_link)(std::string msg, std::string addr));
+        void receive(std::string data, void (*send_link)(std::string msg, std::string addr));
   
     public:
         /**
