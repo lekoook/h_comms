@@ -25,7 +25,7 @@ namespace aodv
         send_link(this->uint8_to_string(msg, length), this->broadcastAddr);
     }
 
-    void Node::receive(std::string data, void (*send_link)(std::string msg, std::string addr))
+    std::optional<aodv::Eth> Node::receive(std::string data, void (*send_link)(std::string msg, std::string addr))
     {
         aodv::Eth eth;
 
@@ -34,7 +34,7 @@ namespace aodv
         eth.deserialise(msg);
 
         if (eth.dst == this->addr) {
-             fifoToApp.push(eth);
+             return eth; // return optional object that contains eth.
         } else {
             auto search = this->table.find(eth.src);
             if (search == this->table.end()) {
@@ -49,6 +49,8 @@ namespace aodv
                 }
             }
         }
+
+        return {}; // return optional object that does not contain a value.
     }
 
     std::string Node::uint8_to_string(uint8_t b[], std::string::size_type l)
