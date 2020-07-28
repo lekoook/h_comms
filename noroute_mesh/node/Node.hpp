@@ -10,6 +10,7 @@
 #include <tuple>
 #include <vector>
 #include <cstring>
+#include <optional>
 
 namespace aodv
 {
@@ -38,18 +39,6 @@ namespace aodv
         std::string addr;
 
         /**
-         * @brief FIFO buffer for data packets from app to node.
-         * 
-         */
-        std::queue<Eth> fifoFromApp;
-
-        /**
-         * @brief FIFO buffer for data packets from node to app.
-         * 
-         */
-        std::queue<Eth> fifoToApp;
-
-        /**
         * @brief Address on which broadcasts are made.
         * 
         */
@@ -70,13 +59,6 @@ namespace aodv
          */
         std::unordered_map<uint32_t, std::vector<aodv::Eth>> tableDesegment;
 
-        /**
-         * @brief Receive a control packet or a data packet.
-         *
-         * @param receive_link method that receives on link level.
-         */
-        void receive(std::string data, void (*send_link)(std::string msg, std::string addr));
-  
     public:
         /**
          * @brief Construct a new object with all members zero initialised.
@@ -97,6 +79,13 @@ namespace aodv
          * @param send_link method that sends on link level.
          */
         void send(Eth eth, void (*send_link)(std::string msg, std::string addr));
+
+        /**
+         * @brief Receive a control packet or a data packet.
+         *
+         * @param receive_link method that receives on link level.
+         */
+        std::optional<aodv::Eth> Node::receive(std::string data, void (*send_link)(std::string msg, std::string addr));
   
         /**
          * @brief Represent an arbitrary uint8_t buffer as a string.

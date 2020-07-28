@@ -49,7 +49,7 @@ namespace aodv
         send_link(this->uint8_to_string(msg, length), this->broadcastAddr);
     }
 
-    void Node::receive(std::string data, void (*send_link)(std::string msg, std::string addr))
+    std::optional<aodv::Eth> Node::receive(std::string data, void (*send_link)(std::string msg, std::string addr))
     {
         aodv::Eth seg = aodv::Eth();
         uint8_t msg[data.length()];
@@ -91,7 +91,7 @@ namespace aodv
                         aodv::Eth eth = aodv::Eth(tableDesegment[seg.seq][0]);
                         eth.payloadLength = payloadLengthTotal;
                         eth.payload = payload;
-                        fifoToApp.push(eth);
+                        return eth; // return optional object that contains eth.
                     }
 
                 }
@@ -125,6 +125,8 @@ namespace aodv
                 }
             }
         }
+
+        return {}; // return optional object that does not contain a value.
     }
 
     std::string Node::uint8_to_string(uint8_t b[], std::string::size_type l)
