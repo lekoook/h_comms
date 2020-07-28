@@ -8,6 +8,7 @@ find_package(catkin REQUIRED COMPONENTS
   nav_msgs
   message_generation
   subt_communication_broker
+  rospy_message_converter
 )
 
 ## Generate messages in the 'msg' folder
@@ -44,18 +45,26 @@ include_directories(
   ${catkin_INCLUDE_DIRS}
 )
 
-#add_library(eth2 eth/Eth.cpp eth/Eth.hpp)
-#add_library(crc2 lib/crc32.c)
-#add_library(node2 node/Node.cpp node/Node.hpp)
-#add_library(serialisers2 utilities/serialisers.cpp utilities/serialisers.hpp)
+add_library(eth eth/Eth.cpp eth/Eth.hpp)
+add_library(crc lib/crc32.c)
+add_library(node node/Node.cpp node/Node.hpp)
+add_library(serialisers utilities/serialisers.cpp utilities/serialisers.hpp)
 
 add_executable(noroute_mesh_node src/main.cpp)
 
+target_link_libraries(eth
+  serialisers
+)
+
+target_link_libraries(node
+  eth
+)
+
 target_link_libraries(noroute_mesh_node
-  #eth2
-  #crc2
-  #node2
-  #serialisers2
+  eth
+  crc
+  node
+  serialisers
   ${catkin_LIBRARIES}
 )
 
