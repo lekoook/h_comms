@@ -25,11 +25,10 @@ namespace aodv
         send_link(this->uint8_to_string(msg, length), this->broadcastAddr);
     }
 
-    void Node::receive(std::string (*receive_link)(), void (*send_link)(std::string msg, std::string addr))
+    void Node::receive(std::string data, void (*send_link)(std::string msg, std::string addr))
     {
         aodv::Eth eth;
 
-        std::string data = receive_link();
         uint8_t msg[data.length()];
         this->string_to_uint8(msg, data);
         eth.deserialise(msg);
