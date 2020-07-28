@@ -3,12 +3,12 @@
 namespace aodv
 {
     Node::Node() :
-        seq(), id(), addr(), broadcastAddr()
+        id(), addr(), broadcastAddr()
     {
     }
 
-    Node::Node(uint32_t seq, uint32_t id, std::string addr, std::string broadcastAddr) :
-        seq(seq), id(id), addr(addr), broadcastAddr(broadcastAddr)
+    Node::Node(uint32_t id, std::string addr, std::string broadcastAddr) :
+        id(id), addr(addr), broadcastAddr(broadcastAddr)
     {
     }
 

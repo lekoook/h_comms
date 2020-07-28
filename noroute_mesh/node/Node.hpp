@@ -70,7 +70,7 @@ namespace aodv
          * @brief Construct a new object.
          * 
          */
-        Node(uint32_t seq, uint32_t id, std::string addr, std::string broadcastAddr);
+        Node(uint32_t id, std::string addr, std::string broadcastAddr);
 
         /**
          * @brief Send a control packet or a data packet with this->seq and this->addr.
