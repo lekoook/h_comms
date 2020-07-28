@@ -68,4 +68,9 @@ namespace aodv
     {
         return true;
     } // TODO calculate and check crc
+
+    bool Eth::operator==(const aodv::Eth& eth)
+    {
+        return this->seq==eth.seq && this->segSeq==eth.segSeq && this->segSeqMax==eth.segSeqMax && this->dstLength==eth.dstLength && this->dst==eth.dst && this->src==eth.src && this->srcLength==eth.srcLength && this->payloadLength==eth.payloadLength && this->payload==eth.payload;
+    }
 }

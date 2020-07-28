@@ -51,26 +51,78 @@ namespace aodv
 
     void Node::receive(std::string (*receive_link)(), void (*send_link)(std::string msg, std::string addr))
     {
-        aodv::Eth eth = aodv::Eth();
-
+        aodv::Eth seg = aodv::Eth();
         std::string data = receive_link();
         uint8_t msg[data.length()];
         this->string_to_uint8(msg, data);
-        eth.deserialise(msg);
+        aodv::Eth().deserialise(msg);
 
-        if (eth.dst == this->addr) {
-             fifoToApp.push(eth);
-        } else {
-            auto search = this->table.find(eth.src);
-            if (search == this->table.end()) {
-                // Packet does not exist in table.
-                this->table[eth.src] = eth.seq;
-                this->send(eth, send_link);
+        if (seg.dst == this->addr) {
+            auto search = this->tableDesegment.find(seg.seq);
+            if (search == tableDesegment.end()) {
+                // No segments from this sequence number exist in tableDesegment.
+                tableDesegment[seg.seq] = std::vector<aodv::Eth>(seg.segSeqMax, aodv::Eth());
+                tableDesegment[seg.seq][seg.segSeq] = seg;
+
             } else {
-                if (eth.seq > search->second) {
-                    // Packet is newer than table's packet.
-                    this->table[search->first] = eth.seq;
-                    this->send(eth, send_link);
+                if (tableDesegment[seg.seq][seg.segSeq] == aodv::Eth()) {
+                    tableDesegment[seg.seq][seg.segSeq] = seg;
+                } else {
+                    bool flag = true;
+                    for (aodv::Eth seg : tableDesegment[seg.seq]) {
+                        if (seg == aodv::Eth()) {
+                            flag = false;
+                        }
+                    }
+
+                    if (flag) {
+                        // All segments have been received, perform desegmentation.
+                        aodv::Eth seg;
+                        uint64_t payloadLengthTotal;
+                        for (aodv::Eth seg : tableDesegment[seg.seq]) {
+                            payloadLengthTotal += seg.payloadLength;
+                        }
+                        uint8_t* payload = (uint8_t*)malloc(payloadLengthTotal);
+                        memcpy(payload, tableDesegment[seg.seq][0].payload, tableDesegment[seg.seq][0].payloadLength);
+                        for (uint32_t i=1; i<seg.segSeqMax; i++) {
+                            memcpy(payload + tableDesegment[seg.seq][i-1].payloadLength, tableDesegment[seg.seq][i].payload, tableDesegment[seg.seq][i].payloadLength);
+                        }
+
+                        // Packet must consist of at least one segment. Copy fields of first segment.
+                        aodv::Eth eth = aodv::Eth(tableDesegment[seg.seq][0]);
+                        eth.payloadLength = payloadLengthTotal;
+                        eth.payload = payload;
+                        fifoToApp.push(eth);
+                    }
+
+                }
+            }
+
+        } else {
+            auto search = this->tableAddr.find(seg.src);
+            if (search == this->tableAddr.end()) {
+                // No segments from this address exist in tableAddr.
+                this->tableAddr[seg.src] = std::unordered_map<uint32_t, std::vector<bool>>();
+                this->tableAddr[seg.src][seg.seq] = std::vector<bool>(seg.segSeqMax);
+                this->tableAddr[seg.src][seg.seq][seg.segSeq] = true;
+                this->send(seg, send_link);
+
+            } else {
+                std::unordered_map<uint32_t, std::vector<bool>> tableSeq = search->second;
+                auto search2 = tableSeq.find(seg.seq);
+                if (search2 == tableSeq.end()) {
+                    // No segments from this sequence number exist in tableSeq.
+                    tableSeq[seg.seq] = std::vector<bool>(seg.segSeqMax);
+                    tableSeq[seg.seq][seg.segSeq] = true;
+                    this->send(seg, send_link);
+
+                } else {
+                    if (!tableSeq[seg.seq][seg.segSeq]) {
+                        // Segment was not already forwarded.
+                        tableSeq[seg.seq][seg.segSeq] = true;
+                        this->send(seg, send_link);
+                    }
+
                 }
             }
         }

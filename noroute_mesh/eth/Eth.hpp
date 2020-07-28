@@ -113,6 +113,8 @@ namespace aodv
          * @param crc expected crc.
          */
         bool check(uint32_t crc);
+
+        bool operator==(const aodv::Eth& eth);
     };
 }
 

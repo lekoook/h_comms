@@ -7,6 +7,9 @@
 #include <queue>
 #include <string>
 #include <unordered_map>
+#include <tuple>
+#include <vector>
+#include <cstring>
 
 namespace aodv
 {
@@ -53,10 +56,19 @@ namespace aodv
         std::string broadcastAddr;
 
         /**
-        * @brief Address on which broadcasts are made.
-        * 
-        */
-        std::unordered_map<std::string, uint32_t> table;
+         * @brief Table of addresses, key: address, value: tableSeq.
+         * tableSeq, key: sequence number, value: vector of (index: segment sequence numbers, value: bool).
+         *
+         * Tracks which segments are forwarded by this node.
+         * 
+         */
+        std::unordered_map<std::string, std::unordered_map<uint32_t, std::vector<bool>>> tableAddr;
+
+        /**
+         * @brief Table storing segments for desegmentation into packets, key: sequence number, value: vector of segments.
+         * 
+         */
+        std::unordered_map<uint32_t, std::vector<aodv::Eth>> tableDesegment;
 
         /**
          * @brief Receive a control packet or a data packet.
