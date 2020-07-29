@@ -7,7 +7,6 @@
 #include "noroute_mesh/neighbArray.h"
 
 // services
-#include "noroute_mesh/discover.h"
 #include "noroute_mesh/send_map.h"
 #include "noroute_mesh/neighbour.h"
 
@@ -25,11 +24,11 @@ public:
 
     subt::CommsClient *cc;
 
-    nomesh(std::string robot) {
-        nomesh::name = robot;
+    nomesh(std::string robotName, uint32_t robotId) {
+        nomesh::name = robotName;
         cc = new subt::CommsClient(nomesh::name);
-        node = new aodv::Node(0,1,nomesh::name,subt::communication_broker::kBroadcast);
-        cc->StartBeaconInterval(ros::Duration(2));
+        node = new aodv::Node(robotId, nomesh::name, subt::communication_broker::kBroadcast);
+        cc->StartBeaconInterval(ros::Duration(PING_INTERVAL));
         start_server();
     }
 
@@ -67,47 +66,53 @@ public:
     }
 
     bool getNeighbour(noroute_mesh::neighbour::Request &req, noroute_mesh::neighbour::Response &res){
-        // cc->SendTo("ping", subt::communication_broker::kBroadcast);
-        // wait a fixed amount of time
-
         int num = 0;
-        std::string names;
-        noroute_mesh::neighbArray a;
-        subt::CommsClient::Neighbor_M neigh;
-        neigh = cc->Neighbors();
+        subt::CommsClient::Neighbor_M neigh = cc->Neighbors();
         std::stringstream ss;
-        std::string temp;
 
-        // Broken printing format
-        // Need to find a way to compare time taken with sim time to create a current list of neighbours
-        for (subt::CommsClient::Neighbor_M::iterator it = neigh.begin(); it != neigh.end(); it++){ 
-            if (num == 0){
-                ss << it->first;
+        // Get current simulation time to compare with.
+        double currentTime = ros::Time::now().toSec();
+
+        // Filter out neighbours that are outdated.
+        for (subt::CommsClient::Neighbor_M::iterator it = neigh.begin(); it != neigh.end(); it++) {
+            if (it->first == this->name)
+            {
+                continue; // ignore ourselves.
             }
-            else{
-                ss << it->first << "|";
+            
+            double neighTime = it->second.first;
+            if (currentTime - neighTime <= NEIGHBOUR_TIME_THRESH)
+            {
+                if (num > 0)
+                {
+                    ss << "|"; // delimiter
+                }
+                ss << it->first << "," << it->second.second; // print Name and RSSI
+                ROS_INFO("%lf", it->second.second);
+                num++;
             }
-            temp = ss.str();
-            names.append(temp);
-            num++;
-            // noroute_mesh::neighb temp;
-            // temp.name = it->second.second;
-            //a.data.insert(temp);
         }
         res.num_neighbours = num;
-        res.response = names;
+        res.response = ss.str();
         return true;
     }
+
+private:
+    const double NEIGHBOUR_TIME_THRESH = 3.0;
+    const double PING_INTERVAL = 1.0;
 };
 
 int main(int argc, char** argv)
 {
-    if (argc != 2){
-        printf("Enter robot name as the argument for this CommsClient.\n");
+    if (argc != 3){
+        printf("Enter robot name and id as the arguments for this CommsClient.\n");
+        printf("Eg: [rosrun ...] RobotA 1\n");
         return 0;
     }
-    std::string robo_name = argv[1];
-    ros::init(argc, argv, robo_name + "_nomesh_API");
-    nomesh robot(robo_name);
+    std::string robotName = argv[1];
+    std::string robotIdStr = argv[2];
+    uint32_t robotId = stoi(robotIdStr);
+    ros::init(argc, argv, robotName + "_nomesh_API");
+    nomesh robot(robotName, robotId);
     ros::spin();
 }
