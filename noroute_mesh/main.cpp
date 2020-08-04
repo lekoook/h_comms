@@ -9,9 +9,9 @@ int main()
     std::string s = n.uint8_to_string(b, 3);
     std::cout << s << std::endl;
 
-    uint8_t bNew[4];
+    uint8_t bNew[6];
     n.string_to_uint8(bNew, s);
-    std::cout << bNew[0] << bNew[1] << bNew[2] << bNew[3] << std::endl;
+    std::cout << bNew[0] << bNew[1] << bNew[2] << bNew[3] << bNew[4] << bNew[5] << std::endl;
 
     return 0;
 }

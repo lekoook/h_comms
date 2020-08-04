@@ -57,40 +57,25 @@ namespace aodv
     {
         /*
          * A uint8_t has bits denoted as: abcdefgh.
-         * The next uint8_t may have different bits, but is still denoted as: abcdefgh.
          */
         char c;
-        uint8_t s[l*5/4 + l%4 + 1]; // + 1 for '\0'
+        uint8_t s[l*2 + 1]; // + 1 for '\0'
         std::string::size_type i=0;
-        for (; i<l; i+=5) {
-            c = 0b10000100u;
-            if (i >=l) { b[i] = '\0'; }
-            c |= (b[i] >> 4) << 3; // 0b1abcd100
-            c |= (b[i] >> 2) & 3; // 0b1abcd1ef
-            s[i] = c;
-            c = 0b00100001u;
-            if (i+1 >=l) { b[i+1] = '\0'; }
-            c |= (b[i] & 3) << 6; // 0bgh100001
-            c |= (b[i+1] >> 4) << 1; // 0bgh1abcd1
-            s[i+1] = c;
-            c = 0b00001000u;
-            if (i+2 >=l) { b[i+2] = '\0'; }
-            c |= (b[i+1] & 15) << 4; // 0befgh1000
-            c |= b[i+2] >> 5; // 0befgh1abc
-            s[i+2] = c;
-            c = 0b01000010u;
-            if (i+3 >=l) { b[i+3] = '\0'; }
-            c |= ((b[i+2] >> 4) & 1) << 7; // 0bd1000010
-            c |= (b[i+2] & 15) << 2; // 0bd1efgh10
-            c |= b[i+3] >> 7; // 0bd1efgh1a
-            s[i+3] = c;
-            c = 0b00010000u;
-            if (i+4 >=l) { b[i+4] = '\0'; }
-            c |= ((b[i+3] >> 4) & 7) << 5; // 0bbcd10000
-            c |= b[i+3] & 15; // 0bbcd1efgh
-            s[i+4] = c;
+        for (; i<l; i++) {
+            c = 0b10101010u;
+            c |= (b[i] >> 7) << 6;
+            c |= ((b[i] >> 6) & 1) << 4;
+            c |= ((b[i] >> 5) & 1) << 2;
+            c |= (b[i] >> 4) & 1;
+            s[2*i] = c;
+            c = 0b10101010u;
+            c |= ((b[i] >> 3) & 1) << 6;
+            c |= ((b[i] >> 2) & 1) << 4;
+            c |= ((b[i] >> 1) & 1) << 2;
+            c |= b[i] & 1;
+            s[2*i+1] = c;
         }
-        s[i] = '\0';
+        s[2*i] = '\0';
         return (char*)s;
     }
 
@@ -99,19 +84,9 @@ namespace aodv
         /*
          * Denotation of bits is as in the body of uint8_to_string(uint8_t b[], std::string::size_type l).
          */
-        std::string::size_type i=0;
-        for (; i<s.size() - 1; i+=4) { // - 1 for '\0'
-            /*
-             * s[i]   : 0b1abcd1ef
-             * s[i+1] : 0bgh1abcd1
-             * s[i+2] : 0befgh1abc
-             * s[i+3] : 0bd1efgh1a
-             * s[i+4] : 0bbcd1efgh
-             */
-            b[i] = ((s[i] & 0b01111000u) << 1) | ((s[i] & 0b00000011u) << 2) | ((s[i+1] & 0b11000000u) >> 6);
-            b[i+1] = ((s[i+1] & 0b00011110u) << 3) | ((s[i+2] & 0b11110000u) >> 4);
-            b[i+2] = ((s[i+2] & 0b00000111u) << 5) | ((s[i+3] & 0b10000000u) >> 3) | ((s[i+3] & 0b00111100u) >> 2);
-            b[i+3] = ((s[i+3] & 0b00000001u) << 7) | ((s[i+4] & 0b11100000u) >> 1) | (s[i+4] & 0b00001111u);
+        for (std::string::size_type i=0; i<s.size() - 1; i+=2) { // - 1 for '\0'
+            b[i/2] = ((s[i] & 0b01000000u) << 1) | ((s[i] & 0b00010000u) << 2) | ((s[i] & 0b00000100u) << 3) | ((s[i] & 1) << 4);
+            b[i/2] |= ((s[i+1] & 0b01000000u) >> 3) | ((s[i+1] & 0b00010000u) >> 2) | ((s[i+1] & 0b00000100u) >> 1) | (s[i+1] & 1);
         }
     }
 }
