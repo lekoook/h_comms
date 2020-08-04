@@ -45,7 +45,7 @@ public:
         
         std::string message = nomesh::name + ": Service server is up.";
         ROS_INFO("Service server is up");
-        //nomesh::cc->Bind(nomesh::handlePacket, nomesh::name,this);
+        // nomesh::cc->Bind(nomesh::handlePacket, nomesh::name,this);
     }
     
     void handlePacket(const std::string &_srcAddress, const std::string &_dstAddress, const uint32_t _dstPort, const std::string &_data){
@@ -79,7 +79,8 @@ public:
 
         e.payloadLength = serial_size;
         e.payload = buffer.get();
-        //nomesh::node->send(e,&nomesh::cc->SendTo);
+        nomesh::node->send(e, this->cc);
+        // nomesh::node->send(e,&send);
         return true;
     }
 

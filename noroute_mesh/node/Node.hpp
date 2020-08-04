@@ -7,6 +7,7 @@
 #include <queue>
 #include <string>
 #include <unordered_map>
+#include "subt_communication_broker/subt_communication_client.h"
 
 namespace aodv
 {
@@ -62,14 +63,14 @@ namespace aodv
          * @param eth ethernet packet.
          * @param send_link method that sends on link level.
          */
-        void send(Eth eth, void (*send_link)(std::string msg, std::string addr));
+        void send(Eth eth, subt::CommsClient* commsClient);
 
         /**
          * @brief Receive a control packet or a data packet.
          *
          * @param receive_link method that receives on link level.
          */
-        tl::optional<aodv::Eth> receive(std::string data, void (*send_link)(std::string msg, std::string addr));
+        tl::optional<aodv::Eth> receive(std::string data, subt::CommsClient* commsClient);
   
         /**
          * @brief Represent an arbitrary uint8_t buffer as a string.

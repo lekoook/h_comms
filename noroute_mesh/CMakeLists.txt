@@ -58,6 +58,7 @@ target_link_libraries(eth
 
 target_link_libraries(node
   eth
+  subt_communication_broker
 )
 
 target_link_libraries(noroute_mesh_node
