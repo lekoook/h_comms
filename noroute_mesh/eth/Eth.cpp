@@ -46,7 +46,7 @@ namespace aodv
         i += dstLength;
         srcLength = serialisers::getU16(&data[i]);
         i += 2;
-        memcpy(reinterpret_cast<uint8_t*>(&src[0]), &data[i], dstLength);
+        memcpy(reinterpret_cast<uint8_t*>(&src[0]), &data[i], srcLength);
         i += srcLength;
         payloadLength = serialisers::getU16(&data[i]);
         i += 2;

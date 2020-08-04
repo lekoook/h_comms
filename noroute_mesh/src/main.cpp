@@ -45,13 +45,14 @@ public:
         
         std::string message = nomesh::name + ": Service server is up.";
         ROS_INFO("Service server is up");
-        // nomesh::cc->Bind(nomesh::handlePacket, nomesh::name,this);
+        // nomesh::cc->Bind(&nomesh::handlePacket, this->name, 4100);
+        nomesh::cc->Bind(std::bind(&nomesh::handlePacket, this, std::placeholders::_1, std::placeholders::_2, std::placeholders::_3, std::placeholders::_4), this->name, 4100);
     }
     
     void handlePacket(const std::string &_srcAddress, const std::string &_dstAddress, const uint32_t _dstPort, const std::string &_data){
         // Deserialise the received data
         ROS_INFO("[SEND_MAP] Response received.");
-        //nomesh::node->receive(_data,&nomesh::cc->SendTo,this);
+        nomesh::node->receive(_data, cc);
 
         // If the message is for this robot, publish
         // peek at the first byte to identify type of ros message
