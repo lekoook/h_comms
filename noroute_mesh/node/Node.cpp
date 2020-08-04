@@ -1,6 +1,6 @@
 #include "Node.hpp"
 #include <stdint.h>
-
+#include <iostream>
 namespace aodv
 {
     Node::Node() :
@@ -22,7 +22,21 @@ namespace aodv
         uint16_t length = aodv::ETH_NONVAR_LEN + eth.srcLength + eth.dstLength + eth.payloadLength;
         uint8_t msg[length];
         eth.serialise(msg);
-        commsClient->SendTo(this->uint8_to_string(msg, length), this->broadcastAddr);
+        std::string s = uint8_to_string(msg, length);
+
+        for (int i = 0; i < length; i++)
+        {
+            printf("%u ", (uint8_t)msg[i]);
+        }
+        printf("\n\n");
+        for (int i = 0; i < s.length(); i++)
+        {
+            printf("%u ", (uint8_t)s[i]);
+        }
+        printf("\n\n");
+        // commsClient->SendTo(this->uint8_to_string(msg, length), this->broadcastAddr);
+        std::string str = "hello";
+        commsClient->SendTo(str, this->broadcastAddr);
     }
 
     tl::optional<aodv::Eth> Node::receive(std::string data, subt::CommsClient* commsClient)
@@ -31,6 +45,16 @@ namespace aodv
 
         uint8_t msg[data.length()];
         this->string_to_uint8(msg, data);
+        for (int i = 0; i < data.length(); i++)
+        {
+            printf("%u ", (uint8_t)data[i]);
+        }
+        printf("\n\n");
+        for (int i = 0; i < data.length(); i++)
+        {
+            printf("%u ", (uint8_t)msg[i]);
+        }
+        printf("\n\n");
         eth.deserialise(msg);
 
         if (eth.dst == this->addr) {
@@ -41,11 +65,13 @@ namespace aodv
                 // Packet does not exist in table.
                 this->table[eth.src] = eth.seq;
                 this->send(eth, commsClient);
+                std::cout << "testA" << std::endl;
             } else {
                 if (eth.seq > search->second) {
                     // Packet is newer than table's packet.
                     this->table[search->first] = eth.seq;
                     this->send(eth, commsClient);
+                    std::cout << "testB" << std::endl;
                 }
             }
         }

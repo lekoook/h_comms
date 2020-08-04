@@ -1,6 +1,7 @@
 #include <cstring>
 #include "Eth.hpp"
 #include "../utilities/serialisers.hpp"
+#include <iostream>
 
 namespace aodv
 {
@@ -16,6 +17,7 @@ namespace aodv
 
     void Eth::serialise(uint8_t data[])
     {
+        std::cout << "serialise" << std::endl;
         size_t i = 0;
         serialisers::copyU32(&data[i], seq);
         i += 4;
@@ -24,6 +26,9 @@ namespace aodv
         memcpy(&data[i], reinterpret_cast<const uint8_t*>(&dst[0]), dstLength);
         i += dstLength;
         serialisers::copyU16(&data[i], srcLength);
+        std::cout << "srcLength: " << srcLength << std::endl;
+        printf("%u\n", data[i]);
+        printf("%u\n", data[i+1]);
         i += 2;
         memcpy(&data[i], reinterpret_cast<const uint8_t*>(&src[0]), srcLength);
         i += srcLength;
@@ -37,22 +42,32 @@ namespace aodv
     
     void Eth::deserialise(uint8_t data[])
     {
+        std::cout << "deserialise" << std::endl;
         size_t i = 0;
         seq = serialisers::getU32(&data[i]);
+        std::cout << "test-1" << std::endl;
         i += 4;
         dstLength = serialisers::getU16(&data[i]);
+        std::cout << "test-2" << std::endl;
         i += 2;
         memcpy(reinterpret_cast<uint8_t*>(&dst[0]), &data[i], dstLength);
+        std::cout << "test-3:" << dstLength << std::endl;
         i += dstLength;
+        printf("%u\n", data[i]);
+        printf("%u\n", data[i+1]);
         srcLength = serialisers::getU16(&data[i]);
+        std::cout << "test-4:" << srcLength << std::endl;
         i += 2;
         memcpy(reinterpret_cast<uint8_t*>(&src[0]), &data[i], srcLength);
         i += srcLength;
         payloadLength = serialisers::getU16(&data[i]);
+        std::cout << "test-6" << std::endl;
         i += 2;
         memcpy(payload, &data[i], payloadLength);
+        std::cout << "test-7" << std::endl;
         i += payloadLength;
         crc = serialisers::getU32(&data[i]);
+        std::cout << "test-8" << std::endl;
         i += 4;
     }
 
