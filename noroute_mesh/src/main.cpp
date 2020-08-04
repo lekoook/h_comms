@@ -1,5 +1,7 @@
 #include "ros/ros.h"
+#include "ros/serialization.h"
 #include "Node.hpp"
+#include "Eth.hpp"
 
 // messages
 #include "std_msgs/String.h"
@@ -20,8 +22,8 @@ public:
     ros::NodeHandle nh;
     ros::Publisher pub;
     ros::ServiceServer map_service, neighbour_service, discovery_service;
+    
     aodv::Node *node;
-
     subt::CommsClient *cc;
 
     nomesh(std::string robotName, uint32_t robotId) {
@@ -43,25 +45,41 @@ public:
         
         std::string message = nomesh::name + ": Service server is up.";
         ROS_INFO("Service server is up");
-        //Bind(handlePacket, address);
+        //nomesh::cc->Bind(nomesh::handlePacket, nomesh::name,this);
     }
     
     void handlePacket(const std::string &_srcAddress, const std::string &_dstAddress, const uint32_t _dstPort, const std::string &_data){
         // Deserialise the received data
         ROS_INFO("[SEND_MAP] Response received.");
-
-        // If the message is not for this robot, check table, send to the other node
-        // Node.receive(data, &cc->SendTo)
-        // peek at the first byte to identify type of ros message
-        cc->SendTo("I am X1", subt::communication_broker::kBroadcast);
+        //nomesh::node->receive(_data,&nomesh::cc->SendTo,this);
 
         // If the message is for this robot, publish
+        // peek at the first byte to identify type of ros message
 
-        //map_pub.publish(recv.map)
+        // uint32_t serial_size = ros::serialization::serializationLength(my_value);
+        // boost::shared_array<uint8_t> buffer(new uint8_t[serial_size]);
+        // ser::IStream stream(buffer.get(), serial_size);
+        // ser::deserialize(stream, my_value);
+
+        // pub.publish(recv.map)
     }
 
     bool sendMap(noroute_mesh::send_map::Request &req, noroute_mesh::send_map::Response &res){
-        cc->SendTo("I am X1", subt::communication_broker::kBroadcast);
+        //cc->SendTo("I am X1", subt::communication_broker::kBroadcast);
+        aodv::Eth e;
+        e.dstLength = req.dest.length();
+        e.dst = req.dest;
+        e.srcLength = nomesh::name.length();
+        e.src = nomesh::name;
+
+        uint16_t serial_size = ros::serialization::serializationLength(req.grid);
+        boost::shared_array<uint8_t> buffer(new uint8_t[serial_size]);
+        ros::serialization::OStream stream(buffer.get(), serial_size);
+        ros::serialization::serialize(stream, req.grid);
+
+        e.payloadLength = serial_size;
+        e.payload = buffer.get();
+        //nomesh::node->send(e,&nomesh::cc->SendTo);
         return true;
     }
 
