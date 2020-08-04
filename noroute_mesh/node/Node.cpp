@@ -19,7 +19,7 @@ namespace aodv
         eth.seq = this->seq;
         eth.src = this->addr;
         this->seq++;
-        uint16_t length = aodv::ETH_NONPAYLOAD_LEN + eth.payloadLength;
+        uint16_t length = aodv::ETH_NONVAR_LEN + eth.srcLength + eth.dstLength + eth.payloadLength;
         uint8_t msg[length];
         eth.serialise(msg);
         commsClient->SendTo(this->uint8_to_string(msg, length), this->broadcastAddr);
