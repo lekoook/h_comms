@@ -84,7 +84,7 @@ namespace aodv
         /*
          * Denotation of bits is as in the body of uint8_to_string(uint8_t b[], std::string::size_type l).
          */
-        for (std::string::size_type i=0; i<s.size() - 1; i+=2) { // - 1 for '\0'
+        for (std::string::size_type i=0; i<s.size(); i+=2) {
             b[i/2] = ((s[i] & 0b01000000u) << 1) | ((s[i] & 0b00010000u) << 2) | ((s[i] & 0b00000100u) << 3) | ((s[i] & 1) << 4);
             b[i/2] |= ((s[i+1] & 0b01000000u) >> 3) | ((s[i+1] & 0b00010000u) >> 2) | ((s[i+1] & 0b00000100u) >> 1) | (s[i+1] & 1);
         }
