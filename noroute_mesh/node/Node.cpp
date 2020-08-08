@@ -13,12 +13,14 @@ namespace aodv
     {
     }
 
-    void Node::send(Eth eth, void (*send_link)(std::string msg, std::string addr))
+    void Node::send(Eth eth, void (*send_link)(std::string msg, std::string addr), bool isOriginating)
     {
-        // Overwrite seq and src, because this node is originating eth.
-        eth.seq = this->seq;
-        eth.src = this->addr;
-        this->seq++;
+        if (isOriginating) {
+            // Overwrite seq and src, because this node is originating eth.
+            eth.seq = this->seq;
+            eth.src = this->addr;
+            this->seq++;
+        }
         uint16_t length = aodv::ETH_NONPAYLOAD_LEN + eth.payloadLength;
         uint8_t msg[length];
         eth.serialise(msg);
@@ -40,12 +42,12 @@ namespace aodv
             if (search == this->table.end()) {
                 // Packet does not exist in table.
                 this->table[eth.src] = eth.seq;
-                this->send(eth, send_link);
+                this->send(eth, send_link, false);
             } else {
                 if (eth.seq > search->second) {
                     // Packet is newer than table's packet.
                     this->table[search->first] = eth.seq;
-                    this->send(eth, send_link);
+                    this->send(eth, send_link, false);
                 }
             }
         }
