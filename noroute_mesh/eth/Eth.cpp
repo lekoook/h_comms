@@ -42,11 +42,17 @@ namespace aodv
         i += 4;
         dstLength = serialisers::getU16(&data[i]);
         i += 2;
-        memcpy(reinterpret_cast<uint8_t*>(&dst[0]), &data[i], dstLength);
+        dst = std::string(dstLength, 1);
+        for (int j=0; j<dstLength; j++) {
+            dst[j] = data[i+j];
+        }
         i += dstLength;
         srcLength = serialisers::getU16(&data[i]);
         i += 2;
-        memcpy(reinterpret_cast<uint8_t*>(&src[0]), &data[i], dstLength);
+        src = std::string(srcLength, 1);
+        for (int j=0; j<srcLength; j++) {
+            src[j] = data[i+j];
+        }
         i += srcLength;
         payloadLength = serialisers::getU16(&data[i]);
         i += 2;
