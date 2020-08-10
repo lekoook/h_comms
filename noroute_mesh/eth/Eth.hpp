@@ -61,8 +61,10 @@ namespace aodv
         /**
          * @brief payload
          *
+         * Must be a string.
+         * If were uint8_t[], would give double free or corruption error.
          */
-        uint8_t *payload;
+        std::string payload;
 
         /**
          * @brief Construct a new object with all members zero initialised.
@@ -74,7 +76,7 @@ namespace aodv
          * @brief Construct a new Ethernet frame.
          * 
          */
-        Eth(uint32_t seq, uint16_t dstLength, std::string dst, uint16_t srcLength, std::string src, uint16_t payloadLength, uint8_t *payload);
+        Eth(uint32_t seq, uint16_t dstLength, std::string dst, uint16_t srcLength, std::string src, uint16_t payloadLength, std::string payload);
   
         /**
          * @brief Serializes a object into a uint8_t bytes array.
