@@ -15,6 +15,12 @@ namespace aodv
     {
     }
 
+    Eth::~Eth(){
+        std::cout << "before DELETE" << std::endl;
+        delete payload;
+        std::cout << "after DELETE" << std::endl;
+    }
+
     void Eth::serialise(uint8_t data[])
     {
         std::cout << "serialise" << std::endl;
@@ -50,19 +56,25 @@ namespace aodv
         dstLength = serialisers::getU16(&data[i]);
         std::cout << "test-2" << std::endl;
         i += 2;
-        memcpy(reinterpret_cast<uint8_t*>(&dst[0]), &data[i], dstLength);
-        std::cout << "test-3:" << dstLength << std::endl;
+        dst = std::string(dstLength, 1);
+        for (int j=0; j<dstLength; j++) {
+            dst[j] = data[i+j];
+        }        std::cout << "test-3:" << dstLength << std::endl;
         i += dstLength;
         printf("%u\n", data[i]);
         printf("%u\n", data[i+1]);
         srcLength = serialisers::getU16(&data[i]);
         std::cout << "test-4:" << srcLength << std::endl;
         i += 2;
-        memcpy(reinterpret_cast<uint8_t*>(&src[0]), &data[i], srcLength);
+        src = std::string(srcLength, 1);
+        for (int j=0; j<srcLength; j++) {
+            src[j] = data[i+j];
+        }
         i += srcLength;
         payloadLength = serialisers::getU16(&data[i]);
-        std::cout << "test-6" << std::endl;
+        std::cout << "test-6: " << payloadLength << std::endl;
         i += 2;
+        payload = new uint8_t[payloadLength];
         memcpy(payload, &data[i], payloadLength);
         std::cout << "test-7" << std::endl;
         i += payloadLength;

@@ -77,6 +77,12 @@ namespace aodv
         Eth(uint32_t seq, uint16_t dstLength, std::string dst, uint16_t srcLength, std::string src, uint16_t payloadLength, uint8_t *payload);
   
         /**
+         * @brief Deconstructor of the Ethernet frame.
+         * 
+         */
+        ~Eth();
+
+        /**
          * @brief Serializes a object into a uint8_t bytes array.
          * 
          * @param data uint8_t array to store the bytes.

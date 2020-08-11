@@ -52,6 +52,7 @@ public:
     void handlePacket(const std::string &_srcAddress, const std::string &_dstAddress, const uint32_t _dstPort, const std::string &_data){
         // Deserialise the received data
         ROS_INFO("[SEND_MAP] Response received.");
+        
         nomesh::node->receive(_data, cc);
 
         // If the message is for this robot, publish
@@ -74,14 +75,26 @@ public:
         e.src = nomesh::name;
 
         uint16_t serial_size = ros::serialization::serializationLength(req.grid);
-        boost::shared_array<uint8_t> buffer(new uint8_t[serial_size]);
-        ros::serialization::OStream stream(buffer.get(), serial_size);
+        //boost::shared_array<uint8_t> buffer(new uint8_t[serial_size]);
+        uint8_t buffer[serial_size];
+        ros::serialization::OStream stream(buffer, serial_size);
         ros::serialization::serialize(stream, req.grid);
 
+        std::cout << "Ethernet Contents (MAIN):" << std::endl
+            << "seq:" << e.seq << std::endl
+            << "dstlength:" << e.dstLength << std::endl
+            << "dst:" << e.dst << std::endl
+            << "srclength:" << e.srcLength<< std::endl
+            << "src:" << e.src << std::endl;
+
+        std::cout << "SerialSize:" << serial_size << std::endl;
         e.payloadLength = serial_size;
-        e.payload = buffer.get();
-        nomesh::node->send(e, this->cc);
-        // nomesh::node->send(e,&send);
+        //e.payload = new uint8_t[serial_size];
+        e.payload = buffer;
+        //memcpy(e.payload, buffer.get(), serial_size);
+        //std::cout << "memcpy done" << std::endl;
+        nomesh::node->send(e, this->cc, true);
+        std::cout << "SEND DONE" << std::endl;
         return true;
     }
 
