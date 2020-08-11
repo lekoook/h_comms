@@ -63,7 +63,7 @@ namespace aodv
          * @param eth ethernet packet.
          * @param send_link method that sends on link level.
          */
-        void send(Eth eth, subt::CommsClient* commsClient);
+        void send(Eth &eth, subt::CommsClient* commsClient, bool isOriginating);
 
         /**
          * @brief Receive a control packet or a data packet.
