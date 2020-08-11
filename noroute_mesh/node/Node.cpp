@@ -36,6 +36,10 @@ namespace aodv
         this->string_to_uint8(msg, data);
         eth.deserialise(msg);
 
+        if (eth.src == this->addr) {
+            return tl::nullopt;
+        }
+        
         if (eth.dst == this->addr) {
             return eth; // return optional object that contains eth.
             
