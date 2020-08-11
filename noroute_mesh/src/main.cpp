@@ -67,7 +67,6 @@ public:
     }
 
     bool sendMap(noroute_mesh::send_map::Request &req, noroute_mesh::send_map::Response &res){
-        //cc->SendTo("I am X1", subt::communication_broker::kBroadcast);
         aodv::Eth e;
         e.dstLength = req.dest.length();
         e.dst = req.dest;
@@ -75,26 +74,13 @@ public:
         e.src = nomesh::name;
 
         uint16_t serial_size = ros::serialization::serializationLength(req.grid);
-        //boost::shared_array<uint8_t> buffer(new uint8_t[serial_size]);
-        uint8_t buffer[serial_size];
+        uint8_t *buffer = new uint8_t[serial_size];
         ros::serialization::OStream stream(buffer, serial_size);
         ros::serialization::serialize(stream, req.grid);
 
-        std::cout << "Ethernet Contents (MAIN):" << std::endl
-            << "seq:" << e.seq << std::endl
-            << "dstlength:" << e.dstLength << std::endl
-            << "dst:" << e.dst << std::endl
-            << "srclength:" << e.srcLength<< std::endl
-            << "src:" << e.src << std::endl;
-
-        std::cout << "SerialSize:" << serial_size << std::endl;
         e.payloadLength = serial_size;
-        //e.payload = new uint8_t[serial_size];
         e.payload = buffer;
-        //memcpy(e.payload, buffer.get(), serial_size);
-        //std::cout << "memcpy done" << std::endl;
         nomesh::node->send(e, this->cc, true);
-        std::cout << "SEND DONE" << std::endl;
         return true;
     }
 

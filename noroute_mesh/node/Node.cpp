@@ -25,22 +25,7 @@ namespace aodv
         uint8_t msg[length];
         eth.serialise(msg);
         std::string s = uint8_to_string(msg, length);
-
-        for (int i = 0; i < length; i++)
-        {
-            printf("%u ", (uint8_t)msg[i]);
-        }
-        printf("\n\n");
-        for (int i = 0; i < s.length(); i++)
-        {
-            printf("%u ", (uint8_t)s[i]);
-        }
-        printf("\n\n");
-        printf("Before SendTo\n");
-        //commsClient->SendTo(this->uint8_to_string(msg, length), this->broadcastAddr);
-        //std::string str = "hello";
         commsClient->SendTo(s, this->broadcastAddr);
-        printf("After SendTo\n");
     }
 
     tl::optional<aodv::Eth> Node::receive(std::string data, subt::CommsClient* commsClient)
@@ -49,41 +34,22 @@ namespace aodv
 
         uint8_t msg[data.length()];
         this->string_to_uint8(msg, data);
-        for (int i = 0; i < data.length(); i++)
-        {
-            printf("%u ", (uint8_t)data[i]);
-        }
-        printf("\n\n");
-        for (int i = 0; i < data.length(); i++)
-        {
-            printf("%u ", (uint8_t)msg[i]);
-        }
-        printf("\n\n");
         eth.deserialise(msg);
-
-        std::cout << "Ethernet Contents:" << std::endl
-            << "seq:" << eth.seq << std::endl
-            << "dstlength:" << eth.dstLength << std::endl
-            << "dst:" << eth.dst << std::endl
-            << "srclength:" << eth.srcLength<< std::endl
-            << "src:" << eth.src << std::endl;
 
         if (eth.dst == this->addr) {
             return eth; // return optional object that contains eth.
-            std::cout << "Package for me" << std::endl;
+            
         } else {
             auto search = this->table.find(eth.src);
             if (search == this->table.end()) {
                 // Packet does not exist in table.
                 this->table[eth.src] = eth.seq;
                 this->send(eth, commsClient, false);
-                std::cout << "testA" << std::endl;
             } else {
                 if (eth.seq > search->second) {
                     // Packet is newer than table's packet.
                     this->table[search->first] = eth.seq;
                     this->send(eth, commsClient, false);
-                    std::cout << "testB" << std::endl;
                 }
             }
         }
