@@ -3,6 +3,7 @@
 
 #include <stdint.h>
 #include <string>
+#include <vector>
 
 namespace aodv
 {
@@ -62,7 +63,7 @@ namespace aodv
          * @brief payload
          *
          */
-        uint8_t *payload;
+        std::vector<uint8_t> payload;
 
         /**
          * @brief Construct a new object with all members zero initialised.

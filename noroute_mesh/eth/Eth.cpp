@@ -11,12 +11,12 @@ namespace aodv
     }
 
     Eth::Eth(uint32_t seq, uint16_t dstLength, std::string dst, uint16_t srcLength, std::string src, uint16_t payloadLength, uint8_t *payload) :
-        seq(seq), dstLength(dstLength), dst(dst), srcLength(srcLength), src(src), payloadLength(payloadLength), payload(payload), crc()
+        seq(seq), dstLength(dstLength), dst(dst), srcLength(srcLength), src(src), payloadLength(payloadLength), crc()
     {
     }
 
     Eth::~Eth(){
-        delete[] payload;
+        //delete[] payload;
     }
 
     void Eth::serialise(uint8_t data[])
@@ -34,10 +34,12 @@ namespace aodv
         i += srcLength;
         serialisers::copyU16(&data[i], payloadLength);
         i += 2;
-        memcpy(&data[i], payload, payloadLength);
-        i += payloadLength;
+        //memcpy(&data[i], payload, payloadLength);
+        for (int j=0; j<payloadLength; j++) {
+            data[i] = payload[j];
+            i += 1;
+        }
         serialisers::copyU32(&data[i], crc);
-        i += 4;
     } // TODO calculate crc
     
     void Eth::deserialise(uint8_t data[])
@@ -61,11 +63,13 @@ namespace aodv
         i += srcLength;
         payloadLength = serialisers::getU16(&data[i]);
         i += 2;
-        payload = new uint8_t[payloadLength];
-        memcpy(payload, &data[i], payloadLength);
+        //payload = new uint8_t[payloadLength];
+        //memcpy(payload, &data[i], payloadLength);
+        for (int j=0; j<payloadLength; j++) {
+            payload.push_back(data[j]);
+        }
         i += payloadLength;
         crc = serialisers::getU32(&data[i]);
-        i += 4;
     }
 
     bool check(uint32_t crc)
