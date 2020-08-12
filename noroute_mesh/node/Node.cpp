@@ -21,8 +21,17 @@ namespace aodv
             eth.src = this->addr;
             this->seq++;
         }
+
         uint16_t length = aodv::ETH_NONVAR_LEN + eth.srcLength + eth.dstLength + eth.payloadLength;
         uint8_t msg[length];
+
+        std::cout << "SENDING" << std::endl
+            << eth.seq << std::endl
+            << eth.dst << std::endl
+            << eth.dstLength << std::endl
+            << eth.src << std::endl
+            << eth.srcLength << std::endl
+            << eth.payloadLength << std::endl;
         eth.serialise(msg);
         std::string s = uint8_to_string(msg, length);
         commsClient->SendTo(s, this->broadcastAddr);
@@ -36,27 +45,39 @@ namespace aodv
         this->string_to_uint8(msg, data);
         eth.deserialise(msg);
 
+        std::cout << "RECVING" << std::endl
+            << eth.seq << std::endl
+            << eth.dst << std::endl
+            << eth.dstLength << std::endl
+            << eth.src << std::endl
+            << eth.srcLength << std::endl
+            << eth.payloadLength << std::endl;
+
         if (eth.src == this->addr) {
+            std::cout << "Ignore packet from myself" << std::endl;
             return tl::nullopt;
         }
         
         if (eth.dst == this->addr) {
+            std::cout << "Packet for me" << std::endl;
             return eth; // return optional object that contains eth.
-            
-        } else {
-            auto search = this->table.find(eth.src);
-            if (search == this->table.end()) {
-                // Packet does not exist in table.
-                this->table[eth.src] = eth.seq;
-                this->send(eth, commsClient, false);
-            } else {
-                if (eth.seq > search->second) {
-                    // Packet is newer than table's packet.
-                    this->table[search->first] = eth.seq;
-                    this->send(eth, commsClient, false);
-                }
-            }
         }
+        // } else {
+        //     auto search = this->table.find(eth.src);
+        //     if (search == this->table.end()) {
+        //         // Packet does not exist in table.
+        //         this->table[eth.src] = eth.seq;
+        //         this->send(eth, commsClient, false);
+        //         std::cout << "Packet not in table" << std::endl;
+        //     } else {
+        //         if (eth.seq > search->second) {
+        //             // Packet is newer than table's packet.
+        //             this->table[search->first] = eth.seq;
+        //             this->send(eth, commsClient, false);
+        //             std::cout << "Packet in table" << std::endl;
+        //         }
+        //     }
+        // }
 
         return tl::nullopt; // return optional object that does not contain a value.
     }
