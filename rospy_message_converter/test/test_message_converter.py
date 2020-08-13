@@ -64,7 +64,7 @@ class TestMessageConverter(unittest.TestCase):
 
     def test_ros_message_with_float32(self):
         from std_msgs.msg import Float32
-        expected_dictionary = { 'data': struct.unpack('<f', '\x7F\x7F\xFF\xFD')[0] }
+        expected_dictionary = { 'data': struct.unpack('<f', b'\x7F\x7F\xFF\xFD')[0] }
         message = Float32(data=expected_dictionary['data'])
         message = serialize_deserialize(message)
         dictionary = message_converter.convert_ros_message_to_dictionary(message)
@@ -72,7 +72,7 @@ class TestMessageConverter(unittest.TestCase):
 
     def test_ros_message_with_float64(self):
         from std_msgs.msg import Float64
-        expected_dictionary = { 'data': struct.unpack('<d', '\x7F\xEF\xFF\xFF\xFF\xFF\xFF\xFD')[0] }
+        expected_dictionary = { 'data': struct.unpack('<d', b'\x7F\xEF\xFF\xFF\xFF\xFF\xFF\xFD')[0] }
         message = Float64(data=expected_dictionary['data'])
         message = serialize_deserialize(message)
         dictionary = message_converter.convert_ros_message_to_dictionary(message)
@@ -115,20 +115,22 @@ class TestMessageConverter(unittest.TestCase):
     def test_ros_message_with_uint8_array(self):
         from rospy_message_converter.msg import Uint8ArrayTestMessage
         from base64 import standard_b64encode
-        expected_data = "".join([chr(i) for i in [97, 98, 99, 100]])
+        expected_data = [97, 98, 99, 100]
         message = Uint8ArrayTestMessage(data=expected_data)
         message = serialize_deserialize(message)
         dictionary = message_converter.convert_ros_message_to_dictionary(message)
-        self.assertEqual(dictionary["data"], standard_b64encode(expected_data))
+        expected_data = standard_b64encode(bytearray(expected_data)).decode('utf-8')
+        self.assertEqual(dictionary["data"], expected_data)
 
     def test_ros_message_with_3uint8_array(self):
         from rospy_message_converter.msg import Uint8Array3TestMessage
         from base64 import standard_b64encode
-        expected_data = "".join([chr(i) for i in [97, 98, 99]])
+        expected_data = [97, 98, 99]
         message = Uint8Array3TestMessage(data=expected_data)
         message = serialize_deserialize(message)
         dictionary = message_converter.convert_ros_message_to_dictionary(message)
-        self.assertEqual(dictionary["data"], standard_b64encode(expected_data))
+        expected_data = standard_b64encode(bytearray(expected_data)).decode('utf-8')
+        self.assertEqual(dictionary["data"], expected_data)
 
     def test_ros_message_with_int16(self):
         from std_msgs.msg import Int16
@@ -240,6 +242,14 @@ class TestMessageConverter(unittest.TestCase):
         expected_message = serialize_deserialize(expected_message)
         self.assertEqual(message, expected_message)
 
+    def test_dictionary_with_uint8_array(self):
+        from rospy_message_converter.msg import Uint8ArrayTestMessage
+        expected_message = Uint8ArrayTestMessage(data=[1, 2, 3, 4])
+        dictionary = {'data': expected_message.data}
+        message = message_converter.convert_dictionary_to_ros_message('rospy_message_converter/Uint8ArrayTestMessage', dictionary)
+        expected_message = serialize_deserialize(expected_message)
+        self.assertEqual(message, expected_message)
+
     def test_dictionary_with_bool(self):
         from std_msgs.msg import Bool
         expected_message = Bool(data = True)
@@ -286,9 +296,46 @@ class TestMessageConverter(unittest.TestCase):
         expected_message = serialize_deserialize(expected_message)
         self.assertEqual(message, expected_message)
 
+    def test_dictionary_with_empty_additional_args_strict_mode(self):
+        from std_msgs.msg import Empty
+        dictionary = {"additional_args": "should raise value error"}
+        with self.assertRaises(ValueError) as context:
+            message_converter.convert_dictionary_to_ros_message('std_msgs/Empty', dictionary)
+        self.assertEqual('''ROS message type "std_msgs/Empty" has no field named "additional_args"''',
+                         context.exception.args[0])
+
+    def test_dictionary_with_empty_additional_args_forgiving(self):
+        from std_msgs.msg import Empty
+        expected_message = Empty()
+        dictionary = {"additional_args": "should be ignored"}
+        message = message_converter.convert_dictionary_to_ros_message('std_msgs/Empty', dictionary, strict_mode=False)
+        expected_message = serialize_deserialize(expected_message)
+        self.assertEqual(message, expected_message)
+
+    def test_dictionary_with_missing_field_unchecked(self):
+        from std_msgs.msg import Bool
+        expected_message = Bool(data=False)
+        dictionary = {}
+        message = message_converter.convert_dictionary_to_ros_message('std_msgs/Bool', dictionary)
+        expected_message = serialize_deserialize(expected_message)
+        self.assertEqual(message, expected_message)
+
+    def test_dictionary_with_missing_field_checked(self):
+        dictionary = {}
+        with self.assertRaises(ValueError) as context:
+            message_converter.convert_dictionary_to_ros_message('std_msgs/Bool', dictionary, check_missing_fields=True)
+        self.assertEqual('''Missing fields "{'data': 'bool'}"''',
+                         context.exception.args[0])
+
+    def test_dictionary_with_wrong_type(self):
+        dictionary = {"data": "should_be_a_bool"}
+        with self.assertRaises(TypeError) as context:
+            message_converter.convert_dictionary_to_ros_message('std_msgs/Bool', dictionary)
+        self.assertEqual("Wrong type: 'should_be_a_bool' must be bool", context.exception.args[0])
+
     def test_dictionary_with_float32(self):
         from std_msgs.msg import Float32
-        expected_message = Float32(data = struct.unpack('<f', '\x7F\x7F\xFF\xFD')[0])
+        expected_message = Float32(data = struct.unpack('<f', b'\x7F\x7F\xFF\xFD')[0])
         dictionary = { 'data': expected_message.data }
         message = message_converter.convert_dictionary_to_ros_message('std_msgs/Float32', dictionary)
         expected_message = serialize_deserialize(expected_message)
@@ -296,7 +343,7 @@ class TestMessageConverter(unittest.TestCase):
 
     def test_dictionary_with_float64(self):
         from std_msgs.msg import Float64
-        expected_message = Float64(data = struct.unpack('<d', '\x7F\xEF\xFF\xFF\xFF\xFF\xFF\xFD')[0])
+        expected_message = Float64(data = struct.unpack('<d', b'\x7F\xEF\xFF\xFF\xFF\xFF\xFF\xFD')[0])
         dictionary = { 'data': expected_message.data }
         message = message_converter.convert_dictionary_to_ros_message('std_msgs/Float64', dictionary)
         expected_message = serialize_deserialize(expected_message)
@@ -413,7 +460,7 @@ class TestMessageConverter(unittest.TestCase):
     def test_dictionary_with_unicode(self):
         from std_msgs.msg import String
         expected_message = String(data = 'Hello')
-        dictionary = { 'data': unicode(expected_message.data) }
+        dictionary = { 'data': u'Hello' }
         message = message_converter.convert_dictionary_to_ros_message('std_msgs/String', dictionary)
         expected_message = serialize_deserialize(expected_message)
         self.assertEqual(message.data,expected_message.data)
@@ -530,8 +577,8 @@ def serialize_deserialize(message):
     to publish this message will throw `SerializationError: field data must be
     of type str`. This method will expose such bugs.
     """
-    from StringIO import StringIO
-    buff = StringIO()
+    from io import BytesIO
+    buff = BytesIO()
     message.serialize(buff)
     result = message.__class__()   # create new instance of same class as message
     result.deserialize(buff.getvalue())

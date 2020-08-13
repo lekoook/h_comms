@@ -63,7 +63,7 @@ namespace aodv
          * @brief payload
          *
          */
-        std::vector<uint8_t> payload;
+        std::string payload;
 
         /**
          * @brief Construct a new object with all members zero initialised.

@@ -35,10 +35,11 @@ namespace aodv
         serialisers::copyU16(&data[i], payloadLength);
         i += 2;
         //memcpy(&data[i], payload, payloadLength);
-        for (int j=0; j<payloadLength; j++) {
-            data[i] = payload[j];
-            i += 1;
-        }
+        // for (int j=0; j<payloadLength; j++) {
+        //     data[i] = payload[j];
+        //     i += 1;
+        // }
+        memcpy(&data[i], reinterpret_cast<const uint8_t*>(&payload[0]), payloadLength);
         serialisers::copyU32(&data[i], crc);
     } // TODO calculate crc
     
@@ -65,10 +66,14 @@ namespace aodv
         i += 2;
         //payload = new uint8_t[payloadLength];
         //memcpy(payload, &data[i], payloadLength);
+        // for (int j=0; j<payloadLength; j++) {
+        //     payload.push_back(data[j]);
+        // }
+        // i += payloadLength;
+        payload = std::string(payloadLength, 1);
         for (int j=0; j<payloadLength; j++) {
-            payload.push_back(data[j]);
+            payload[j] = data[i+j];
         }
-        i += payloadLength;
         crc = serialisers::getU32(&data[i]);
     }
 

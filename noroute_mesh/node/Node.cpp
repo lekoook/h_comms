@@ -31,7 +31,8 @@ namespace aodv
             << eth.dstLength << std::endl
             << eth.src << std::endl
             << eth.srcLength << std::endl
-            << eth.payloadLength << std::endl;
+            << eth.payloadLength << std::endl
+            << eth.payload << std::endl;
         eth.serialise(msg);
         std::string s = uint8_to_string(msg, length);
         commsClient->SendTo(s, this->broadcastAddr);
@@ -51,7 +52,8 @@ namespace aodv
             << eth.dstLength << std::endl
             << eth.src << std::endl
             << eth.srcLength << std::endl
-            << eth.payloadLength << std::endl;
+            << eth.payloadLength << std::endl
+            << eth.payload << std::endl;
 
         if (eth.src == this->addr) {
             std::cout << "Ignore packet from myself" << std::endl;
