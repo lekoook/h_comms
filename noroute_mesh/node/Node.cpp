@@ -26,11 +26,11 @@ namespace aodv
         uint8_t msg[length];
 
         std::cout << "SENDING" << std::endl
-            << eth.seq << std::endl
-            << eth.dst << std::endl
-            << eth.dstLength << std::endl
-            << eth.src << std::endl
-            << eth.srcLength << std::endl
+            // << eth.seq << std::endl
+            // << eth.dst << std::endl
+            // << eth.dstLength << std::endl
+            // << eth.src << std::endl
+            // << eth.srcLength << std::endl
             << eth.payloadLength << std::endl
             << eth.payload << std::endl;
         eth.serialise(msg);
@@ -47,11 +47,11 @@ namespace aodv
         eth.deserialise(msg);
 
         std::cout << "RECVING" << std::endl
-            << eth.seq << std::endl
-            << eth.dst << std::endl
-            << eth.dstLength << std::endl
-            << eth.src << std::endl
-            << eth.srcLength << std::endl
+            // << eth.seq << std::endl
+            // << eth.dst << std::endl
+            // << eth.dstLength << std::endl
+            // << eth.src << std::endl
+            // << eth.srcLength << std::endl
             << eth.payloadLength << std::endl
             << eth.payload << std::endl;
 

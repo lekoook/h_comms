@@ -34,8 +34,6 @@ public:
     
     aodv::Node *node;
     subt::CommsClient *cc;
-    std::vector<uint8_t> payload;
-    bool payload_flag = false;
 
     nomesh(std::string robotName, uint32_t robotId) {
         nomesh::name = robotName;
@@ -75,11 +73,11 @@ public:
         if (e){
             std::cout << "Source: " << e.value().src << std::endl;
             std::cout << "HANDLE PACKET" << std::endl
-                << e.value().seq << std::endl
-                << e.value().dst << std::endl
-                << e.value().dstLength << std::endl
-                << e.value().src << std::endl
-                << e.value().srcLength << std::endl
+                // << e.value().seq << std::endl
+                // << e.value().dst << std::endl
+                // << e.value().dstLength << std::endl
+                // << e.value().src << std::endl
+                // << e.value().srcLength << std::endl
                 << e.value().payloadLength << std::endl
                 << e.value().payload << std::endl;
 
