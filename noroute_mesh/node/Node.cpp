@@ -22,12 +22,14 @@ namespace aodv
             this->seq++;
         }
 
+        const uint16_t inputPayloadLength = eth.payloadLength;
+
         // Where seg is a segment, aodv::MAX_MESSAGE_SIZE/2 == aodv::ETH_NONVAR_LEN + seg.srcLength + seg.dstLength + seg.payloadLength
         // Where eth is a packet, there are sizeof(typeof(eth.segSeqMax)) segments.
         // So the maximum eth.payloadLength must be:
         const uint16_t maxPayloadLength = aodv::MAX_MESSAGE_SIZE/2 - (aodv::ETH_NONVAR_LEN + eth.srcLength + eth.dstLength);
-        assert (eth.payloadLength <= sizeof(uint32_t) * maxPayloadLength);
-        eth.segSeqMax = (eth.payloadLength / maxPayloadLength) + ((eth.payloadLength % maxPayloadLength) != 0);
+        uint32_t maxSegments = (eth.payloadLength / maxPayloadLength) + ((eth.payloadLength % maxPayloadLength) != 0); 
+        eth.segSeqMax = maxSegments;
 
         // Overwrite seq and src, because this node is originating eth.
         eth.seq = this->seq;
@@ -35,38 +37,36 @@ namespace aodv
         this->seq++;
 
         // Split packet into segments.
-        int segSeq=0, p=0;
-        for (; p<eth.payloadLength; segSeq++,p+=maxPayloadLength) {
+        int pos = 0;
+        for (int segSeq = 0; segSeq < maxSegments; segSeq++)
+        {
             aodv::Eth seg(eth);
-            seg.payloadLength = maxPayloadLength;
-            seg.payload = eth.payload.substr(p, p + seg.payloadLength);
             seg.segSeq = segSeq;
 
-            uint16_t length = aodv::ETH_NONVAR_LEN + seg.srcLength + seg.dstLength + seg.payloadLength;
-            uint8_t msg[length];
+            // Figure out the length of this segment.
+            if (maxSegments == 1) // If we only have one segment, just use the input length.
+            {
+                seg.payloadLength = inputPayloadLength;
+            }
+            else if (segSeq == maxSegments - 1) // This is the last segment.
+            {
+                seg.payloadLength = inputPayloadLength - (maxPayloadLength * (maxSegments - 1));
+            }
+            else
+            {
+                seg.payloadLength = maxPayloadLength;
+            }
+
+            // Set the payload for this segment.
+            seg.payload = eth.payload.substr(pos, pos + seg.payloadLength);
+            pos += seg.payloadLength;
+
+            // Send segment.
+            uint16_t segLen = aodv::ETH_NONVAR_LEN + seg.srcLength + seg.dstLength + seg.payloadLength;
+            uint8_t msg[segLen] = { 0 };
             seg.serialise(msg);
-            commsClient->SendTo(this->uint8_to_string(msg, length), this->broadcastAddr);
+            commsClient->SendTo(this->uint8_to_string(msg, segLen), this->broadcastAddr);
         }
-
-        aodv::Eth seg(eth);
-        seg.payloadLength = eth.payloadLength - (p - maxPayloadLength);
-        seg.payload = eth.payload.substr(p - maxPayloadLength, p - maxPayloadLength + seg.payloadLength);
-        seg.segSeq = segSeq;
-
-        uint16_t length = aodv::ETH_NONVAR_LEN + eth.srcLength + eth.dstLength + eth.payloadLength;
-        uint8_t msg[length];
-
-        std::cout << "SENDING" << std::endl
-            // << eth.seq << std::endl
-            // << eth.dst << std::endl
-            // << eth.dstLength << std::endl
-            // << eth.src << std::endl
-            // << eth.srcLength << std::endl
-            << eth.payloadLength << std::endl
-            << eth.payload << std::endl;
-        eth.serialise(msg);
-        std::string s = uint8_to_string(msg, length);
-        commsClient->SendTo(s, this->broadcastAddr);
     }
 
     tl::optional<aodv::Eth> Node::receive(std::string data, subt::CommsClient* commsClient)
@@ -178,7 +178,7 @@ namespace aodv
          * A uint8_t has bits denoted as: abcdefgh.
          */
         char c;
-        uint8_t s[l*2 + 1]; // + 1 for '\0'
+        uint8_t s[l*2]; // + 1 for '\0'
         std::string::size_type i=0;
         for (; i<l; i++) {
             c = 0b10101010u;
@@ -194,8 +194,7 @@ namespace aodv
             c |= b[i] & 1;
             s[2*i+1] = c;
         }
-        s[2*i] = '\0';
-        return std::string((char*)s,l*2+1);
+        return std::string((char*)s,l*2);
     }
 
     void Node::string_to_uint8(uint8_t b[], std::string s)

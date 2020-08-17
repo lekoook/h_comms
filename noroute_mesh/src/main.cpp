@@ -127,7 +127,7 @@ public:
         {
             e.payload = srv.response.str.data;
             e.payloadLength = e.payload.size();
-            std::cout << nomesh::name << "Sendmap called" << std::endl;
+            std::cout << nomesh::name << "Sendmap called with payload of " << e.payloadLength << " bytes" << std::endl;
             nomesh::node->send(e, this->cc, true);
             return true;
         }
