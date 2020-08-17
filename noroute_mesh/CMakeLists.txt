@@ -23,6 +23,8 @@ add_service_files(
   FILES
   send_map.srv
   neighbour.srv
+  string_to_map.srv
+  map_to_string.srv
 )
 
 ## Generate added messages and services with any dependencies listed here

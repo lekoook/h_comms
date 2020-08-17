@@ -12,11 +12,15 @@
 // services
 #include "noroute_mesh/send_map.h"
 #include "noroute_mesh/neighbour.h"
+#include "noroute_mesh/map_to_string.h"
+#include "noroute_mesh/string_to_map.h"
 
 #include "nav_msgs/OccupancyGrid.h"
 #include "subt_communication_broker/subt_communication_client.h"
 
 void handlePacket2(const std::string &_srcAddress, const std::string &_dstAddress, const uint32_t _dstPort, const std::string &_data);
+void string_to_uint8(uint8_t b[], std::string s);
+std::string uint8_to_string(uint8_t b[], std::string::size_type l);
 
 class nomesh {
 public:
@@ -25,12 +29,11 @@ public:
     ros::NodeHandle nh;
     ros::Publisher pub;
     ros::ServiceServer map_service, neighbour_service, discovery_service;
+    ros::ServiceClient map_to_string_client, string_to_map_client;
     nav_msgs::OccupancyGrid grid;
     
     aodv::Node *node;
     subt::CommsClient *cc;
-    std::vector<uint8_t> payload;
-    bool payload_flag = false;
 
     nomesh(std::string robotName, uint32_t robotId) {
         nomesh::name = robotName;
@@ -48,12 +51,13 @@ public:
     void start_server(){
         map_service = nh.advertiseService(nomesh::name + "/send_map",&nomesh::sendMap,this);
         neighbour_service = nh.advertiseService(nomesh::name + "/get_neighbour",&nomesh::getNeighbour,this);
-        pub = nh.advertise<nav_msgs::OccupancyGrid>(nomesh::name + "/comms_publisher",1);
+        std::cout << "Services advertised" << std::endl;
 
-        std::cout << cc->Host() << std::endl;
-        std::string message = nomesh::name + ": Service server is up.";
-        ROS_INFO("Service server is up");
-        //nomesh::cc->Bind(&handlePacket2, this->name);
+        map_to_string_client = nh.serviceClient<noroute_mesh::map_to_string>("map_to_string");
+        string_to_map_client = nh.serviceClient<noroute_mesh::string_to_map>("string_to_map");
+        std::cout << "Clients subscribed" << std::endl;
+
+        pub = nh.advertise<nav_msgs::OccupancyGrid>(nomesh::name + "/comms_publisher",1);
         nomesh::cc->Bind(std::bind(&nomesh::handlePacket,this, std::placeholders::_1, std::placeholders::_2, std::placeholders::_3, std::placeholders::_4), this->name, 4100);
     }
     
@@ -69,27 +73,40 @@ public:
         if (e){
             std::cout << "Source: " << e.value().src << std::endl;
             std::cout << "HANDLE PACKET" << std::endl
-                << e.value().seq << std::endl
-                << e.value().dst << std::endl
-                << e.value().dstLength << std::endl
-                << e.value().src << std::endl
-                << e.value().srcLength << std::endl
+                // << e.value().seq << std::endl
+                // << e.value().dst << std::endl
+                // << e.value().dstLength << std::endl
+                // << e.value().src << std::endl
+                // << e.value().srcLength << std::endl
                 << e.value().payloadLength << std::endl
-                << e.value().payload.size() << std::endl;
-            nomesh::payload = e.value().payload;
-            nomesh::payload_flag = true;
+                << e.value().payload << std::endl;
+
+            noroute_mesh::string_to_map srv;
+            srv.request.str.data = e.value().payload;
+            if (string_to_map_client.call(srv))
+            {
+                std::cout << "Successfully converted string to message" << std::endl;
+                pub.publish(srv.response.grid);
+            }
+            else
+            {
+                ROS_ERROR("Failed to call service: string_to_map");
+            }
+            // nomesh::payload = e.value().payload;
+            // nomesh::payload_flag = true;
 
             // uint8_t buffer[e.value().payloadLength];
             
-            boost::shared_array<uint8_t> buffer(new uint8_t[e.value().payloadLength]);
-            for (int j=0; j<e.value().payloadLength; j++) {
-                buffer[j] = e.value().payload[j];
-            }
-
-            ros::serialization::IStream stream(buffer.get(), e.value().payloadLength);
-            ros::serialization::deserialize(stream, nomesh::grid);
-            ros::serialization::Serializer<nav_msgs::OccupancyGrid>::read(stream, nomesh::grid);
-            pub.publish(nomesh::grid);
+            // boost::shared_array<uint8_t> buffer(new uint8_t[e.value().payloadLength]);
+            // for (int j=0; j<e.value().payloadLength; j++) {
+            //     buffer[j] = e.value().payload[j];
+            // }
+            // uint8_t buffer[payload.size()/2];
+            // string_to_uint8(buffer, e.value().payload);
+            // ros::serialization::IStream stream(buffer,payload.size()/2);
+            // ros::serialization::deserialize(stream, nomesh::grid);
+            // ros::serialization::Serializer<nav_msgs::OccupancyGrid>::read(stream, nomesh::grid);
+            // pub.publish(nomesh::grid);
         }
         // If the message is for this robot, publish
         // peek at the first byte to identify type of ros message
@@ -98,34 +115,27 @@ public:
 
     bool sendMap(noroute_mesh::send_map::Request &req, noroute_mesh::send_map::Response &res){
         aodv::Eth e;
-        // std::cout << nomesh::name << "Sendmap called" << std::endl;
-        // cc->SendTo("Hello","X2");
+        
         e.dstLength = req.dest.length();
         e.dst = req.dest;
         e.srcLength = nomesh::name.length();
         e.src = nomesh::name;
 
-        uint16_t serial_size = ros::serialization::serializationLength(req.grid);
-        uint8_t *buffer = new uint8_t[serial_size];
-        ros::serialization::OStream stream(buffer, serial_size);
-        ros::serialization::serialize(stream, req.grid);
-
-        std::cout << "Serial size: " << serial_size << std::endl;
-        e.payloadLength = serial_size;
-        //std::cout << "Array size: " << sizeof(buffer) << std::endl;
-        std::vector<uint8_t> p(&buffer[0],&buffer[serial_size]);
-        std::cout << "Vector size: " << p.size() << std::endl;
-        e.payload = p;
-
-        nav_msgs::OccupancyGrid grid;
-        ros::serialization::IStream stream2(&(e.payload)[0], e.payloadLength);
-        ros::serialization::deserialize(stream2, grid);
-
-        pub.publish(grid);
-
-        std::cout << nomesh::name << "Sendmap called" << std::endl;
-        nomesh::node->send(e, this->cc, true);
-        return true;
+        noroute_mesh::map_to_string srv;
+        srv.request.grid = req.grid;
+        if (map_to_string_client.call(srv))
+        {
+            e.payload = srv.response.str.data;
+            e.payloadLength = e.payload.size();
+            std::cout << nomesh::name << "Sendmap called" << std::endl;
+            nomesh::node->send(e, this->cc, true);
+            return true;
+        }
+        else
+        {
+            ROS_ERROR("Failed to call service: map_to_string");
+            return false;
+        }
     }
 
     bool getNeighbour(noroute_mesh::neighbour::Request &req, noroute_mesh::neighbour::Response &res){
@@ -189,25 +199,38 @@ int main(int argc, char** argv)
     // }
 }
 
-void handlePacket2(const std::string &_srcAddress, const std::string &_dstAddress, const uint32_t _dstPort, const std::string &_data){
-        // Deserialise the received data
-        ROS_INFO("[SEND_MAP] Response received.");
-        std::cout << "SourceAddress: " << _srcAddress << std::endl
-            << "DestAddress: "<<_dstAddress << std::endl
-            << "DestPort: "<< _dstPort << std::endl;
-        
-        // tl::optional<aodv::Eth> e = nomesh::node->receive(_data, cc);
+std::string uint8_to_string(uint8_t b[], std::string::size_type l){
+    /*
+    * A uint8_t has bits denoted as: abcdefgh.
+    */
+    char c;
+    uint8_t s[l*2 + 1]; // + 1 for '\0'
+    std::string::size_type i=0;
+    for (; i<l; i++) {
+        c = 0b10101010u;
+        c |= (b[i] >> 7) << 6;
+        c |= ((b[i] >> 6) & 1) << 4;
+        c |= ((b[i] >> 5) & 1) << 2;
+        c |= (b[i] >> 4) & 1;
+        s[2*i] = c;
+        c = 0b10101010u;
+        c |= ((b[i] >> 3) & 1) << 6;
+        c |= ((b[i] >> 2) & 1) << 4;
+        c |= ((b[i] >> 1) & 1) << 2;
+        c |= b[i] & 1;
+        s[2*i+1] = c;
+    }
+    s[2*i] = '\0';
+    return std::string((char*)s,l*2);
+}
 
-        // if (e){
-        //     std::cout << "Source: " << e.value().src << std::endl;
-        // }
-        // If the message is for this robot, publish
-        // peek at the first byte to identify type of ros message
-
-        // uint32_t serial_size = ros::serialization::serializationLength(my_value);
-        // boost::shared_array<uint8_t> buffer(new uint8_t[serial_size]);
-        // ser::IStream stream(buffer.get(), serial_size);
-        // ser::deserialize(stream, my_value);
-
-        // pub.publish(recv.map)
+void string_to_uint8(uint8_t b[], std::string s)
+{
+    /*
+        * Denotation of bits is as in the body of uint8_to_string(uint8_t b[], std::string::size_type l).
+        */
+    for (std::string::size_type i=0; i<s.size(); i+=2) {
+        b[i/2] = ((s[i] & 0b01000000u) << 1) | ((s[i] & 0b00010000u) << 2) | ((s[i] & 0b00000100u) << 3) | ((s[i] & 1) << 4);
+        b[i/2] |= ((s[i+1] & 0b01000000u) >> 3) | ((s[i+1] & 0b00010000u) >> 2) | ((s[i+1] & 0b00000100u) >> 1) | (s[i+1] & 1);
+        }
     }
