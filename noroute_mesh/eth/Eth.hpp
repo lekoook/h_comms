@@ -11,7 +11,7 @@ namespace aodv
      * @brief Byte length of the non-payload part of a Eth.
      * 
      */
-    const uint8_t ETH_NONVAR_LEN = 21;
+    const uint8_t ETH_NONVAR_LEN = 22;
 
     class Eth
     {
