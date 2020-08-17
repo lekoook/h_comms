@@ -35,7 +35,7 @@ namespace aodv
         this->seq++;
 
         // Split packet into segments.
-        int segSeq=0, p=maxPayloadLength;
+        int segSeq=0, p=0;
         for (; p<eth.payloadLength; segSeq++,p+=maxPayloadLength) {
             aodv::Eth seg(eth);
             seg.payloadLength = maxPayloadLength;
