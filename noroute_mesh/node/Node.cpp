@@ -44,6 +44,14 @@ namespace aodv
 
             uint16_t length = aodv::ETH_NONVAR_LEN + seg.srcLength + seg.dstLength + seg.payloadLength;
             uint8_t msg[length];
+            std::cout << "SENDING" << std::endl
+                // << seg.seq << std::endl
+                // << seg.dst << std::endl
+                // << seg.dstLength << std::endl
+                // << seg.src << std::endl
+                // << seg.srcLength << std::endl
+                << seg.payloadLength << std::endl
+                << seg.payload << std::endl;
             seg.serialise(msg);
             std::cout << uint8_to_string(msg, length);
         }
