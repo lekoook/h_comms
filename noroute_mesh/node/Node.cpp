@@ -53,7 +53,6 @@ namespace aodv
                 << seg.payloadLength << std::endl
                 << seg.payload << std::endl;
             seg.serialise(msg);
-            std::cout << uint8_to_string(msg, length);
         }
 
         aodv::Eth seg(eth);
