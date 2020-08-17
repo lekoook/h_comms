@@ -22,10 +22,10 @@ namespace aodv
             this->seq++;
         }
 
-        // Where seg is a segment, aodv::MAX_MESSAGE_SIZE == aodv::ETH_NONVAR_LEN + seg.srcLength + seg.dstLength + seg.payloadLength
+        // Where seg is a segment, aodv::MAX_MESSAGE_SIZE/2 == aodv::ETH_NONVAR_LEN + seg.srcLength + seg.dstLength + seg.payloadLength
         // Where eth is a packet, there are sizeof(typeof(eth.segSeqMax)) segments.
         // So the maximum eth.payloadLength must be:
-        const uint16_t maxPayloadLength = aodv::MAX_MESSAGE_SIZE - (aodv::ETH_NONVAR_LEN + eth.srcLength + eth.dstLength);
+        const uint16_t maxPayloadLength = aodv::MAX_MESSAGE_SIZE/2 - (aodv::ETH_NONVAR_LEN + eth.srcLength + eth.dstLength);
         assert (eth.payloadLength <= sizeof(uint32_t) * maxPayloadLength);
         eth.segSeqMax = (eth.payloadLength / maxPayloadLength) + ((eth.payloadLength % maxPayloadLength) != 0);
 
