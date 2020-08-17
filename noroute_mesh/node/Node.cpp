@@ -76,17 +76,7 @@ namespace aodv
         this->string_to_uint8(msg, data);
         seg.deserialise(msg);
 
-        std::cout << "RECVING" << std::endl
-            // << seg.seq << std::endl
-            // << seg.dst << std::endl
-            // << seg.dstlength << std::endl
-            // << seg.src << std::endl
-            // << seg.srclength << std::endl
-            << seg.payloadLength << std::endl
-            << seg.payload << std::endl;
-
         if (seg.src == this->addr) {
-            std::cout << "ignore packet from myself" << std::endl;
             return tl::nullopt;
         }
 
@@ -110,19 +100,10 @@ namespace aodv
 
                     if (flag) {
                         // All segments have been received, perform desegmentation.
-                        // aodv::Eth seg;
                         uint64_t payloadLengthTotal = 0;
                         for (aodv::Eth seg : tableDesegment[seg.seq]) {
                             payloadLengthTotal += seg.payloadLength;
                         }
-
-
-                        // Copy all the segments payload into one final payload according to order.
-                        // uint8_t* payload = (uint8_t*)malloc(payloadLengthTotal);
-                        // memcpy(payload, tableDesegment[seg.seq][0].payload, tableDesegment[seg.seq][0].payloadLength);
-                        // for (uint32_t i=1; i<seg.segSeqMax; i++) {
-                        //     memcpy(payload + tableDesegment[seg.seq][i-1].payloadLength, tableDesegment[seg.seq][i].payload, tableDesegment[seg.seq][i].payloadLength);
-                        // }
 
                         std::string payload = "";
                         payload.reserve(payloadLengthTotal);

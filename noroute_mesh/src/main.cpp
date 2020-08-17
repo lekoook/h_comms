@@ -51,11 +51,11 @@ public:
     void start_server(){
         map_service = nh.advertiseService(nomesh::name + "/send_map",&nomesh::sendMap,this);
         neighbour_service = nh.advertiseService(nomesh::name + "/get_neighbour",&nomesh::getNeighbour,this);
-        std::cout << "Services advertised" << std::endl;
+        ROS_INFO("Send map and neighbour service advertised");
 
         map_to_string_client = nh.serviceClient<noroute_mesh::map_to_string>("map_to_string");
         string_to_map_client = nh.serviceClient<noroute_mesh::string_to_map>("string_to_map");
-        std::cout << "Clients subscribed" << std::endl;
+        ROS_INFO("ROS messages conversion service subscribed");
 
         pub = nh.advertise<nav_msgs::OccupancyGrid>(nomesh::name + "/comms_publisher",1);
         nomesh::cc->Bind(std::bind(&nomesh::handlePacket,this, std::placeholders::_1, std::placeholders::_2, std::placeholders::_3, std::placeholders::_4), this->name, 4100);
@@ -63,54 +63,22 @@ public:
     
     void handlePacket(const std::string &_srcAddress, const std::string &_dstAddress, const uint32_t _dstPort, const std::string &_data){
         // Deserialise the received data
-        std::cout << "SourceAddress: " << _srcAddress << std::endl
-            << "DestAddress: "<<_dstAddress << std::endl
-            << "DestPort: "<< _dstPort << std::endl;
-        ROS_INFO("[SEND_MAP] Response received.");
-        
         tl::optional<aodv::Eth> e = nomesh::node->receive(_data, cc);
-
-        if (e){
-            std::cout << "Source: " << e.value().src << std::endl;
-            std::cout << "HANDLE PACKET" << std::endl
-                // << e.value().seq << std::endl
-                // << e.value().dst << std::endl
-                // << e.value().dstLength << std::endl
-                // << e.value().src << std::endl
-                // << e.value().srcLength << std::endl
-                << e.value().payloadLength << std::endl
-                << e.value().payload << std::endl;
-
+        if (e)
+        {
+            ROS_INFO("Received map from source %s", e.value().src.c_str());
             noroute_mesh::string_to_map srv;
             srv.request.str.data = e.value().payload;
             if (string_to_map_client.call(srv))
             {
-                std::cout << "Successfully converted string to message" << std::endl;
                 pub.publish(srv.response.grid);
             }
             else
             {
                 ROS_ERROR("Failed to call service: string_to_map");
             }
-            // nomesh::payload = e.value().payload;
-            // nomesh::payload_flag = true;
-
-            // uint8_t buffer[e.value().payloadLength];
-            
-            // boost::shared_array<uint8_t> buffer(new uint8_t[e.value().payloadLength]);
-            // for (int j=0; j<e.value().payloadLength; j++) {
-            //     buffer[j] = e.value().payload[j];
-            // }
-            // uint8_t buffer[payload.size()/2];
-            // string_to_uint8(buffer, e.value().payload);
-            // ros::serialization::IStream stream(buffer,payload.size()/2);
-            // ros::serialization::deserialize(stream, nomesh::grid);
-            // ros::serialization::Serializer<nav_msgs::OccupancyGrid>::read(stream, nomesh::grid);
-            // pub.publish(nomesh::grid);
+           
         }
-        // If the message is for this robot, publish
-        // peek at the first byte to identify type of ros message
-        
     }
 
     bool sendMap(noroute_mesh::send_map::Request &req, noroute_mesh::send_map::Response &res){
@@ -127,8 +95,8 @@ public:
         {
             e.payload = srv.response.str.data;
             e.payloadLength = e.payload.size();
-            std::cout << nomesh::name << "Sendmap called with payload of " << e.payloadLength << " bytes" << std::endl;
             nomesh::node->send(e, this->cc, true);
+            ROS_INFO("Sent serialised payload of size %u bytes", e.payloadLength);
             return true;
         }
         else
