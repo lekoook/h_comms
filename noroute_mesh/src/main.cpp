@@ -18,10 +18,6 @@
 #include "nav_msgs/OccupancyGrid.h"
 #include "subt_communication_broker/subt_communication_client.h"
 
-void handlePacket2(const std::string &_srcAddress, const std::string &_dstAddress, const uint32_t _dstPort, const std::string &_data);
-void string_to_uint8(uint8_t b[], std::string s);
-std::string uint8_to_string(uint8_t b[], std::string::size_type l);
-
 class nomesh {
 public:
 
@@ -157,49 +153,4 @@ int main(int argc, char** argv)
     ros::init(argc, argv, robotName + "_nomesh_API", ros::init_options::AnonymousName);
     nomesh robot(robotName, robotId);
     ros::spin();
-    // nav_msgs::OccupancyGrid grid;
-    // while (ros::ok()){
-    //     if (robot.payload_flag){
-    //         ros::serialization::IStream stream(&robot.payload[0], robot.payload.size());
-    //         ros::serialization::deserialize(stream,grid);
-    //         robot.payload_flag = false;
-    //     }
-    //     ros::spinOnce();
-    // }
 }
-
-std::string uint8_to_string(uint8_t b[], std::string::size_type l){
-    /*
-    * A uint8_t has bits denoted as: abcdefgh.
-    */
-    char c;
-    uint8_t s[l*2 + 1]; // + 1 for '\0'
-    std::string::size_type i=0;
-    for (; i<l; i++) {
-        c = 0b10101010u;
-        c |= (b[i] >> 7) << 6;
-        c |= ((b[i] >> 6) & 1) << 4;
-        c |= ((b[i] >> 5) & 1) << 2;
-        c |= (b[i] >> 4) & 1;
-        s[2*i] = c;
-        c = 0b10101010u;
-        c |= ((b[i] >> 3) & 1) << 6;
-        c |= ((b[i] >> 2) & 1) << 4;
-        c |= ((b[i] >> 1) & 1) << 2;
-        c |= b[i] & 1;
-        s[2*i+1] = c;
-    }
-    s[2*i] = '\0';
-    return std::string((char*)s,l*2);
-}
-
-void string_to_uint8(uint8_t b[], std::string s)
-{
-    /*
-        * Denotation of bits is as in the body of uint8_to_string(uint8_t b[], std::string::size_type l).
-        */
-    for (std::string::size_type i=0; i<s.size(); i+=2) {
-        b[i/2] = ((s[i] & 0b01000000u) << 1) | ((s[i] & 0b00010000u) << 2) | ((s[i] & 0b00000100u) << 3) | ((s[i] & 1) << 4);
-        b[i/2] |= ((s[i+1] & 0b01000000u) >> 3) | ((s[i+1] & 0b00010000u) >> 2) | ((s[i+1] & 0b00000100u) >> 1) | (s[i+1] & 1);
-        }
-    }
