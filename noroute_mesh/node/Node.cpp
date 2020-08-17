@@ -65,14 +65,14 @@ namespace aodv
         uint8_t msg[length];
 
         std::cout << "SENDING" << std::endl
-            // << eth.seq << std::endl
-            // << eth.dst << std::endl
-            // << eth.dstLength << std::endl
-            // << eth.src << std::endl
-            // << eth.srcLength << std::endl
-            << eth.payloadLength << std::endl
-            << eth.payload << std::endl;
-        eth.serialise(msg);
+            // << seg.seq << std::endl
+            // << seg.dst << std::endl
+            // << seg.dstLength << std::endl
+            // << seg.src << std::endl
+            // << seg.srcLength << std::endl
+            << seg.payloadLength << std::endl
+            << seg.payload << std::endl;
+        seg.serialise(msg);
         return uint8_to_string(msg, length);
     }
 
