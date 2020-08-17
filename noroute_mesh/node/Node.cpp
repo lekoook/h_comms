@@ -46,7 +46,7 @@ namespace aodv
             uint16_t length = aodv::ETH_NONPAYLOAD_LEN + seg.payloadLength;
             uint8_t msg[length];
             seg.serialise(msg);
-            send_link(this->uint8_to_string(msg, length), this->broadcastAddr);
+            commsClient->SendTo(this->uint8_to_string(msg, length), this->broadcastAddr);
         }
 
         aodv::Eth seg(eth);
@@ -138,7 +138,7 @@ namespace aodv
                 this->tableAddr[seg.src] = std::unordered_map<uint32_t, std::vector<bool>>();
                 this->tableAddr[seg.src][seg.seq] = std::vector<bool>(seg.segSeqMax);
                 this->tableAddr[seg.src][seg.seq][seg.segSeq] = true;
-                this->send(seg, send_link);
+                this->send(seg, commsClient, false);
 
             } else {
                 std::unordered_map<uint32_t, std::vector<bool>> tableSeq = search->second;
@@ -147,15 +147,14 @@ namespace aodv
                     // No segments from this sequence number exist in tableSeq.
                     tableSeq[seg.seq] = std::vector<bool>(seg.segSeqMax);
                     tableSeq[seg.seq][seg.segSeq] = true;
-                    this->send(seg, send_link);
+                    this->send(seg, commsClient, false);
 
                 } else {
                     if (!tableSeq[seg.seq][seg.segSeq]) {
                         // Segment was not already forwarded.
                         tableSeq[seg.seq][seg.segSeq] = true;
-                        this->send(seg, send_link);
+                        this->send(seg, commsClient, false);
                     }
-
                 }
             }
         }
