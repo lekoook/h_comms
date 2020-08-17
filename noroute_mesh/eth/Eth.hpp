@@ -12,6 +12,7 @@ namespace aodv
      * 
      */
     const uint8_t ETH_NONVAR_LEN = 21;
+    const uint8_t ETH_NONPAYLOAD_LEN = 9;
 
     class Eth
     {

@@ -22,8 +22,6 @@ namespace aodv
             this->seq++;
         }
 
-        uint16_t length = aodv::ETH_NONVAR_LEN + eth.srcLength + eth.dstLength + eth.payloadLength;
-
         // Where seg is a segment, aodv::MAX_MESSAGE_SIZE == aodv::ETH_NONVAR_LEN + seg.payloadLength
         // Where eth is a packet, there are sizeof(typeof(eth.segSeqMax)) segments.
         // So the maximum eth.payloadLength must be:
@@ -82,7 +80,7 @@ namespace aodv
             // << seg.dstlength << std::endl
             // << seg.src << std::endl
             // << seg.srclength << std::endl
-            << seg.payloadlength << std::endl
+            << seg.payloadLength << std::endl
             << seg.payload << std::endl;
 
         if (seg.src == this->addr) {
@@ -110,15 +108,25 @@ namespace aodv
 
                     if (flag) {
                         // All segments have been received, perform desegmentation.
-                        aodv::Eth seg;
-                        uint64_t payloadLengthTotal;
+                        // aodv::Eth seg;
+                        uint64_t payloadLengthTotal = 0;
                         for (aodv::Eth seg : tableDesegment[seg.seq]) {
                             payloadLengthTotal += seg.payloadLength;
                         }
-                        uint8_t* payload = (uint8_t*)malloc(payloadLengthTotal);
-                        memcpy(payload, tableDesegment[seg.seq][0].payload, tableDesegment[seg.seq][0].payloadLength);
-                        for (uint32_t i=1; i<seg.segSeqMax; i++) {
-                            memcpy(payload + tableDesegment[seg.seq][i-1].payloadLength, tableDesegment[seg.seq][i].payload, tableDesegment[seg.seq][i].payloadLength);
+
+
+                        // Copy all the segments payload into one final payload according to order.
+                        // uint8_t* payload = (uint8_t*)malloc(payloadLengthTotal);
+                        // memcpy(payload, tableDesegment[seg.seq][0].payload, tableDesegment[seg.seq][0].payloadLength);
+                        // for (uint32_t i=1; i<seg.segSeqMax; i++) {
+                        //     memcpy(payload + tableDesegment[seg.seq][i-1].payloadLength, tableDesegment[seg.seq][i].payload, tableDesegment[seg.seq][i].payloadLength);
+                        // }
+
+                        std::string payload = "";
+                        payload.reserve(payloadLengthTotal);
+                        for (int i = 0; i < seg.segSeqMax; i++)
+                        {
+                            payload += tableDesegment[seg.seq][i].payload;
                         }
 
                         // Packet must consist of at least one segment. Copy fields of first segment.
