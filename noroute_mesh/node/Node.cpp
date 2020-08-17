@@ -50,7 +50,7 @@ namespace aodv
 
         aodv::Eth seg(eth);
         seg.payloadLength = eth.payloadLength - (p - maxPayloadLength);
-        seg.payload = eth.payload.substr(p, p + seg.payloadLength);
+        seg.payload = eth.payload.substr(p - seg.payloadLength, p);
         seg.segSeq = segSeq;
 
         uint16_t length = aodv::ETH_NONVAR_LEN + eth.srcLength + eth.dstLength + eth.payloadLength;
