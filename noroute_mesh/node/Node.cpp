@@ -188,7 +188,7 @@ namespace aodv
          * A uint8_t has bits denoted as: abcdefgh.
          */
         char c;
-        uint8_t s[l*2 + 1]; // + 1 for '\0'
+        uint8_t s[l*2];
         std::string::size_type i=0;
         for (; i<l; i++) {
             c = 0b10101010u;
@@ -204,8 +204,7 @@ namespace aodv
             c |= b[i] & 1;
             s[2*i+1] = c;
         }
-        s[2*i] = '\0';
-        return std::string((char*)s,l*2+1);
+        return std::string((char*)s,l*2);
     }
 
     void Node::string_to_uint8(uint8_t b[], std::string s)
