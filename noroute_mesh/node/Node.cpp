@@ -13,7 +13,7 @@ namespace aodv
     {
     }
 
-    void Node::send(Eth &eth, subt::CommsClient* commsClient, bool isOriginating)
+    std::string Node::send(Eth &eth, bool isOriginating)
     {
         if (isOriginating) {
             // Overwrite seq and src, because this node is originating eth.
@@ -45,7 +45,7 @@ namespace aodv
             uint16_t length = aodv::ETH_NONVAR_LEN + seg.srcLength + seg.dstLength + seg.payloadLength;
             uint8_t msg[length];
             seg.serialise(msg);
-            commsClient->SendTo(this->uint8_to_string(msg, length), this->broadcastAddr);
+            std::cout << uint8_to_string(msg, length);
         }
 
         aodv::Eth seg(eth);
@@ -65,11 +65,10 @@ namespace aodv
             << eth.payloadLength << std::endl
             << eth.payload << std::endl;
         eth.serialise(msg);
-        std::string s = uint8_to_string(msg, length);
-        commsClient->SendTo(s, this->broadcastAddr);
+        return uint8_to_string(msg, length);
     }
 
-    tl::optional<aodv::Eth> Node::receive(std::string data, subt::CommsClient* commsClient)
+    tl::optional<aodv::Eth> Node::receive(std::string data)
     {
         aodv::Eth seg = aodv::Eth();
         uint8_t msg[data.length()];
@@ -148,7 +147,7 @@ namespace aodv
                 this->tableAddr[seg.src] = std::unordered_map<uint32_t, std::vector<bool>>();
                 this->tableAddr[seg.src][seg.seq] = std::vector<bool>(seg.segSeqMax);
                 this->tableAddr[seg.src][seg.seq][seg.segSeq] = true;
-                this->send(seg, commsClient, false);
+                this->send(seg, false);
 
             } else {
                 std::unordered_map<uint32_t, std::vector<bool>> tableSeq = search->second;
@@ -157,13 +156,13 @@ namespace aodv
                     // No segments from this sequence number exist in tableSeq.
                     tableSeq[seg.seq] = std::vector<bool>(seg.segSeqMax);
                     tableSeq[seg.seq][seg.segSeq] = true;
-                    this->send(seg, commsClient, false);
+                    this->send(seg, false);
 
                 } else {
                     if (!tableSeq[seg.seq][seg.segSeq]) {
                         // Segment was not already forwarded.
                         tableSeq[seg.seq][seg.segSeq] = true;
-                        this->send(seg, commsClient, false);
+                        this->send(seg, false);
                     }
                 }
             }
