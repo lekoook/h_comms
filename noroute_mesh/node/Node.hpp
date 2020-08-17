@@ -78,7 +78,7 @@ namespace aodv
          * @param eth ethernet packet. No limit on eth.payloadLength (other than sizeof(eth.payloadLength).
          * @param send_link method that sends on link level.
          */
-        std::string send(Eth &eth, bool isOriginating);
+        std::vector<std::string> send(Eth &eth, bool isOriginating);
 
         /**
          * @brief Receive a control packet or a data packet.

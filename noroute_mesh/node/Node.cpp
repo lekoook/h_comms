@@ -13,7 +13,7 @@ namespace aodv
     {
     }
 
-    std::string Node::send(Eth &eth, bool isOriginating)
+    std::vector<std::string> Node::send(Eth &eth, bool isOriginating)
     {
         if (isOriginating) {
             // Overwrite seq and src, because this node is originating eth.
@@ -32,6 +32,8 @@ namespace aodv
         } else {
             eth.segSeqMax = (eth.payloadLength / maxPayloadLength) + ((eth.payloadLength % maxPayloadLength) != 0);
         }
+
+        std::vector<std::string> retval = std::vector<std::string>(eth.segSeqMax, "");
 
         // Overwrite seq and src, because this node is originating eth.
         eth.seq = this->seq;
@@ -57,6 +59,7 @@ namespace aodv
                 << seg.payloadLength << std::endl
                 << seg.payload << std::endl;
             seg.serialise(msg);
+            retval[segSeq] = uint8_to_string(msg, length);
         }
 
         aodv::Eth seg(eth);
@@ -76,7 +79,8 @@ namespace aodv
             << seg.payloadLength << std::endl
             << seg.payload << std::endl;
         seg.serialise(msg);
-        return uint8_to_string(msg, length);
+        retval[segSeq] = uint8_to_string(msg, length);
+        return retval;
     }
 
     tl::optional<aodv::Eth> Node::receive(std::string data)
