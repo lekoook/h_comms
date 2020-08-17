@@ -24,10 +24,10 @@ namespace aodv
 
         uint16_t length = aodv::ETH_NONVAR_LEN + eth.srcLength + eth.dstLength + eth.payloadLength;
 
-        // Where seg is a segment, aodv::MAX_MESSAGE_SIZE == aodv::ETH_NONPAYLOAD_LEN + seg.payloadLength
+        // Where seg is a segment, aodv::MAX_MESSAGE_SIZE == aodv::ETH_NONVAR_LEN + seg.payloadLength
         // Where eth is a packet, there are sizeof(typeof(eth.segSeqMax)) segments.
         // So the maximum eth.payloadLength must be:
-        const uint16_t maxPayloadLength = aodv::MAX_MESSAGE_SIZE - aodv::ETH_NONPAYLOAD_LEN;
+        const uint16_t maxPayloadLength = aodv::MAX_MESSAGE_SIZE - aodv::ETH_NONVAR_LEN;
         assert (eth.payloadLength <= sizeof(uint32_t) * maxPayloadLength);
         eth.segSeqMax = (eth.payloadLength / maxPayloadLength) + ((eth.payloadLength % maxPayloadLength) != 0);
 
@@ -43,7 +43,7 @@ namespace aodv
             seg.payloadLength = maxPayloadLength;
             seg.segSeq = segSeq;
 
-            uint16_t length = aodv::ETH_NONPAYLOAD_LEN + seg.payloadLength;
+            uint16_t length = aodv::ETH_NONVAR_LEN + seg.payloadLength;
             uint8_t msg[length];
             seg.serialise(msg);
             commsClient->SendTo(this->uint8_to_string(msg, length), this->broadcastAddr);
