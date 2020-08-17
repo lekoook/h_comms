@@ -22,6 +22,7 @@ class nomesh {
 public:
 
     std::string name;
+    uint32_t id;
     ros::NodeHandle nh;
     ros::Publisher pub;
     ros::ServiceServer map_service, neighbour_service, discovery_service;
@@ -32,7 +33,8 @@ public:
     subt::CommsClient *cc;
 
     nomesh(std::string robotName, uint32_t robotId) {
-        nomesh::name = robotName;
+        this->name = robotName;
+        this->id = robotId;
         cc = new subt::CommsClient(nomesh::name);
         node = new aodv::Node(robotId, nomesh::name, subt::communication_broker::kBroadcast);
         cc->StartBeaconInterval(ros::Duration(PING_INTERVAL));
@@ -45,6 +47,8 @@ public:
     }
 
     void start_server(){
+        ROS_INFO("Name: %s, ID: %u", this->name.c_str(), this->id);
+
         map_service = nh.advertiseService(nomesh::name + "/send_map",&nomesh::sendMap,this);
         neighbour_service = nh.advertiseService(nomesh::name + "/get_neighbour",&nomesh::getNeighbour,this);
         ROS_INFO("Send map and neighbour service advertised");
@@ -142,7 +146,7 @@ private:
 
 int main(int argc, char** argv)
 {
-    if (argc != 3){
+    if (argc != 5){
         printf("Enter robot name and id as the arguments for this CommsClient.\n");
         printf("Eg: [rosrun ...] RobotA 1\n");
         return 0;
