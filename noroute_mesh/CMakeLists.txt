@@ -70,18 +70,3 @@ target_link_libraries(noroute_mesh_node
   serialisers
   ${catkin_LIBRARIES}
 )
-
-#add_executable(sim_node main.cpp)
-
-#target_link_libraries(sim_node
-#  eth
-#  crc
-#  node
-# rerr
-#  rrep
-#  rrep_ack
-#  rreq
-#  table
-#  serialisers
-#  ${catkin_LIBRARIES}
-#)
