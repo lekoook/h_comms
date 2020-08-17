@@ -27,7 +27,11 @@ namespace aodv
         // So the maximum eth.payloadLength must be:
         const uint16_t maxPayloadLength = aodv::MAX_MESSAGE_SIZE/2 - (aodv::ETH_NONVAR_LEN + eth.srcLength + eth.dstLength);
         assert (eth.payloadLength <= sizeof(uint32_t) * maxPayloadLength);
-        eth.segSeqMax = (eth.payloadLength / maxPayloadLength) + ((eth.payloadLength % maxPayloadLength) != 0);
+        if (eth.payloadLength < maxPayloadLength) {
+            eth.segSeqMax = 1;
+        } else {
+            eth.segSeqMax = (eth.payloadLength / maxPayloadLength) + ((eth.payloadLength % maxPayloadLength) != 0);
+        }
 
         // Overwrite seq and src, because this node is originating eth.
         eth.seq = this->seq;
