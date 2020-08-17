@@ -2,6 +2,10 @@
 
 High level communications for team NUS SEDS.
 
+## Install these prerequisites for ROS message conversion
+sudo apt-get install python3-pip python3-yaml
+sudo pip3 install rospkg catkin_pkg
+
 ## Start the simulator with 3 robots
 source ~/subt_ws/install/setup.bash
 
