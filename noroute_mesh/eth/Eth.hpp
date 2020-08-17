@@ -92,13 +92,7 @@ namespace aodv
          * @brief Construct a new Ethernet frame.
          * 
          */
-        Eth(uint32_t seq, uint32_t segSeq, uint32_t segSeqMax, uint16_t dstLength, std::string dst, uint16_t srcLength, std::string src, uint16_t payloadLength, uint8_t *payload);
-  
-        /**
-         * @brief Deconstructor of the Ethernet frame.
-         * 
-         */
-        ~Eth();
+        Eth(uint32_t seq, uint32_t segSeq, uint32_t segSeqMax, uint16_t dstLength, std::string dst, uint16_t srcLength, std::string src, uint16_t payloadLength);
 
         /**
          * @brief Serializes a object into a uint8_t bytes array.
