@@ -4,12 +4,20 @@
 #include "../eth/Eth.hpp"
 #include "../include/tl/optional.hpp"
 #include <stdint.h>
+#include <cassert>
 #include <queue>
 #include <string>
 #include <unordered_map>
+#include "subt_communication_broker/subt_communication_client.h"
+#include <tuple>
+#include <vector>
+#include <cstring>
 
 namespace aodv
 {
+    // Assume send_link has maximum message size of 1500 octets.
+    const uint16_t MAX_MESSAGE_SIZE = 1500;
+
     class Node
     {
     private:
@@ -38,11 +46,20 @@ namespace aodv
         std::string broadcastAddr;
 
         /**
-        * @brief Address on which broadcasts are made.
-        * 
-        */
-        std::unordered_map<std::string, uint32_t> table;
-  
+         * @brief Table of addresses, key: address, value: tableSeq.
+         * tableSeq, key: sequence number, value: vector of (index: segment sequence numbers, value: bool).
+         *
+         * Tracks which segments are forwarded by this node.
+         * 
+         */
+        std::unordered_map<std::string, std::unordered_map<uint32_t, std::vector<bool>>> tableAddr;
+
+        /**
+         * @brief Table storing segments for desegmentation into packets, key: sequence number, value: vector of segments.
+         * 
+         */
+        std::unordered_map<uint32_t, std::vector<aodv::Eth>> tableDesegment;
+
     public:
         /**
          * @brief Construct a new object with all members zero initialised.
@@ -59,17 +76,17 @@ namespace aodv
         /**
          * @brief Send a control packet or a data packet with this->seq and this->addr.
          *
-         * @param eth ethernet packet.
+         * @param eth ethernet packet. No limit on eth.payloadLength (other than sizeof(eth.payloadLength).
          * @param send_link method that sends on link level.
          */
-        void send(Eth eth, void (*send_link)(std::string msg, std::string addr), bool isOriginating = true);
+        void send(Eth &eth, subt::CommsClient* commsClient, bool isOriginating);
 
         /**
          * @brief Receive a control packet or a data packet.
          *
          * @param receive_link method that receives on link level.
          */
-        tl::optional<aodv::Eth> receive(std::string data, void (*send_link)(std::string msg, std::string addr));
+        tl::optional<aodv::Eth> receive(std::string data, subt::CommsClient* commsClient);
   
         /**
          * @brief Represent an arbitrary uint8_t buffer as a string.

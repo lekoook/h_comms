@@ -23,6 +23,8 @@ add_service_files(
   FILES
   send_map.srv
   neighbour.srv
+  string_to_map.srv
+  map_to_string.srv
 )
 
 ## Generate added messages and services with any dependencies listed here
@@ -58,6 +60,7 @@ target_link_libraries(eth
 
 target_link_libraries(node
   eth
+  subt_communication_broker
 )
 
 target_link_libraries(noroute_mesh_node

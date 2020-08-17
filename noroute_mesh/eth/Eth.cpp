@@ -1,16 +1,17 @@
 #include <cstring>
 #include "Eth.hpp"
 #include "../utilities/serialisers.hpp"
+#include <iostream>
 
 namespace aodv
 {
     Eth::Eth() : 
-        seq(), dstLength(), dst(), src(), srcLength(), payloadLength(), payload(), crc()
+        seq(), segSeq(), segSeqMax(), dstLength(), dst(), src(), srcLength(), payloadLength()
     {
     }
 
-    Eth::Eth(uint32_t seq, uint16_t dstLength, std::string dst, uint16_t srcLength, std::string src, uint16_t payloadLength, std::string payload) :
-        seq(seq), dstLength(dstLength), dst(dst), srcLength(srcLength), src(src), payloadLength(payloadLength), payload(payload), crc()
+    Eth::Eth(uint32_t seq, uint32_t segSeq, uint32_t segSeqMax, uint16_t dstLength, std::string dst, uint16_t srcLength, std::string src, uint16_t payloadLength) :
+        seq(seq), segSeq(segSeq), segSeqMax(segSeqMax), dstLength(dstLength), dst(dst), srcLength(srcLength), src(src), payloadLength(payloadLength)
     {
     }
 
@@ -18,6 +19,10 @@ namespace aodv
     {
         size_t i = 0;
         serialisers::copyU32(&data[i], seq);
+        i += 4;
+        serialisers::copyU32(&data[i], segSeq);
+        i += 4;
+        serialisers::copyU32(&data[i], segSeqMax);
         i += 4;
         serialisers::copyU16(&data[i], dstLength);
         i += 2;
@@ -32,13 +37,16 @@ namespace aodv
         memcpy(&data[i], reinterpret_cast<const uint8_t*>(&payload[0]), payloadLength);
         i += payloadLength;
         serialisers::copyU32(&data[i], crc);
-        i += 4;
     } // TODO calculate crc
     
     void Eth::deserialise(uint8_t data[])
     {
         size_t i = 0;
         seq = serialisers::getU32(&data[i]);
+        i += 4;
+        segSeq = serialisers::getU32(&data[i]);
+        i += 4;
+        segSeqMax = serialisers::getU32(&data[i]);
         i += 4;
         dstLength = serialisers::getU16(&data[i]);
         i += 2;
@@ -62,11 +70,15 @@ namespace aodv
         }
         i += payloadLength;
         crc = serialisers::getU32(&data[i]);
-        i += 4;
     }
 
     bool check(uint32_t crc)
     {
         return true;
     } // TODO calculate and check crc
+
+    bool Eth::operator==(const aodv::Eth& eth)
+    {
+        return this->seq==eth.seq && this->segSeq==eth.segSeq && this->segSeqMax==eth.segSeqMax && this->dstLength==eth.dstLength && this->dst==eth.dst && this->src==eth.src && this->srcLength==eth.srcLength && this->payloadLength==eth.payloadLength && this->payload==eth.payload;
+    }
 }
