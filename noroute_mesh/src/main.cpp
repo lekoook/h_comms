@@ -115,6 +115,7 @@ public:
         double currentTime = ros::Time::now().toSec();
 
         // Filter out neighbours that are outdated.
+        ROS_INFO("Requested for neighbours information");
         for (subt::CommsClient::Neighbor_M::iterator it = neigh.begin(); it != neigh.end(); it++) {
             if (it->first == this->name)
             {
@@ -129,7 +130,7 @@ public:
                     ss << "|"; // delimiter
                 }
                 ss << it->first << "," << it->second.second; // print Name and RSSI
-                ROS_INFO("%lf", it->second.second);
+                ROS_INFO("Name: %s, RSSI: %lf", it->first.c_str(), it->second.second);
                 num++;
             }
         }
