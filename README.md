@@ -28,5 +28,23 @@ roslaunch noroute_mesh comms_node.launch name:={robotName} id:={robotId}
 
 Example:
 ```
-roslaunch noroute_mesh comms_node.launch name:=X1 id:=1 
+roslaunch noroute_mesh comms_node.launch name:=X1 id:=1
 ```
+
+### Sending maps
+When a communication node gets started, a ROS service named `/{robotName}/send_map` will be advertised. The request message contains `string:dest` and `nav_msgs/OccupancyGrid:grid` fields.
+
+`string:dest` should be filled with the robot name of the intended recipient.
+
+`nav_msgs/OccupancyGrid:grid` should be filled with the OccupancyGrid map that is to be sent.
+
+NOTE: At the moment, the response from calling this service has no meaning.
+
+### Querying neighbours
+When a communication node gets started, a ROS service named `/{robotName}/get_neighbour` will be advertised. The request message is an empty message.
+
+In the response message, it contains `int32:num_neighbours` and `string:response` fields.
+
+`int32:num_neighbours` tells you how many neighbours this robot can see.
+
+`string:response` contains the information of each robot. Each robot has a `robotName` and `RSSI` value associated with it, both values are delimited by a `,`. Multiple robots are delimited by a `|`. For example, a `string:response` field could look like this: `X1,-20|X2,-25|X3,-22.1`
