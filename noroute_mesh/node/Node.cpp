@@ -116,47 +116,44 @@ namespace aodv
                 }
 
             } else {
-                if (tableDesegment[seg.seq][seg.segSeq] == aodv::Eth()) {
-                    tableDesegment[seg.seq][seg.segSeq] = seg;
-                } else {
-                    bool flag = true;
+                tableDesegment[seg.seq][seg.segSeq] = seg;
+                bool flag = true;
+                for (aodv::Eth seg : tableDesegment[seg.seq]) {
+                    if (seg == aodv::Eth()) {
+                        flag = false;
+                    }
+                }
+
+                if (flag) {
+                    // All segments have been received, perform desegmentation.
+                    // aodv::Eth seg;
+                    uint64_t payloadLengthTotal = 0;
                     for (aodv::Eth seg : tableDesegment[seg.seq]) {
-                        if (seg == aodv::Eth()) {
-                            flag = false;
-                        }
+                        payloadLengthTotal += seg.payloadLength;
                     }
 
-                    if (flag) {
-                        // All segments have been received, perform desegmentation.
-                        // aodv::Eth seg;
-                        uint64_t payloadLengthTotal = 0;
-                        for (aodv::Eth seg : tableDesegment[seg.seq]) {
-                            payloadLengthTotal += seg.payloadLength;
-                        }
 
+                    // Copy all the segments payload into one final payload according to order.
+                    // uint8_t* payload = (uint8_t*)malloc(payloadLengthTotal);
+                    // memcpy(payload, tableDesegment[seg.seq][0].payload, tableDesegment[seg.seq][0].payloadLength);
+                    // for (uint32_t i=1; i<seg.segSeqMax; i++) {
+                    //     memcpy(payload + tableDesegment[seg.seq][i-1].payloadLength, tableDesegment[seg.seq][i].payload, tableDesegment[seg.seq][i].payloadLength);
+                    // }
 
-                        // Copy all the segments payload into one final payload according to order.
-                        // uint8_t* payload = (uint8_t*)malloc(payloadLengthTotal);
-                        // memcpy(payload, tableDesegment[seg.seq][0].payload, tableDesegment[seg.seq][0].payloadLength);
-                        // for (uint32_t i=1; i<seg.segSeqMax; i++) {
-                        //     memcpy(payload + tableDesegment[seg.seq][i-1].payloadLength, tableDesegment[seg.seq][i].payload, tableDesegment[seg.seq][i].payloadLength);
-                        // }
-
-                        std::string payload = "";
-                        payload.reserve(payloadLengthTotal);
-                        for (int i = 0; i < seg.segSeqMax; i++)
+                    std::string payload = "";
+                    payload.reserve(payloadLengthTotal);
+                    for (int i = 0; i < seg.segSeqMax; i++)
                         {
                             payload += tableDesegment[seg.seq][i].payload;
                         }
 
-                        // Packet must consist of at least one segment. Copy fields of first segment.
-                        aodv::Eth eth = aodv::Eth(tableDesegment[seg.seq][0]);
-                        eth.payloadLength = payloadLengthTotal;
-                        eth.payload = payload;
-                        return eth; // return optional object that contains eth.
-                    }
-
+                    // Packet must consist of at least one segment. Copy fields of first segment.
+                    aodv::Eth eth = aodv::Eth(tableDesegment[seg.seq][0]);
+                    eth.payloadLength = payloadLengthTotal;
+                    eth.payload = payload;
+                    return eth; // return optional object that contains eth.
                 }
+
             }
 
         } else {
