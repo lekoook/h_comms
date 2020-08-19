@@ -107,9 +107,13 @@ namespace aodv
         if (seg.dst == this->addr) {
             auto search = this->tableDesegment.find(seg.seq);
             if (search == tableDesegment.end()) {
-                // No segments from this sequence number exist in tableDesegment.
-                tableDesegment[seg.seq] = std::vector<aodv::Eth>(seg.segSeqMax, aodv::Eth());
-                tableDesegment[seg.seq][seg.segSeq] = seg;
+                if (seg.segSeqMax == 1) {
+                    return seg; // return optional object that contains seg.
+                } else {
+                    // No segments from this sequence number exist in tableDesegment.
+                    tableDesegment[seg.seq] = std::vector<aodv::Eth>(seg.segSeqMax, aodv::Eth());
+                    tableDesegment[seg.seq][seg.segSeq] = seg;
+                }
 
             } else {
                 if (tableDesegment[seg.seq][seg.segSeq] == aodv::Eth()) {
