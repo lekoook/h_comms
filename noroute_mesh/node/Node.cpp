@@ -22,13 +22,18 @@ namespace aodv
             this->seq++;
         }
 
+        const uint16_t inputPayloadLength = eth.payloadLength;
+
         // Where seg is a segment, aodv::MAX_MESSAGE_SIZE/2 == aodv::ETH_NONVAR_LEN + seg.srcLength + seg.dstLength + seg.payloadLength
         // Where eth is a packet, there are sizeof(typeof(eth.segSeqMax)) segments.
         // So the maximum eth.payloadLength must be:
         const uint16_t maxPayloadLength = aodv::MAX_MESSAGE_SIZE/2 - (aodv::ETH_NONVAR_LEN + eth.srcLength + eth.dstLength);
-        if (eth.payloadLength < maxPayloadLength) {
+        if (eth.payloadLength < maxPayloadLength) 
+        {
             eth.segSeqMax = 1;
-        } else {
+        } 
+        else 
+        {
             eth.segSeqMax = (eth.payloadLength / maxPayloadLength) + ((eth.payloadLength % maxPayloadLength) != 0);
         }
 
@@ -38,29 +43,36 @@ namespace aodv
         this->seq++;
 
         // Split packet into segments.
-        int segSeq=0, p=maxPayloadLength;
-        for (; p<eth.payloadLength; segSeq++,p+=maxPayloadLength) {
+        int pos = 0;
+        for (int segSeq = 0; segSeq < maxSegments; segSeq++)
+        {
             aodv::Eth seg(eth);
-            seg.payloadLength = maxPayloadLength;
-            seg.payload = eth.payload.substr(p - maxPayloadLength, seg.payloadLength);
             seg.segSeq = segSeq;
 
+            // Figure out the length of this segment.
+            if (maxSegments == 1) // If we only have one segment, just use the input length.
+            {
+                seg.payloadLength = inputPayloadLength;
+            }
+            else if (segSeq == maxSegments - 1) // This is the last segment.
+            {
+                seg.payloadLength = inputPayloadLength - (maxPayloadLength * (maxSegments - 1));
+            }
+            else
+            {
+                seg.payloadLength = maxPayloadLength;
+            }
+
+            // Set the payload for this segment.
+            seg.payload = eth.payload.substr(pos, seg.payloadLength);
+            pos += seg.payloadLength;
+
+            // Send segment.
             uint16_t segLen = aodv::ETH_NONVAR_LEN + seg.srcLength + seg.dstLength + seg.payloadLength;
-            uint8_t msg[segLen];
+            uint8_t msg[segLen] = { 0 };
             seg.serialise(msg);
             commsClient->SendTo(this->uint8_to_string(msg, segLen), this->broadcastAddr);
         }
-
-        aodv::Eth seg(eth);
-        seg.payloadLength = eth.payloadLength - (p - maxPayloadLength);
-        seg.payload = eth.payload.substr(p - maxPayloadLength, seg.payloadLength);
-        seg.segSeq = segSeq;
-
-        uint16_t segLen = aodv::ETH_NONVAR_LEN + eth.srcLength + eth.dstLength + eth.payloadLength;
-        uint8_t msg[segLen];
-        seg.serialise(msg);
-        std::string s = uint8_to_string(msg, segLen);
-        commsClient->SendTo(s, this->broadcastAddr);
     }
 
     tl::optional<aodv::Eth> Node::receive(std::string data, subt::CommsClient* commsClient)
