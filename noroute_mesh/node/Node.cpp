@@ -36,6 +36,7 @@ namespace aodv
         {
             eth.segSeqMax = (eth.payloadLength / maxPayloadLength) + ((eth.payloadLength % maxPayloadLength) != 0);
         }
+        uint32_t maxSegments = eth.segSeqMax;
 
         // Overwrite seq and src, because this node is originating eth.
         eth.seq = this->seq;
