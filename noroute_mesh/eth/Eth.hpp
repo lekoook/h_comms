@@ -11,7 +11,7 @@ namespace aodv
      * @brief Byte length of the non-variable part of a Eth.
      * 
      */
-    const uint8_t ETH_NONVAR_LEN = 23;
+    const uint8_t ETH_NONVAR_LEN = 22;
 
     class Eth
     {
@@ -21,12 +21,6 @@ namespace aodv
          *
          */
         uint32_t crc;
-
-        /**
-         * @brief Specifies the type of message this is. Eth messages are always '1'. Used as a field in the message.
-         * 
-         */
-        static const uint8_t Type = 1;  
   
     public:
         /**

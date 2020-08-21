@@ -18,8 +18,6 @@ namespace aodv
     void Eth::serialise(uint8_t data[])
     {
         size_t i = 0;
-        serialisers::copyU8(&data[i], Type);
-        i += 1;
         serialisers::copyU32(&data[i], seq);
         i += 4;
         serialisers::copyU32(&data[i], segSeq);
@@ -44,13 +42,6 @@ namespace aodv
     void Eth::deserialise(uint8_t data[])
     {
         size_t i = 0;
-        uint8_t type = serialisers::getU8(&data[i]);
-        if (type != this->Type)
-        {
-            std::cerr << "Serialised message is not of Eth type." << std::endl;
-            return;
-        }
-        i += 1;
         seq = serialisers::getU32(&data[i]);
         i += 4;
         segSeq = serialisers::getU32(&data[i]);
