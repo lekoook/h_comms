@@ -21,20 +21,27 @@ namespace aodv
             eth.src = this->addr;
             this->seq++;
         }
-
+        
         const uint16_t inputPayloadLength = eth.payloadLength;
 
         // Where seg is a segment, aodv::MAX_MESSAGE_SIZE/2 == aodv::ETH_NONVAR_LEN + seg.srcLength + seg.dstLength + seg.payloadLength
         // Where eth is a packet, there are sizeof(typeof(eth.segSeqMax)) segments.
         // So the maximum eth.payloadLength must be:
         const uint16_t maxPayloadLength = aodv::MAX_MESSAGE_SIZE/2 - (aodv::ETH_NONVAR_LEN + eth.srcLength + eth.dstLength);
-        uint32_t maxSegments = (eth.payloadLength / maxPayloadLength) + ((eth.payloadLength % maxPayloadLength) != 0); 
-        eth.segSeqMax = maxSegments;
+        if (eth.payloadLength < maxPayloadLength) 
+        {
+            eth.segSeqMax = 1;
+        } 
+        else 
+        {
+            eth.segSeqMax = (eth.payloadLength / maxPayloadLength) + ((eth.payloadLength % maxPayloadLength) != 0);
+        }
+        uint32_t maxSegments = eth.segSeqMax;
 
         // Overwrite seq and src, because this node is originating eth.
-        eth.seq = this->seq;
-        eth.src = this->addr;
-        this->seq++;
+        // eth.seq = this->seq;
+        // eth.src = this->addr;
+        // this->seq++;
 
         // Split packet into segments.
         int pos = 0;
@@ -58,7 +65,7 @@ namespace aodv
             }
 
             // Set the payload for this segment.
-            seg.payload = eth.payload.substr(pos, pos + seg.payloadLength);
+            seg.payload = eth.payload.substr(pos, seg.payloadLength);
             pos += seg.payloadLength;
 
             // Send segment.
@@ -66,6 +73,26 @@ namespace aodv
             uint8_t msg[segLen] = { 0 };
             seg.serialise(msg);
             commsClient->SendTo(this->uint8_to_string(msg, segLen), this->broadcastAddr);
+
+            /* 
+                The subt data rate cap is 6750 bytes per second.
+                By utilising the max 1500 bytes per message limit,
+                this leads to a cap of 4.5 messages per second.
+
+                Sleep for 250ms:
+                250ms per message
+                1s / 250ms = 4 messages per second
+
+                4 < 4.5
+
+                So long we keep to less than 4.5 messages per second, we should be fine.
+            */
+            uint64_t slp = 250000000;
+            uint64_t start = ros::Time::now().toNSec();
+            while (ros::Time::now().toNSec() - start < slp)
+            {
+                ros::spinOnce(); // To continue processing ros message callbacks
+            }
         }
     }
 
@@ -83,43 +110,52 @@ namespace aodv
         if (seg.dst == this->addr) {
             auto search = this->tableDesegment.find(seg.seq);
             if (search == tableDesegment.end()) {
-                // No segments from this sequence number exist in tableDesegment.
-                tableDesegment[seg.seq] = std::vector<aodv::Eth>(seg.segSeqMax, aodv::Eth());
-                tableDesegment[seg.seq][seg.segSeq] = seg;
+                if (seg.segSeqMax == 1) {
+                    return seg; // return optional object that contains seg.
+                } else {
+                    // No segments from this sequence number exist in tableDesegment.
+                    tableDesegment[seg.seq] = std::vector<aodv::Eth>(seg.segSeqMax, aodv::Eth());
+                    tableDesegment[seg.seq][seg.segSeq] = seg;
+                }
 
             } else {
-                if (tableDesegment[seg.seq][seg.segSeq] == aodv::Eth()) {
-                    tableDesegment[seg.seq][seg.segSeq] = seg;
-                } else {
-                    bool flag = true;
+                tableDesegment[seg.seq][seg.segSeq] = seg;
+                bool flag = true;
+                for (aodv::Eth seg : tableDesegment[seg.seq]) {
+                    if (seg == aodv::Eth()) {
+                        flag = false;
+                    }
+                }
+
+                if (flag) {
+                    // All segments have been received, perform desegmentation.
+                    // aodv::Eth seg;
+                    uint64_t payloadLengthTotal = 0;
                     for (aodv::Eth seg : tableDesegment[seg.seq]) {
-                        if (seg == aodv::Eth()) {
-                            flag = false;
-                        }
+                        payloadLengthTotal += seg.payloadLength;
                     }
 
-                    if (flag) {
-                        // All segments have been received, perform desegmentation.
-                        uint64_t payloadLengthTotal = 0;
-                        for (aodv::Eth seg : tableDesegment[seg.seq]) {
-                            payloadLengthTotal += seg.payloadLength;
-                        }
+                    // Copy all the segments payload into one final payload according to order.
+                    // uint8_t* payload = (uint8_t*)malloc(payloadLengthTotal);
+                    // memcpy(payload, tableDesegment[seg.seq][0].payload, tableDesegment[seg.seq][0].payloadLength);
+                    // for (uint32_t i=1; i<seg.segSeqMax; i++) {
+                    //     memcpy(payload + tableDesegment[seg.seq][i-1].payloadLength, tableDesegment[seg.seq][i].payload, tableDesegment[seg.seq][i].payloadLength);
+                    // }
 
-                        std::string payload = "";
-                        payload.reserve(payloadLengthTotal);
-                        for (int i = 0; i < seg.segSeqMax; i++)
+                    std::string payload = "";
+                    payload.reserve(payloadLengthTotal);
+                    for (int i = 0; i < seg.segSeqMax; i++)
                         {
                             payload += tableDesegment[seg.seq][i].payload;
                         }
 
-                        // Packet must consist of at least one segment. Copy fields of first segment.
-                        aodv::Eth eth = aodv::Eth(tableDesegment[seg.seq][0]);
-                        eth.payloadLength = payloadLengthTotal;
-                        eth.payload = payload;
-                        return eth; // return optional object that contains eth.
-                    }
-
+                    // Packet must consist of at least one segment. Copy fields of first segment.
+                    aodv::Eth eth = aodv::Eth(tableDesegment[seg.seq][0]);
+                    eth.payloadLength = payloadLengthTotal;
+                    eth.payload = payload;
+                    return eth; // return optional object that contains eth.
                 }
+
             }
 
         } else {
