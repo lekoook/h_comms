@@ -44,6 +44,7 @@ include_directories(
   lib
   node
   utilities
+  ack
   ${catkin_INCLUDE_DIRS}
 )
 
@@ -51,6 +52,7 @@ add_library(eth eth/Eth.cpp eth/Eth.hpp)
 add_library(crc lib/crc32.c)
 add_library(node node/Node.cpp node/Node.hpp)
 add_library(serialisers utilities/serialisers.cpp utilities/serialisers.hpp)
+add_library(ack ack/AckMsg.cpp ack/AckMsg.hpp)
 
 add_executable(noroute_mesh_node src/main.cpp)
 
@@ -61,6 +63,7 @@ target_link_libraries(eth
 target_link_libraries(node
   eth
   subt_communication_broker
+  ack
 )
 
 target_link_libraries(noroute_mesh_node
@@ -68,5 +71,6 @@ target_link_libraries(noroute_mesh_node
   crc
   node
   serialisers
+  ack
   ${catkin_LIBRARIES}
 )
