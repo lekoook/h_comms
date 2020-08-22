@@ -21,7 +21,7 @@ namespace aodv
             eth.src = this->addr;
             this->seq++;
         }
-
+        
         const uint16_t inputPayloadLength = eth.payloadLength;
 
         // Where seg is a segment, aodv::MAX_MESSAGE_SIZE/2 == aodv::ETH_NONVAR_LEN + seg.srcLength + seg.dstLength + seg.payloadLength
@@ -39,9 +39,9 @@ namespace aodv
         uint32_t maxSegments = eth.segSeqMax;
 
         // Overwrite seq and src, because this node is originating eth.
-        eth.seq = this->seq;
-        eth.src = this->addr;
-        this->seq++;
+        // eth.seq = this->seq;
+        // eth.src = this->addr;
+        // this->seq++;
 
         // Split packet into segments.
         int pos = 0;
@@ -72,7 +72,28 @@ namespace aodv
             uint16_t segLen = aodv::ETH_NONVAR_LEN + seg.srcLength + seg.dstLength + seg.payloadLength;
             uint8_t msg[segLen] = { 0 };
             seg.serialise(msg);
-            commsClient->SendTo(this->uint8_to_string(msg, segLen), this->broadcastAddr);
+            std::string s = this->uint8_to_string(msg, segLen);
+            commsClient->SendTo(s, this->broadcastAddr);
+
+            /* 
+                The subt data rate cap is 6750 bytes per second.
+                By utilising the max 1500 bytes per message limit,
+                this leads to a cap of 4.5 messages per second.
+
+                Sleep for 250ms:
+                250ms per message
+                1s / 250ms = 4 messages per second
+
+                4 < 4.5
+
+                So long we keep to less than 4.5 messages per second, we should be fine.
+            */
+            uint64_t slp = 250000000;
+            uint64_t start = ros::Time::now().toNSec();
+            while (ros::Time::now().toNSec() - start < slp)
+            {
+                ros::spinOnce(); // To continue processing ros message callbacks
+            }
         }
     }
 

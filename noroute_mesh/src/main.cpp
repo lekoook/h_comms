@@ -1,3 +1,4 @@
+#include <unordered_set>
 #include "iostream"
 #include "ros/ros.h"
 #include "ros/serialization.h"
@@ -19,17 +20,18 @@
 #include "subt_communication_broker/subt_communication_client.h"
 
 class nomesh {
-public:
-
+private:
     std::string name;
+    std::unordered_set<uint32_t> sequences;
+    aodv::Node *node;
+    subt::CommsClient *cc;
+    uint32_t prevSeq = 0;
+    
+public:
     ros::NodeHandle nh;
     ros::Publisher pub;
     ros::ServiceServer map_service, neighbour_service, discovery_service;
     ros::ServiceClient map_to_string_client, string_to_map_client;
-    nav_msgs::OccupancyGrid grid;
-    
-    aodv::Node *node;
-    subt::CommsClient *cc;
 
     nomesh(std::string robotName, uint32_t robotId) {
         nomesh::name = robotName;
@@ -60,11 +62,21 @@ public:
     void handlePacket(const std::string &_srcAddress, const std::string &_dstAddress, const uint32_t _dstPort, const std::string &_data){
         // Deserialise the received data
         tl::optional<aodv::Eth> e = nomesh::node->receive(_data, cc);
-        if (e)
+
+        if (e && sequences.count(e.value().seq) == 0) // Prevent data from being published twice.
         {
-            ROS_INFO("Received map from source %s", e.value().src.c_str());
+            aodv::Eth eth = e.value();
+
+            if (eth.seq < prevSeq)
+            {
+                sequences.clear(); // Sequence number has overflowed, reset previous trackings.
+            }
+            prevSeq = eth.seq;
+            sequences.insert(eth.seq);
+
+            ROS_INFO("Received map from source %s", eth.src.c_str());
             noroute_mesh::string_to_map srv;
-            srv.request.str.data = e.value().payload;
+            srv.request.str.data = eth.payload;
             if (string_to_map_client.call(srv))
             {
                 pub.publish(srv.response.grid);
@@ -73,7 +85,6 @@ public:
             {
                 ROS_ERROR("Failed to call service: string_to_map");
             }
-           
         }
     }
 
