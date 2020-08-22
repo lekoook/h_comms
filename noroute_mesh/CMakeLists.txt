@@ -6,6 +6,7 @@ find_package(catkin REQUIRED COMPONENTS
   rospy
   std_msgs
   nav_msgs
+  subt_ign
   message_generation
   subt_communication_broker
   rospy_message_converter
@@ -23,6 +24,7 @@ add_service_files(
   FILES
   send_map.srv
   neighbour.srv
+  send_artifact.srv
   string_to_map.srv
   map_to_string.srv
 )

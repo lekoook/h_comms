@@ -7,14 +7,18 @@
 
 // messages
 #include "std_msgs/String.h"
+#include <ignition/msgs.hh>
 #include "noroute_mesh/neighb.h"
 #include "noroute_mesh/neighbArray.h"
+#include "subt_ign/protobuf/artifact.pb.h"
+#include "subt_ign/CommonTypes.hh"
 
 // services
 #include "noroute_mesh/send_map.h"
 #include "noroute_mesh/neighbour.h"
 #include "noroute_mesh/map_to_string.h"
 #include "noroute_mesh/string_to_map.h"
+#include "noroute_mesh/send_artifact.h"
 
 #include "nav_msgs/OccupancyGrid.h"
 #include "subt_communication_broker/subt_communication_client.h"
@@ -31,7 +35,7 @@ public:
     uint32_t id;
     ros::NodeHandle nh;
     ros::Publisher pub;
-    ros::ServiceServer map_service, neighbour_service, discovery_service;
+    ros::ServiceServer map_service, neighbour_service, discovery_service, artifact_service;
     ros::ServiceClient map_to_string_client, string_to_map_client;
 
     nomesh(std::string robotName, uint32_t robotId) {
@@ -53,6 +57,7 @@ public:
 
         map_service = nh.advertiseService(nomesh::name + "/send_map",&nomesh::sendMap,this);
         neighbour_service = nh.advertiseService(nomesh::name + "/get_neighbour",&nomesh::getNeighbour,this);
+        artifact_service = nh.advertiseService(nomesh::name + "/send_artifact",&nomesh::sendArtifact,this);
         ROS_INFO("Send map and neighbour service advertised");
 
         map_to_string_client = nh.serviceClient<noroute_mesh::map_to_string>("map_to_string");
@@ -147,6 +152,82 @@ public:
         }
         res.num_neighbours = num;
         res.response = ss.str();
+        return true;
+    }
+
+    bool sendArtifact(noroute_mesh::send_artifact::Request &req, noroute_mesh::send_artifact::Response &res){
+        std::cout << "send artifact service called" << std::endl;
+        ignition::msgs::Pose pose;
+        std::cout << "Pose init" << std::endl;
+        pose.mutable_position()->set_x(req.x);
+        pose.mutable_position()->set_y(req.y);
+        pose.mutable_position()->set_z(req.z);
+        std::cout << "Pose x,y,z" << std::endl;
+
+        // Fill the type and pose.
+        subt::msgs::Artifact artifact;
+        if (req.type == "TYPE_BACKPACK"){
+            artifact.set_type(static_cast<uint32_t>(subt::ArtifactType::TYPE_BACKPACK));
+        }
+        else if (req.type == "TYPE_DUCT"){
+            artifact.set_type(static_cast<uint32_t>(subt::ArtifactType::TYPE_DUCT));
+        }
+        else if (req.type == "TYPE_DRILL"){
+            artifact.set_type(static_cast<uint32_t>(subt::ArtifactType::TYPE_DRILL));
+        }
+        else if (req.type == "TYPE_ELECTRICAL_BOX"){
+            artifact.set_type(static_cast<uint32_t>(subt::ArtifactType::TYPE_ELECTRICAL_BOX));
+        }
+        else if (req.type == "TYPE_EXTINGUISHER"){
+            artifact.set_type(static_cast<uint32_t>(subt::ArtifactType::TYPE_EXTINGUISHER));
+        }
+        else if (req.type == "TYPE_PHONE"){
+            artifact.set_type(static_cast<uint32_t>(subt::ArtifactType::TYPE_PHONE));
+        }
+        else if (req.type == "TYPE_RADIO"){
+            artifact.set_type(static_cast<uint32_t>(subt::ArtifactType::TYPE_RADIO));
+        }
+        else if (req.type == "TYPE_RESCUE_RANDY"){
+            artifact.set_type(static_cast<uint32_t>(subt::ArtifactType::TYPE_RESCUE_RANDY));
+        }
+        else if (req.type == "TYPE_TOOLBOX"){
+            artifact.set_type(static_cast<uint32_t>(subt::ArtifactType::TYPE_TOOLBOX));
+        }
+        else if (req.type == "TYPE_VALVE"){
+            artifact.set_type(static_cast<uint32_t>(subt::ArtifactType::TYPE_VALVE));
+        }
+        else if (req.type == "TYPE_VENT"){
+            artifact.set_type(static_cast<uint32_t>(subt::ArtifactType::TYPE_VENT));
+        }
+        else if (req.type == "TYPE_GAS"){
+            artifact.set_type(static_cast<uint32_t>(subt::ArtifactType::TYPE_GAS));
+        }
+        else if (req.type == "TYPE_HELMET"){
+            artifact.set_type(static_cast<uint32_t>(subt::ArtifactType::TYPE_HELMET));
+        }
+        else if (req.type == "TYPE_ROPE"){
+            artifact.set_type(static_cast<uint32_t>(subt::ArtifactType::TYPE_ROPE));
+        }
+        else {
+            std::cout << "ReportArtifact(): Not a valid artifact type" << std::endl;
+            res.response = false;
+            return false;
+        }
+        std::cout << "added type" << std::endl;
+        artifact.mutable_pose()->CopyFrom(pose);
+        std::cout << "serialising" << std::endl;
+        // Serialize the artifact.
+        std::string serializedData;
+        if (!artifact.SerializeToString(&serializedData)) {
+            std::cout << "ReportArtifact(): Error serializing message\n"
+                    << artifact.DebugString() << std::endl;
+        }
+        std::cout << "serialised" << std::endl;
+
+        // Report it.
+        cc->SendTo(serializedData, subt::kBaseStationName);
+        std::cout << "sent" << std::endl;
+        res.response = true;
         return true;
     }
 
