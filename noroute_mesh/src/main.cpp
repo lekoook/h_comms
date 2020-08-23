@@ -69,30 +69,44 @@ public:
     }
     
     void handlePacket(const std::string &_srcAddress, const std::string &_dstAddress, const uint32_t _dstPort, const std::string &_data){
-        // Deserialise the received data
-        tl::optional<aodv::Eth> e = nomesh::node->receive(_data, cc);
-
-        if (e && sequences.count(e.value().seq) == 0) // Prevent data from being published twice.
+        // Handle artifact score acknowledgements
+        subt::msgs::ArtifactScore res;
+        if (res.ParseFromString(_data))
         {
-            aodv::Eth eth = e.value();
+            ROS_INFO("Message from [%s] to [%s] on port [%u]:\n [%s]", _srcAddress.c_str(),_dstAddress.c_str(), _dstPort, res.DebugString().c_str());
+        }
+        else {
+            // Deserialise the received data
+            tl::optional<aodv::Eth> e = nomesh::node->receive(_data, cc);
 
-            if (eth.seq < prevSeq)
+            if (e && sequences.count(e.value().seq) == 0) // Prevent data from being published twice.
             {
-                sequences.clear(); // Sequence number has overflowed, reset previous trackings.
-            }
-            prevSeq = eth.seq;
-            sequences.insert(eth.seq);
+                aodv::Eth eth = e.value();
 
-            ROS_INFO("Received map from source %s", eth.src.c_str());
-            noroute_mesh::string_to_map srv;
-            srv.request.str.data = eth.payload;
-            if (string_to_map_client.call(srv))
-            {
-                pub.publish(srv.response.grid);
-            }
-            else
-            {
-                ROS_ERROR("Failed to call service: string_to_map");
+                if (eth.seq < prevSeq)
+                {
+                    sequences.clear(); // Sequence number has overflowed, reset previous trackings.
+                }
+                prevSeq = eth.seq;
+                sequences.insert(eth.seq);
+
+                ROS_INFO("Received map from source %s", eth.src.c_str());
+                if (eth.payload.at(0) == '1'){
+                    std::cout << "Received nav_msgs::OccupancyGrid message type." << std::endl;
+                    noroute_mesh::string_to_map srv;
+                    srv.request.str.data = eth.payload;
+                    if (string_to_map_client.call(srv))
+                    {
+                        pub.publish(srv.response.grid);
+                    }
+                    else
+                    {
+                        ROS_ERROR("Failed to call service: string_to_map.");
+                    }
+                }
+                else{
+                    ROS_ERROR("Unable to retrieve ros_msg type.");
+                }
             }
         }
     }
@@ -156,13 +170,10 @@ public:
     }
 
     bool sendArtifact(noroute_mesh::send_artifact::Request &req, noroute_mesh::send_artifact::Response &res){
-        std::cout << "send artifact service called" << std::endl;
         ignition::msgs::Pose pose;
-        std::cout << "Pose init" << std::endl;
         pose.mutable_position()->set_x(req.x);
         pose.mutable_position()->set_y(req.y);
         pose.mutable_position()->set_z(req.z);
-        std::cout << "Pose x,y,z" << std::endl;
 
         // Fill the type and pose.
         subt::msgs::Artifact artifact;
@@ -213,20 +224,17 @@ public:
             res.response = false;
             return false;
         }
-        std::cout << "added type" << std::endl;
         artifact.mutable_pose()->CopyFrom(pose);
-        std::cout << "serialising" << std::endl;
         // Serialize the artifact.
         std::string serializedData;
         if (!artifact.SerializeToString(&serializedData)) {
             std::cout << "ReportArtifact(): Error serializing message\n"
                     << artifact.DebugString() << std::endl;
         }
-        std::cout << "serialised" << std::endl;
-
+    
         // Report it.
         cc->SendTo(serializedData, subt::kBaseStationName);
-        std::cout << "sent" << std::endl;
+        ROS_INFO("Artifact Reported.");
         res.response = true;
         return true;
     }
