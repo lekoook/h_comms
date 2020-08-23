@@ -48,3 +48,24 @@ In the response message, it contains `int32:num_neighbours` and `string:response
 `int32:num_neighbours` tells you how many neighbours this robot can see.
 
 `string:response` contains the information of each robot. Each robot has a `robotName` and `RSSI` value associated with it, both values are delimited by a `,`. Multiple robots are delimited by a `|`. For example, a `string:response` field could look like this: `X1,-20|X2,-25|X3,-22.1`
+
+### Sending Artifacts
+When a communication node gets started, a ROS service named `/{robotName}/send_artifact` will be advertised. The request message contains `int32:x`, `int32:y`, `int32:z` and `string:type` field.
+
+`string:type` type field will inform the judge of the type of artifact found. It can be of the following types:
+- TYPE_BACKPACK
+- TYPE_DUCT
+- TYPE_DRILL
+- TYPE_ELECTRICAL_BOX
+- TYPE_EXTINGUISHER
+- TYPE_PHONE
+- TYPE_RADIO
+- TYPE_RESCUE_RANDY
+- TYPE_TOOLBOX
+- TYPE_VALVE
+- TYPE_VENT
+- TYPE_GAS
+- TYPE_HELMET
+- TYPE_ROPE
+
+In the response message, it contains `bool:response` which indicates whether the report was sent successfully.
