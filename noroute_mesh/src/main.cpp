@@ -7,14 +7,18 @@
 
 // messages
 #include "std_msgs/String.h"
+#include <ignition/msgs.hh>
 #include "noroute_mesh/neighb.h"
 #include "noroute_mesh/neighbArray.h"
+#include "subt_ign/protobuf/artifact.pb.h"
+#include "subt_ign/CommonTypes.hh"
 
 // services
 #include "noroute_mesh/send_map.h"
 #include "noroute_mesh/neighbour.h"
 #include "noroute_mesh/map_to_string.h"
 #include "noroute_mesh/string_to_map.h"
+#include "noroute_mesh/send_artifact.h"
 
 #include "nav_msgs/OccupancyGrid.h"
 #include "subt_communication_broker/subt_communication_client.h"
@@ -31,7 +35,7 @@ public:
     uint32_t id;
     ros::NodeHandle nh;
     ros::Publisher pub;
-    ros::ServiceServer map_service, neighbour_service, discovery_service;
+    ros::ServiceServer map_service, neighbour_service, discovery_service, artifact_service;
     ros::ServiceClient map_to_string_client, string_to_map_client;
 
     nomesh(std::string robotName, uint32_t robotId) {
@@ -53,6 +57,7 @@ public:
 
         map_service = nh.advertiseService(nomesh::name + "/send_map",&nomesh::sendMap,this);
         neighbour_service = nh.advertiseService(nomesh::name + "/get_neighbour",&nomesh::getNeighbour,this);
+        artifact_service = nh.advertiseService(nomesh::name + "/send_artifact",&nomesh::sendArtifact,this);
         ROS_INFO("Send map and neighbour service advertised");
 
         map_to_string_client = nh.serviceClient<noroute_mesh::map_to_string>("map_to_string");
@@ -64,30 +69,44 @@ public:
     }
     
     void handlePacket(const std::string &_srcAddress, const std::string &_dstAddress, const uint32_t _dstPort, const std::string &_data){
-        // Deserialise the received data
-        tl::optional<aodv::Eth> e = nomesh::node->receive(_data, cc);
-
-        if (e && sequences.count(e.value().seq) == 0) // Prevent data from being published twice.
+        // Handle artifact score acknowledgements
+        subt::msgs::ArtifactScore res;
+        if (res.ParseFromString(_data))
         {
-            aodv::Eth eth = e.value();
+            ROS_INFO("Message from [%s] to [%s] on port [%u]:\n [%s]", _srcAddress.c_str(),_dstAddress.c_str(), _dstPort, res.DebugString().c_str());
+        }
+        else {
+            // Deserialise the received data
+            tl::optional<aodv::Eth> e = nomesh::node->receive(_data, cc);
 
-            if (eth.seq < prevSeq)
+            if (e && sequences.count(e.value().seq) == 0) // Prevent data from being published twice.
             {
-                sequences.clear(); // Sequence number has overflowed, reset previous trackings.
-            }
-            prevSeq = eth.seq;
-            sequences.insert(eth.seq);
+                aodv::Eth eth = e.value();
 
-            ROS_INFO("Received map from source %s", eth.src.c_str());
-            noroute_mesh::string_to_map srv;
-            srv.request.str.data = eth.payload;
-            if (string_to_map_client.call(srv))
-            {
-                pub.publish(srv.response.grid);
-            }
-            else
-            {
-                ROS_ERROR("Failed to call service: string_to_map");
+                if (eth.seq < prevSeq)
+                {
+                    sequences.clear(); // Sequence number has overflowed, reset previous trackings.
+                }
+                prevSeq = eth.seq;
+                sequences.insert(eth.seq);
+
+                ROS_INFO("Received map from source %s", eth.src.c_str());
+                if (eth.payload.at(0) == '1'){
+                    std::cout << "Received nav_msgs::OccupancyGrid message type." << std::endl;
+                    noroute_mesh::string_to_map srv;
+                    srv.request.str.data = eth.payload;
+                    if (string_to_map_client.call(srv))
+                    {
+                        pub.publish(srv.response.grid);
+                    }
+                    else
+                    {
+                        ROS_ERROR("Failed to call service: string_to_map.");
+                    }
+                }
+                else{
+                    ROS_ERROR("Unable to retrieve ros_msg type.");
+                }
             }
         }
     }
@@ -147,6 +166,76 @@ public:
         }
         res.num_neighbours = num;
         res.response = ss.str();
+        return true;
+    }
+
+    bool sendArtifact(noroute_mesh::send_artifact::Request &req, noroute_mesh::send_artifact::Response &res){
+        ignition::msgs::Pose pose;
+        pose.mutable_position()->set_x(req.x);
+        pose.mutable_position()->set_y(req.y);
+        pose.mutable_position()->set_z(req.z);
+
+        // Fill the type and pose.
+        subt::msgs::Artifact artifact;
+        if (req.type == "TYPE_BACKPACK"){
+            artifact.set_type(static_cast<uint32_t>(subt::ArtifactType::TYPE_BACKPACK));
+        }
+        else if (req.type == "TYPE_DUCT"){
+            artifact.set_type(static_cast<uint32_t>(subt::ArtifactType::TYPE_DUCT));
+        }
+        else if (req.type == "TYPE_DRILL"){
+            artifact.set_type(static_cast<uint32_t>(subt::ArtifactType::TYPE_DRILL));
+        }
+        else if (req.type == "TYPE_ELECTRICAL_BOX"){
+            artifact.set_type(static_cast<uint32_t>(subt::ArtifactType::TYPE_ELECTRICAL_BOX));
+        }
+        else if (req.type == "TYPE_EXTINGUISHER"){
+            artifact.set_type(static_cast<uint32_t>(subt::ArtifactType::TYPE_EXTINGUISHER));
+        }
+        else if (req.type == "TYPE_PHONE"){
+            artifact.set_type(static_cast<uint32_t>(subt::ArtifactType::TYPE_PHONE));
+        }
+        else if (req.type == "TYPE_RADIO"){
+            artifact.set_type(static_cast<uint32_t>(subt::ArtifactType::TYPE_RADIO));
+        }
+        else if (req.type == "TYPE_RESCUE_RANDY"){
+            artifact.set_type(static_cast<uint32_t>(subt::ArtifactType::TYPE_RESCUE_RANDY));
+        }
+        else if (req.type == "TYPE_TOOLBOX"){
+            artifact.set_type(static_cast<uint32_t>(subt::ArtifactType::TYPE_TOOLBOX));
+        }
+        else if (req.type == "TYPE_VALVE"){
+            artifact.set_type(static_cast<uint32_t>(subt::ArtifactType::TYPE_VALVE));
+        }
+        else if (req.type == "TYPE_VENT"){
+            artifact.set_type(static_cast<uint32_t>(subt::ArtifactType::TYPE_VENT));
+        }
+        else if (req.type == "TYPE_GAS"){
+            artifact.set_type(static_cast<uint32_t>(subt::ArtifactType::TYPE_GAS));
+        }
+        else if (req.type == "TYPE_HELMET"){
+            artifact.set_type(static_cast<uint32_t>(subt::ArtifactType::TYPE_HELMET));
+        }
+        else if (req.type == "TYPE_ROPE"){
+            artifact.set_type(static_cast<uint32_t>(subt::ArtifactType::TYPE_ROPE));
+        }
+        else {
+            std::cout << "ReportArtifact(): Not a valid artifact type" << std::endl;
+            res.response = false;
+            return false;
+        }
+        artifact.mutable_pose()->CopyFrom(pose);
+        // Serialize the artifact.
+        std::string serializedData;
+        if (!artifact.SerializeToString(&serializedData)) {
+            std::cout << "ReportArtifact(): Error serializing message\n"
+                    << artifact.DebugString() << std::endl;
+        }
+    
+        // Report it.
+        cc->SendTo(serializedData, subt::kBaseStationName);
+        ROS_INFO("Artifact Reported.");
+        res.response = true;
         return true;
     }
 
