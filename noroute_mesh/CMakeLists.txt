@@ -51,6 +51,7 @@ include_directories(
 
 add_library(eth eth/Eth.cpp eth/Eth.hpp)
 add_library(crc lib/crc32.c)
+add_library(lz4 lib/lz4.c)
 add_library(node node/Node.cpp node/Node.hpp)
 add_library(serialisers utilities/serialisers.cpp utilities/serialisers.hpp)
 
