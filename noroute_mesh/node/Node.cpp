@@ -1,5 +1,6 @@
 #include "Node.hpp"
 #include <iostream>
+#include "include/lz4.h"
 
 namespace aodv
 {
@@ -20,6 +21,14 @@ namespace aodv
             eth.seq = this->seq;
             eth.src = this->addr;
             this->seq++;
+
+            // Compress eth.payload.
+            int srcSize = eth.payload.size();
+            int dstCapacity = srcSize;
+            std::string dst = std::string();
+            dst.reserve(dstCapacity);
+            int dstSize = LZ4_compress_default(eth.payload.data(), dst.data(), srcSize, dstCapacity);
+            eth.payload = dst;
         }
         
         const uint16_t inputPayloadLength = eth.payloadLength;
@@ -148,6 +157,16 @@ namespace aodv
                     aodv::Eth eth = aodv::Eth(tableDesegment[seg.seq][0]);
                     eth.payloadLength = payloadLengthTotal;
                     eth.payload = payload;
+
+                    // Decompress eth.payload.
+                    // Guess decompressed size is at most ten times the compressed size.
+                    int srcSize = eth.payload.size();
+                    int dstCapacity = srcSize * 10;
+                    std::string dst = std::string();
+                    dst.reserve(dstCapacity);
+                    int dstSize = LZ4_decompress_safe(eth.payload.data(), dst.data(), srcSize, dstCapacity);
+                    eth.payload = dst;
+
                     return eth; // return optional object that contains eth.
                 }
 
