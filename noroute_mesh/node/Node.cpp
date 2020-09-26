@@ -1,6 +1,6 @@
 #include "Node.hpp"
 #include <iostream>
-#include "include/lz4.h"
+#include "lz4.h"
 
 namespace aodv
 {

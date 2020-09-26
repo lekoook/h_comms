@@ -51,7 +51,7 @@ include_directories(
 
 add_library(eth eth/Eth.cpp eth/Eth.hpp)
 add_library(crc lib/crc32.c)
-add_library(lz4 lib/lz4.c)
+add_library(lz4 lib/lz4.c include/lz4.h)
 add_library(node node/Node.cpp node/Node.hpp)
 add_library(serialisers utilities/serialisers.cpp utilities/serialisers.hpp)
 
@@ -64,6 +64,7 @@ target_link_libraries(eth
 target_link_libraries(node
   eth
   subt_communication_broker
+  lz4
 )
 
 target_link_libraries(noroute_mesh_node
