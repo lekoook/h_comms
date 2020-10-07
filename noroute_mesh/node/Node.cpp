@@ -25,9 +25,8 @@ namespace aodv
             // Compress eth.payload.
             int srcSize = eth.payload.size();
             int dstCapacity = srcSize;
-            std::string dst = std::string();
-            dst.reserve(dstCapacity);
-            int dstSize = LZ4_compress_default(eth.payload.data(), dst.data(), srcSize, dstCapacity);
+            char dst[dstCapacity];
+            int dstSize = LZ4_compress_default(eth.payload.data(), dst, srcSize, dstCapacity);
             eth.payload = dst;
         }
         
@@ -162,9 +161,8 @@ namespace aodv
                     // Guess decompressed size is at most ten times the compressed size.
                     int srcSize = eth.payload.size();
                     int dstCapacity = srcSize * 10;
-                    std::string dst = std::string();
-                    dst.reserve(dstCapacity);
-                    int dstSize = LZ4_decompress_safe(eth.payload.data(), dst.data(), srcSize, dstCapacity);
+                    char dst[dstCapacity];
+                    int dstSize = LZ4_decompress_safe(eth.payload.data(), dst, srcSize, dstCapacity);
                     eth.payload = dst;
 
                     return eth; // return optional object that contains eth.
