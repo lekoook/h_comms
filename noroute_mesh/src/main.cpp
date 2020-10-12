@@ -91,22 +91,19 @@ public:
                 sequences.insert(eth.seq);
 
                 ROS_INFO("Received map from source %s", eth.src.c_str());
-                if (eth.payload.at(0) == '1'){
-                    std::cout << "Received nav_msgs::OccupancyGrid message type." << std::endl;
-                    noroute_mesh::string_to_map srv;
-                    srv.request.str.data = eth.payload;
-                    if (string_to_map_client.call(srv))
-                    {
-                        pub.publish(srv.response.grid);
-                    }
-                    else
-                    {
-                        ROS_ERROR("Failed to call service: string_to_map.");
-                    }
+                
+                std::cout << "Received nav_msgs::OccupancyGrid message type." << std::endl;
+                noroute_mesh::string_to_map srv;
+                srv.request.str.data = eth.payload;
+                if (string_to_map_client.call(srv))
+                {
+                    pub.publish(srv.response.grid);
                 }
-                else{
-                    ROS_ERROR("Unable to retrieve ros_msg type.");
+                else
+                {
+                    ROS_ERROR("Failed to call service: string_to_map.");
                 }
+                
             }
         }
     }
