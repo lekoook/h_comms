@@ -1,0 +1,3 @@
+/home/lekok/workspace/subt_ws/src/h_comms/mit/build/CMakeFiles/rebuild_cache.dir
+/home/lekok/workspace/subt_ws/src/h_comms/mit/build/CMakeFiles/main.dir
+/home/lekok/workspace/subt_ws/src/h_comms/mit/build/CMakeFiles/edit_cache.dir
