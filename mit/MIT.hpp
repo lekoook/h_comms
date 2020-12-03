@@ -16,7 +16,7 @@
  * 
  * ------------------------
  * | Entry ID | Timestamp |
- * ------------------------
+ * ------------------------|
  * |  10001   |   10000   |
  * ------------------------
  * |  10002   |   20000   |
@@ -29,10 +29,10 @@
  * The Entry ID can be decomposed into Robot ID and Data Type number:
  * 
  * Robot ID - A unique identifier assigned to a robot.
- * Data Type number - Represents a particular datum type (user defines what the type corresponds to which number).
+ * Data Type number - Represents a particular datum type (user defines what the type corresponds to which number) belonging to that robot ID.
  * 
  * The first 2 digits of Entry ID holds the Robot ID and the last 3 digits holds the Data Type number.
- * For example, an Entry ID of "10002" represents Robot ID of "10" and Data Type of "002" (or just "2").
+ * For example, an Entry ID of "10002" means that this entry is for Data Type of "002" (or just "2") that belongs to Robot ID of "10".
  * NOTE: Since Entry ID is 16 bits unsigned int, the maximum number of robots representable is 66 and the maximum number of data types representable is 536.
  * 
  */
@@ -168,8 +168,6 @@ public:
     {
         std::set<uint16_t> compareKeys = toCompare.getIdKeys();
         std::vector<std::pair<uint16_t, uint16_t>> ret;
-
-        // TODO: Lock guard this->table, so during comparison, no external changes can be made until comparison with another MIT is done.
 
         for (auto& key : compareKeys)
         {
