@@ -11,7 +11,7 @@ namespace aodv
      * @brief Byte length of the non-variable part of a Eth.
      * 
      */
-    const uint8_t ETH_NONVAR_LEN = 22;
+    const uint8_t ETH_NONVAR_LEN = 23;
 
     class Eth
     {
@@ -45,6 +45,13 @@ namespace aodv
          *   If segSeqMax is in all segments, then the amount of memory needed to hold all segments is known whenever any segment arrives.
          */
         uint32_t segSeqMax;
+
+        /**
+         * @brief Flag to indicate if this message is an acknowledge message.
+         * @details The \p seq and \p segSeq accompanied with this acknowledge message indicates which message this is meant to acknowledge.
+         * 
+         */
+        bool isAck;
   
         /**
          * @brief dst length
@@ -91,10 +98,19 @@ namespace aodv
         Eth();
 
         /**
-         * @brief Construct a new Ethernet frame.
+         * @brief Construct a new non-ACK Ethernet frame.
          * 
+         * @param seq Sequence number of frame.
+         * @param segSeq Segment sequence number of frame.
+         * @param segSeqMax Maximum number of segments.
+         * @param isAck Indicates if this is acknowledgem message. If true, \p segSeqMax and \p payloadLength will default to zero.
+         * @param dstLength 
+         * @param dst 
+         * @param srcLength 
+         * @param src 
+         * @param payloadLength 
          */
-        Eth(uint32_t seq, uint32_t segSeq, uint32_t segSeqMax, uint16_t dstLength, std::string dst, uint16_t srcLength, std::string src, uint16_t payloadLength);
+        Eth(uint32_t seq, uint32_t segSeq, uint32_t segSeqMax, bool isAck=false, uint16_t dstLength, std::string dst, uint16_t srcLength, std::string src, uint16_t payloadLength);
 
         /**
          * @brief Serializes a object into a uint8_t bytes array.

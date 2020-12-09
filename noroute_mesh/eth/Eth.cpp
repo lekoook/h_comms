@@ -6,13 +6,18 @@
 namespace aodv
 {
     Eth::Eth() : 
-        seq(), segSeq(), segSeqMax(), dstLength(), dst(), src(), srcLength(), payloadLength()
+        seq(), segSeq(), segSeqMax(), isAck(), dstLength(), dst(), src(), srcLength(), payloadLength()
     {
     }
 
-    Eth::Eth(uint32_t seq, uint32_t segSeq, uint32_t segSeqMax, uint16_t dstLength, std::string dst, uint16_t srcLength, std::string src, uint16_t payloadLength) :
-        seq(seq), segSeq(segSeq), segSeqMax(segSeqMax), dstLength(dstLength), dst(dst), srcLength(srcLength), src(src), payloadLength(payloadLength)
+    Eth::Eth(uint32_t seq, uint32_t segSeq, uint32_t segSeqMax, bool isAck=false, uint16_t dstLength, std::string dst, uint16_t srcLength, std::string src, uint16_t payloadLength) :
+        seq(seq), segSeq(segSeq), segSeqMax(segSeqMax), isAck(isAck), dstLength(dstLength), dst(dst), srcLength(srcLength), src(src), payloadLength(payloadLength)
     {
+        if (isAck)
+        {
+            this->segSeqMax = 0;
+            this->payloadLength = 0;
+        }
     }
 
     void Eth::serialise(uint8_t data[])
@@ -23,6 +28,8 @@ namespace aodv
         serialisers::copyU32(&data[i], segSeq);
         i += 4;
         serialisers::copyU32(&data[i], segSeqMax);
+        i += 1;
+        serialisers::copyU8(&data[i], isAck ? 1 : 0);
         i += 4;
         serialisers::copyU16(&data[i], dstLength);
         i += 2;
@@ -47,6 +54,8 @@ namespace aodv
         segSeq = serialisers::getU32(&data[i]);
         i += 4;
         segSeqMax = serialisers::getU32(&data[i]);
+        i += 1;
+        isAck = serialisers::getU8(&data[i]) == 1;
         i += 4;
         dstLength = serialisers::getU16(&data[i]);
         i += 2;
@@ -79,6 +88,6 @@ namespace aodv
 
     bool Eth::operator==(const aodv::Eth& eth)
     {
-        return this->seq==eth.seq && this->segSeq==eth.segSeq && this->segSeqMax==eth.segSeqMax && this->dstLength==eth.dstLength && this->dst==eth.dst && this->src==eth.src && this->srcLength==eth.srcLength && this->payloadLength==eth.payloadLength && this->payload==eth.payload;
+        return this->seq==eth.seq && this->segSeq==eth.segSeq && this->segSeqMax==eth.segSeqMax && this->isAck==eth.isAck && this->dstLength==eth.dstLength && this->dst==eth.dst && this->src==eth.src && this->srcLength==eth.srcLength && this->payloadLength==eth.payloadLength && this->payload==eth.payload;
     }
 }
