@@ -103,14 +103,14 @@ namespace aodv
          * @param seq Sequence number of frame.
          * @param segSeq Segment sequence number of frame.
          * @param segSeqMax Maximum number of segments.
-         * @param isAck Indicates if this is acknowledgem message. If true, \p segSeqMax and \p payloadLength will default to zero.
          * @param dstLength 
          * @param dst 
          * @param srcLength 
          * @param src 
          * @param payloadLength 
+         * @param isAck Indicates if this is acknowledgem message. If true, \p segSeqMax and \p payloadLength will default to zero.
          */
-        Eth(uint32_t seq, uint32_t segSeq, uint32_t segSeqMax, bool isAck=false, uint16_t dstLength, std::string dst, uint16_t srcLength, std::string src, uint16_t payloadLength);
+        Eth(uint32_t seq, uint32_t segSeq, uint32_t segSeqMax, uint16_t dstLength, std::string dst, uint16_t srcLength, std::string src, uint16_t payloadLength, bool isAck=false);
 
         /**
          * @brief Serializes a object into a uint8_t bytes array.

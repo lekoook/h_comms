@@ -10,8 +10,8 @@ namespace aodv
     {
     }
 
-    Eth::Eth(uint32_t seq, uint32_t segSeq, uint32_t segSeqMax, bool isAck=false, uint16_t dstLength, std::string dst, uint16_t srcLength, std::string src, uint16_t payloadLength) :
-        seq(seq), segSeq(segSeq), segSeqMax(segSeqMax), isAck(isAck), dstLength(dstLength), dst(dst), srcLength(srcLength), src(src), payloadLength(payloadLength)
+    Eth::Eth(uint32_t seq, uint32_t segSeq, uint32_t segSeqMax, uint16_t dstLength, std::string dst, uint16_t srcLength, std::string src, uint16_t payloadLength, bool isAck) :
+        seq(seq), segSeq(segSeq), segSeqMax(segSeqMax), dstLength(dstLength), dst(dst), srcLength(srcLength), src(src), payloadLength(payloadLength), isAck(isAck)
     {
         if (isAck)
         {
