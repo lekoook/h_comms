@@ -22,6 +22,8 @@ public:
     std::string dest;
     std::vector<uint8_t> data;
 
+    Packet() {}
+
     Packet(uint32_t seqNum, uint8_t totalSegs, uint8_t segNum, std::string src, std::string dest, std::vector<uint8_t> data, bool isAck=false)
         : seqNum(seqNum), totalSegs(totalSegs), segNum(segNum), src(src), dest(dest), data(data), isAck(isAck)
     {
@@ -43,6 +45,8 @@ public:
         memcpy(&temp[8], src.data(), srcLen);
         memcpy(&temp[8+srcLen], dest.data(), destLen);
         memcpy(&temp[8+srcLen+destLen], data.data(), data.size());
+
+        return std::string((char*)temp, tLen);
     }
 
     void deserialize(std::string byteStr)
