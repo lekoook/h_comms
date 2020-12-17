@@ -116,6 +116,7 @@ catkin_package(
 ## Specify additional locations of header files
 ## Your package locations should be listed before other locations
 include_directories(
+  lib/serialisers/
   include
   include/${PROJECT_NAME}
   ${catkin_INCLUDE_DIRS}
@@ -125,6 +126,7 @@ include_directories(
 #add_library(TxerTh
 #  include/${PROJECT_NAME}/TxerTh.hpp
 #)
+add_library(serialisers_ptp lib/serialisers/serialisers.hpp lib/serialisers/serialisers.cpp)
 
 ## Add cmake target dependencies of the library
 ## as an example, code may need to be generated before libraries
@@ -153,7 +155,7 @@ include_directories(
 
 ## Executables
 add_executable(${PROJECT_NAME}_node src/ptp_comms_node.cpp)
-target_link_libraries(${PROJECT_NAME}_node ${catkin_LIBRARIES} subt_communication_broker)
+target_link_libraries(${PROJECT_NAME}_node ${catkin_LIBRARIES} subt_communication_broker serialisers_ptp)
 #add_dependencies(ptp_comms)
 
 #############
