@@ -14,11 +14,8 @@ public:
     std::string data;
     std::string src;
     RxQueueData () {}
-    RxQueueData (std::string data, std::string src)
-    {
-        this->data = data;
-        this->src = src;
-    }
+    RxQueueData (std::string data, std::string src) : data(data), src(src)
+    {}
 };
 
 class RxerTh

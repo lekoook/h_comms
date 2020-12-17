@@ -15,11 +15,8 @@ public:
     std::vector<uint8_t> data;
     std::string dest;
     TxQueueData () {}
-    TxQueueData (std::vector<uint8_t> data, std::string dest)
-    {
-        this->data = data;
-        this->dest = dest;
-    }
+    TxQueueData (std::vector<uint8_t> data, std::string dest) : data(data), dest(dest)
+    {}
 };
 
 class TxerTh
