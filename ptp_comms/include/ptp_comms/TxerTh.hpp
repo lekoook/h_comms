@@ -7,6 +7,7 @@
 #include <vector>
 #include <mutex>
 #include "subt_communication_broker/subt_communication_client.h"
+#include "Packet.hpp"
 
 class TxQueueData
 {
@@ -25,12 +26,16 @@ private:
     // Constants
     uint8_t const MAX_QUEUE_SIZE = 10;
     uint8_t const MAX_QUEUE_TRIES = 3;
+    uint32_t const MAX_PACKET_SIZE = 10; // Constrained by subt API
+    uint32_t const MAX_SEGMENT_SIZE = MAX_PACKET_SIZE - Packet::FIXED_LEN;
 
     std::thread txThread;
     std::atomic<bool> thRunning;
     std::queue<TxQueueData> txQ;
     std::mutex mTxQ;
     subt::CommsClient* cc;
+
+    uint32_t sequence = 0;
 
     void _run()
     {
@@ -51,7 +56,12 @@ private:
                 subt::CommsClient::Neighbor_M nb = cc->Neighbors();
                 if (nb.find(dat.dest) != nb.end())
                 {
-                    cc->SendTo(_uint8_to_string(dat.data), dat.dest);
+                    std::vector<Packet> segments = segmentize(dat.data);
+                    for (Packet p : segments)
+                    {
+                        std::string ser = p.serialize();
+                        cc->SendTo(ser, dat.dest);
+                    }
                 }
                 else
                 {
@@ -63,6 +73,26 @@ private:
                 }
             }
         }
+    }
+
+    std::vector<Packet> segmentize(const std::vector<uint8_t>& data)
+    {
+        int dSize = data.size();
+        int segs = (dSize / MAX_SEGMENT_SIZE) + ((dSize % MAX_SEGMENT_SIZE) != 0);
+        std::vector<Packet> pkts;
+        int s = 0;
+
+        for (size_t i = 0; i < dSize; i+= MAX_SEGMENT_SIZE)
+        {
+            auto last = std::min((unsigned long)dSize, i + MAX_SEGMENT_SIZE);
+            pkts.push_back(Packet(sequence, 
+                    (uint8_t)segs, 
+                    (uint8_t)s++, 
+                    std::vector<uint8_t>(data.begin() + i, data.begin() + last)));
+        }
+        sequence++;
+
+        return pkts;
     }
 
     bool _sendOne(TxQueueData& sendData)
