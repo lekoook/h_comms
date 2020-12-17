@@ -8,10 +8,9 @@
 
 class Packet
 {
-private:
-    uint8_t const FIXED_LEN = 7;
-
 public:
+    static uint8_t const FIXED_LEN = 7;
+
     bool isAck = false;
     uint32_t seqNum = 0;
     uint8_t totalSegs = 0;
