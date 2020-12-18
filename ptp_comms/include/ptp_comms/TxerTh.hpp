@@ -26,8 +26,6 @@ private:
     // Constants
     uint8_t const MAX_QUEUE_SIZE = 10;
     uint8_t const MAX_QUEUE_TRIES = 3;
-    uint32_t const MAX_PACKET_SIZE = 10; // Constrained by subt API
-    uint32_t const MAX_SEGMENT_SIZE = MAX_PACKET_SIZE - Packet::FIXED_LEN;
 
     std::thread txThread;
     std::atomic<bool> thRunning;
@@ -73,13 +71,13 @@ private:
     void sendData(const std::vector<uint8_t>& data, std::string dest)
     {
         int dSize = data.size();
-        int segs = (dSize / MAX_SEGMENT_SIZE) + ((dSize % MAX_SEGMENT_SIZE) != 0);
+        int segs = (dSize / Packet::MAX_SEGMENT_SIZE) + ((dSize % Packet::MAX_SEGMENT_SIZE) != 0);
         uint8_t* ptr = (uint8_t*)data.data();
         uint16_t s = 0;
 
-        for (size_t i = 0; i < dSize; i+= MAX_SEGMENT_SIZE)
+        for (size_t i = 0; i < dSize; i+= Packet::MAX_SEGMENT_SIZE)
         {
-            auto last = std::min((unsigned long)dSize, i + MAX_SEGMENT_SIZE);
+            auto last = std::min((unsigned long)dSize, i + Packet::MAX_SEGMENT_SIZE);
             cc->SendTo(
                 Packet(sequence, (uint8_t)segs, s++, std::vector<uint8_t>(ptr + i, ptr + last)).serialize(), dest);
         }
