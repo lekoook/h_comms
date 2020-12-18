@@ -6,7 +6,9 @@
 #include <queue>
 #include <vector>
 #include <mutex>
+#include <functional>
 #include "subt_communication_broker/subt_communication_client.h"
+#include "SegTable.hpp"
 
 class RxQueueData
 {
@@ -30,6 +32,8 @@ private:
     std::queue<RxQueueData> rxQ;
     std::mutex mRxQ;
     subt::CommsClient* cc;
+    SegTable segTable;
+    std::function<void(std::string, std::vector<uint8_t>&)> rxCb;
 
     void _run()
     {
@@ -48,10 +52,12 @@ private:
 
                 Packet pkt;
                 pkt.deserialize(dat.data);
-                ROS_INFO("%u", pkt.seqNum);
-                ROS_INFO("%u", pkt.totalSegs);
-                ROS_INFO("%u", pkt.segNum);
-                ROS_INFO("%s", std::string(pkt.data.begin(), pkt.data.end()).c_str());
+
+                if (segTable.updateSeg(dat.src, pkt))
+                {
+                    std::vector<uint8_t> v = segTable.getFullData(dat.src, pkt.seqNum);
+                    rxCb(dat.src, v);
+                }
             }
         }
     }
@@ -80,7 +86,7 @@ private:
     }
     
 public:
-    RxerTh(subt::CommsClient* cc) : cc(cc)
+    RxerTh(subt::CommsClient* cc, std::function<void(std::string, std::vector<uint8_t>&)> rxCb) : cc(cc), rxCb(rxCb)
     {
         thRunning.store(false);
     }

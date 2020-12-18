@@ -17,7 +17,7 @@ public:
      * @brief Total length of fixed-length fields.
      * 
      */
-    static uint8_t const FIXED_LEN = 7;
+    static uint8_t const FIXED_LEN = 10;
 
     /**
      * @brief Total allowable size (bytes) of a Packet.
@@ -44,16 +44,16 @@ public:
     uint32_t seqNum = 0;
 
     /**
-     * @brief Packet field that indicate the total number of segments this segment belongs to.
-     * 
-     */
-    uint8_t totalSegs = 0;
-
-    /**
      * @brief Packet field that indicate the index number of this segment.
      * 
      */
     uint8_t segNum = 0;
+
+    /**
+     * @brief Packet field that indicate the total length of the full data.
+     * 
+     */
+    uint32_t totalLength = 0;
 
     /**
      * @brief Packet field containing the actual payload data.
@@ -71,15 +71,20 @@ public:
      * @brief Construct a new Packet object.
      * 
      * @param seqNum Sequence number of this packet.
-     * @param totalSegs Total number of segments.
      * @param segNum Segment number of this packet.
+     * @param totalLength Total length of full data.
      * @param data Payload data.
      * @param isAck True if this is an acknowledgement packet, false otherwise.
      */
-    Packet(uint32_t seqNum, uint8_t totalSegs, uint8_t segNum, std::vector<uint8_t> data, bool isAck=false)
-        : seqNum(seqNum), totalSegs(totalSegs), segNum(segNum), data(data), isAck(isAck)
+    Packet(uint32_t seqNum, uint8_t segNum, uint32_t totalLength, std::vector<uint8_t> data, bool isAck=false)
+        : seqNum(seqNum), segNum(segNum), totalLength(totalLength), data(data), isAck(isAck)
     {}
 
+    /**
+     * @brief Serializes the Packet into a std::string.
+     * 
+     * @return std::string Serialized string.
+     */
     std::string serialize()
     {
         uint32_t tLen = FIXED_LEN + data.size();
@@ -87,22 +92,27 @@ public:
 
         serialisers::copyU8(&temp[0], isAck ? 1 : 0);
         serialisers::copyU32(&temp[1], seqNum);
-        serialisers::copyU8(&temp[5], totalSegs);
-        serialisers::copyU8(&temp[6], segNum);
-        memcpy(&temp[7], data.data(), data.size());
+        serialisers::copyU16(&temp[5], totalLength);
+        serialisers::copyU8(&temp[9], segNum);
+        memcpy(&temp[10], data.data(), data.size());
 
         return std::string((char*)temp, tLen);
     }
 
+    /**
+     * @brief Deserializes a std::string into a Packet. Caller must ensure length of string is correct.
+     * 
+     * @param byteStr std::string to deserialize from.
+     */
     void deserialize(std::string byteStr)
     {
         uint8_t* temp = (uint8_t*) byteStr.data();
         isAck = (serialisers::getU8(&temp[0]) == 1);
         seqNum = serialisers::getU32(&temp[1]);
-        totalSegs = serialisers::getU8(&temp[5]);
-        segNum = serialisers::getU8(&temp[6]);
+        totalLength = serialisers::getU16(&temp[5]);
+        segNum = serialisers::getU8(&temp[9]);
         uint32_t dataLen = byteStr.size() - FIXED_LEN;
-        uint8_t* dStart = &temp[7];
+        uint8_t* dStart = &temp[10];
         data = std::vector<uint8_t>(dStart, dStart + dataLen);
     }
 };

@@ -79,7 +79,7 @@ private:
         {
             auto last = std::min((unsigned long)dSize, i + Packet::MAX_SEGMENT_SIZE);
             cc->SendTo(
-                Packet(sequence, (uint8_t)segs, s++, std::vector<uint8_t>(ptr + i, ptr + last)).serialize(), dest);
+                Packet(sequence, s++, dSize, std::vector<uint8_t>(ptr + i, ptr + last)).serialize(), dest);
         }
         sequence++;
     }

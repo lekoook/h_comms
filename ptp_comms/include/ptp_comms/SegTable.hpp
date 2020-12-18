@@ -58,11 +58,13 @@ public:
         else
         {
             // No exisiting record, make a new entry with enough reserved space for the whole data.
-            std::vector<uint8_t> whole(segment.totalSegs * Packet::MAX_SEGMENT_SIZE, 0);
+            std::vector<uint8_t> whole(segment.totalLength, 0);
             // Insert this first arrived segment.
             std::copy(segment.data.begin(), segment.data.end(), whole.begin() + segment.segNum * Packet::MAX_SEGMENT_SIZE);
             // Construct the bitset.
-            std::vector<bool> bitset((size_t)segment.totalSegs, false);
+            std::vector<bool> bitset(
+                (segment.totalLength / Packet::MAX_SEGMENT_SIZE) + ((segment.totalLength % Packet::MAX_SEGMENT_SIZE) != 0), 
+                false);
             bitset[segment.segNum] = true;
 
             table[key] = std::make_pair(whole, bitset);
