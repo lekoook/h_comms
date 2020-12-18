@@ -6,19 +6,76 @@
 #include <vector>
 #include "serialisers.hpp"
 
+/**
+ * @brief Represents a single packet that can be transmitted or received.
+ * 
+ */
 class Packet
 {
 public:
+    /**
+     * @brief Total length of fixed-length fields.
+     * 
+     */
     static uint8_t const FIXED_LEN = 7;
 
+    /**
+     * @brief Total allowable size (bytes) of a Packet.
+     * 
+     */
+    static uint32_t const MAX_PACKET_SIZE = 1500; // Constrained by subt API
+
+    /**
+     * @brief Total allowable size (bytes) of a segment. MAX_SEGMENT_SIZE = MAX_PACKET_SIZE - FIXED_LEN
+     * 
+     */
+    static uint32_t const MAX_SEGMENT_SIZE = MAX_PACKET_SIZE - FIXED_LEN;
+
+    /**
+     * @brief Packet field that indicate if this is an acknowledgment packet.
+     * 
+     */
     bool isAck = false;
+
+    /**
+     * @brief Packet field that indicate sequence number of this packet.
+     * 
+     */
     uint32_t seqNum = 0;
+
+    /**
+     * @brief Packet field that indicate the total number of segments this segment belongs to.
+     * 
+     */
     uint8_t totalSegs = 0;
+
+    /**
+     * @brief Packet field that indicate the index number of this segment.
+     * 
+     */
     uint8_t segNum = 0;
+
+    /**
+     * @brief Packet field containing the actual payload data.
+     * 
+     */
     std::vector<uint8_t> data;
 
+    /**
+     * @brief Construct a new Packet object.
+     * 
+     */
     Packet() {}
 
+    /**
+     * @brief Construct a new Packet object.
+     * 
+     * @param seqNum Sequence number of this packet.
+     * @param totalSegs Total number of segments.
+     * @param segNum Segment number of this packet.
+     * @param data Payload data.
+     * @param isAck True if this is an acknowledgement packet, false otherwise.
+     */
     Packet(uint32_t seqNum, uint8_t totalSegs, uint8_t segNum, std::vector<uint8_t> data, bool isAck=false)
         : seqNum(seqNum), totalSegs(totalSegs), segNum(segNum), data(data), isAck(isAck)
     {}
