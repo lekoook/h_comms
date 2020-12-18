@@ -46,7 +46,12 @@ private:
                 RxQueueData dat = rxQ.front();
                 rxQ.pop();
 
-                
+                Packet pkt;
+                pkt.deserialize(dat.data);
+                ROS_INFO("%u", pkt.seqNum);
+                ROS_INFO("%u", pkt.totalSegs);
+                ROS_INFO("%u", pkt.segNum);
+                ROS_INFO("%s", std::string(pkt.data.begin(), pkt.data.end()).c_str());
             }
         }
     }

@@ -56,12 +56,7 @@ private:
                 subt::CommsClient::Neighbor_M nb = cc->Neighbors();
                 if (nb.find(dat.dest) != nb.end())
                 {
-                    std::vector<Packet> segments = segmentize(dat.data);
-                    for (Packet p : segments)
-                    {
-                        std::string ser = p.serialize();
-                        cc->SendTo(ser, dat.dest);
-                    }
+                    sendData(dat.data, dat.dest);
                 }
                 else
                 {
@@ -75,24 +70,20 @@ private:
         }
     }
 
-    std::vector<Packet> segmentize(const std::vector<uint8_t>& data)
+    void sendData(const std::vector<uint8_t>& data, std::string dest)
     {
         int dSize = data.size();
         int segs = (dSize / MAX_SEGMENT_SIZE) + ((dSize % MAX_SEGMENT_SIZE) != 0);
-        std::vector<Packet> pkts;
-        int s = 0;
+        uint8_t* ptr = (uint8_t*)data.data();
+        uint16_t s = 0;
 
         for (size_t i = 0; i < dSize; i+= MAX_SEGMENT_SIZE)
         {
             auto last = std::min((unsigned long)dSize, i + MAX_SEGMENT_SIZE);
-            pkts.push_back(Packet(sequence, 
-                    (uint8_t)segs, 
-                    (uint8_t)s++, 
-                    std::vector<uint8_t>(data.begin() + i, data.begin() + last)));
+            cc->SendTo(
+                Packet(sequence, (uint8_t)segs, s++, std::vector<uint8_t>(ptr + i, ptr + last)).serialize(), dest);
         }
         sequence++;
-
-        return pkts;
     }
 
     bool _sendOne(TxQueueData& sendData)
