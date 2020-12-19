@@ -26,13 +26,20 @@ private:
     // Constants
     uint8_t const MAX_QUEUE_SIZE = 10;
     uint8_t const MAX_QUEUE_TRIES = 3;
+    uint8_t const MAX_SEGMENT_TRIES = 3;
 
     std::thread txThread;
     std::atomic<bool> thRunning;
     std::queue<TxQueueData> txQ;
     std::mutex mTxQ;
     subt::CommsClient* cc;
-
+    std::mutex mAck;
+    std::condition_variable cvAck;
+    bool gotAck;
+    std::mutex mWaitAck;
+    std::string waitSrc;
+    uint32_t waitSeq;
+    uint8_t waitSeg;
     uint32_t sequence = 0;
 
     void _run()
@@ -52,11 +59,7 @@ private:
 
                 // Only send if the destination is a neighbour.
                 subt::CommsClient::Neighbor_M nb = cc->Neighbors();
-                if (nb.find(dat.dest) != nb.end())
-                {
-                    sendData(dat.data, dat.dest);
-                }
-                else
+                if (nb.find(dat.dest) == nb.end() || !sendData(dat.data, dat.dest))
                 {
                     dat.tries++;
                     if (dat.tries < MAX_QUEUE_TRIES)
@@ -68,7 +71,7 @@ private:
         }
     }
 
-    void sendData(const std::vector<uint8_t>& data, std::string dest)
+    bool sendData(const std::vector<uint8_t>& data, std::string dest)
     {
         int dSize = data.size();
         int segs = (dSize / Packet::MAX_SEGMENT_SIZE) + ((dSize % Packet::MAX_SEGMENT_SIZE) != 0);
@@ -77,11 +80,24 @@ private:
 
         for (size_t i = 0; i < dSize; i+= Packet::MAX_SEGMENT_SIZE)
         {
+            int tries = 0;
             auto last = std::min((unsigned long)dSize, i + Packet::MAX_SEGMENT_SIZE);
-            cc->SendTo(
-                Packet(sequence, s++, dSize, std::vector<uint8_t>(ptr + i, ptr + last)).serialize(), dest);
+            do
+            {
+                cc->SendTo(
+                    Packet(sequence, s, dSize, std::vector<uint8_t>(ptr + i, ptr + last)).serialize(), dest);
+                tries++;
+            } while (!_waitAck(sequence, s, dest, 1000) && tries < MAX_SEGMENT_TRIES);
+
+            if (tries >= MAX_SEGMENT_TRIES)
+            {
+                sequence++;
+                return false;
+            }
+            s++;
         }
         sequence++;
+        return true;
     }
 
     bool _queueOne(TxQueueData& sendData)
@@ -94,6 +110,47 @@ private:
         else
         {
             return false;
+        }
+    }
+
+    bool _waitAck(uint32_t seqNum, uint8_t segNum, std::string src, uint32_t timeout)
+    {
+        {
+            std::lock_guard<std::mutex> wLock(mWaitAck);
+            waitSrc = src;
+            waitSeq = seqNum;
+            waitSeg = segNum;
+        }
+        gotAck = false;
+        std::unique_lock<std::mutex> lock(mAck);
+        bool res = cvAck.wait_for(
+            lock, 
+            std::chrono::milliseconds(timeout),
+            [this] () -> bool
+                {
+                    return gotAck;
+                }
+            );
+        return res;
+    }
+
+    void _signalAck(uint32_t seqNum, uint8_t segNum, std::string src)
+    {
+        uint32_t tseq;
+        uint8_t tseg;
+        std::string tsrc;
+        {
+            std::lock_guard<std::mutex> wLock(mWaitAck);
+            tseq = waitSeq;
+            tseg = waitSeg;
+            tsrc = waitSrc;
+        }
+
+        if (seqNum == tseq && segNum == tseg && src == tsrc)
+        {
+            std::lock_guard<std::mutex> lock(mAck);
+            gotAck = true;
+            cvAck.notify_one(); // Inform that an ACK has been received.
         }
     }
 
@@ -141,6 +198,11 @@ public:
     {
         std::lock_guard<std::mutex> lock(mTxQ);
         return _queueOne(sendData);
+    }
+
+    void notifyAck(uint32_t seqNum, uint8_t segNum, std::string src)
+    {
+        _signalAck(seqNum, segNum, src);
     }
 };
 

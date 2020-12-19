@@ -40,7 +40,7 @@ int main(int argc, char** argv)
     subt::CommsClient cc(robotAddr);
     TxerTh txTh(&cc);
     std::function<void(std::string, std::vector<uint8_t>)> cb = &pubRx;
-    RxerTh rxTh(&cc, pubRx);
+    RxerTh rxTh(&cc, &txTh, pubRx);
     pRxTh = &rxTh;
 
     cc.Bind(rxCb, robotAddr);

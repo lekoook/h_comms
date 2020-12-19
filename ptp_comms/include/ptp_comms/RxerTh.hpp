@@ -32,6 +32,7 @@ private:
     std::queue<RxQueueData> rxQ;
     std::mutex mRxQ;
     subt::CommsClient* cc;
+    TxerTh* txerTh;
     SegTable segTable;
     std::function<void(std::string, std::vector<uint8_t>&)> rxCb;
 
@@ -56,7 +57,7 @@ private:
                 // If this is not an ACK, we reply an ACK and process the segment.
                 if (!pkt.isAck)
                 {
-                    _ack(dat.src, pkt);
+                    // _ack(dat.src, pkt);
                     if (segTable.updateSeg(dat.src, pkt))
                     {
                         std::vector<uint8_t> v = segTable.getFullData(dat.src, pkt.seqNum);
@@ -65,7 +66,7 @@ private:
                 }
                 else
                 {
-                    // Process ACK here.
+                    txerTh->notifyAck(pkt.seqNum, pkt.segNum, dat.src); // Notify that an ACK has been received.
                 }
             }
         }
@@ -102,7 +103,7 @@ private:
     }
     
 public:
-    RxerTh(subt::CommsClient* cc, std::function<void(std::string, std::vector<uint8_t>&)> rxCb) : cc(cc), rxCb(rxCb)
+    RxerTh(subt::CommsClient* cc, TxerTh* txerTh, std::function<void(std::string, std::vector<uint8_t>&)> rxCb) : cc(cc), txerTh(txerTh), rxCb(rxCb)
     {
         thRunning.store(false);
     }
