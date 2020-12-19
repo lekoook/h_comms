@@ -92,7 +92,10 @@ public:
     std::vector<uint8_t> getFullData(std::string addr, uint32_t sequence)
     {
         std::lock_guard<std::mutex> lock(mTable);
-        return table[std::make_pair(addr, sequence)].first;
+        auto key = std::make_pair(addr, sequence);
+        std::vector<uint8_t> ret = table[key].first;
+        table.erase(key);
+        return ret;
     }
 
     /**
