@@ -7,6 +7,7 @@
 #include <vector>
 #include <mutex>
 #include <functional>
+#include <map>
 #include "subt_communication_broker/subt_communication_client.h"
 #include "SegTable.hpp"
 
@@ -26,6 +27,8 @@ private:
     // Constants
     uint8_t const MAX_QUEUE_SIZE = 10;
     uint8_t const MAX_QUEUE_TRIES = 3;
+    uint32_t const MAX_ENTRY_AGE = 300; // Seconds
+    int32_t const CLEAN_SLEEP_TIME = 30; // Seconds
 
     std::thread rxThread;
     std::atomic<bool> thRunning;
@@ -35,6 +38,10 @@ private:
     TxerTh* txerTh;
     SegTable segTable;
     std::function<void(std::string, std::vector<uint8_t>&)> rxCb;
+    std::map<std::tuple<std::string, uint32_t, uint8_t>, uint32_t> seenRx;
+    std::mutex mSeenRx;
+    std::thread cleanSeenRxTh;
+    std::atomic<bool> cleanRunning;
 
     void _run()
     {
@@ -57,12 +64,7 @@ private:
                 // If this is not an ACK, we reply an ACK and process the segment.
                 if (!pkt.isAck)
                 {
-                    _ack(dat.src, pkt);
-                    if (segTable.updateSeg(dat.src, pkt))
-                    {
-                        std::vector<uint8_t> v = segTable.getFullData(dat.src, pkt.seqNum);
-                        rxCb(dat.src, v);
-                    }
+                    _handleData(pkt, dat.src);
                 }
                 else
                 {
@@ -90,6 +92,59 @@ private:
         Packet pkt(received.seqNum, received.segNum, 0, std::vector<uint8_t>(), true);
         std::string ser = pkt.serialize();
         cc->SendTo(ser, dest);
+    }
+
+    void _handleData(Packet& packet, std::string src)
+    {
+        _ack(src, packet); // ACK immediately first.
+
+        // Find out if we have already seen this src, sequence, segment number recently.
+        auto key = std::make_tuple(src, packet.seqNum, packet.segNum);
+        bool notSeen = false;
+        {
+            std::lock_guard<std::mutex> lock(mSeenRx);
+            notSeen = seenRx.find(key) == seenRx.end();
+            seenRx[key] = ros::Time::now().sec; // Update the timestamp of this seen RX entry.
+        }
+
+        // If we have not seen this recently, process the data.
+        if (notSeen)
+        {
+            if (segTable.updateSeg(src, packet))
+            {
+                std::vector<uint8_t> v = segTable.getFullData(src, packet.seqNum);
+                rxCb(src, v);
+            }
+        }
+    }
+
+    void _cleanSeenRx()
+    {
+        while(cleanRunning.load())
+        {
+            {
+                std::lock_guard<std::mutex> lock(mSeenRx);
+                for (auto entry : seenRx)
+                {
+                    std::cout << std::get<1>(entry.first) << " : " << entry.second << std::endl;
+                }
+                
+                // Go through all entries and see which one is old enough to be removed.
+                int64_t current = ros::Time::now().sec;
+                for (auto it = seenRx.begin(); it != seenRx.end();)
+                {
+                    if (current - (int64_t)it->second > MAX_ENTRY_AGE)
+                    {
+                        it = seenRx.erase(it);
+                    }
+                    else
+                    {
+                        it++;
+                    }
+                }
+            }
+            ros::Duration(CLEAN_SLEEP_TIME, 0).sleep();
+        }
     }
 
     std::string _uint8_to_string(std::vector<uint8_t>& b)
@@ -121,14 +176,21 @@ public:
         }
         thRunning.store(true);
         rxThread = std::thread(&RxerTh::_run, this);
+        cleanRunning.store(true);
+        cleanSeenRxTh = std::thread(&RxerTh::_cleanSeenRx, this);
     }
 
     void stop()
     {
         thRunning.store(false);
+        cleanRunning.store(false);
         if (rxThread.joinable())
         {
             rxThread.join();
+        }
+        if (cleanSeenRxTh.joinable())
+        {
+            cleanSeenRxTh.join();
         }
     }
 
