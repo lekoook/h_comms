@@ -14,7 +14,7 @@ void rxCb(const std::string &_srcAddress, const std::string &_dstAddress, const 
 
 bool txData(ptp_comms::TxData::Request &req, ptp_comms::TxData::Response &res, TxerTh* th)
 {
-    res.successful = th->sendOne(TxQueueData(req.data, req.dest));
+    res.successful = th->sendOne(req.data, req.dest);
     return res.successful;
 }
 

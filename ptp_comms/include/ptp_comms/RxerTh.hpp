@@ -57,7 +57,7 @@ private:
                 // If this is not an ACK, we reply an ACK and process the segment.
                 if (!pkt.isAck)
                 {
-                    // _ack(dat.src, pkt);
+                    _ack(dat.src, pkt);
                     if (segTable.updateSeg(dat.src, pkt))
                     {
                         std::vector<uint8_t> v = segTable.getFullData(dat.src, pkt.seqNum);

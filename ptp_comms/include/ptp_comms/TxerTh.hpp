@@ -9,20 +9,23 @@
 #include "subt_communication_broker/subt_communication_client.h"
 #include "Packet.hpp"
 
-class TxQueueData
-{
-public:
-    int8_t tries = 0;
-    std::vector<uint8_t> data;
-    std::string dest;
-    TxQueueData () {}
-    TxQueueData (std::vector<uint8_t> data, std::string dest) : data(data), dest(dest)
-    {}
-};
 
 class TxerTh
 {
 private:
+    class TxQueueData
+    {
+    public:
+        int8_t tries = 0;
+        uint32_t seqNum = 0;
+        std::vector<uint8_t> data;
+        std::string dest;
+        TxQueueData () {}
+        TxQueueData (std::vector<uint8_t> data, std::string dest, uint32_t seqNum) 
+            : data(data), dest(dest), seqNum(seqNum)
+        {}
+    };
+
     // Constants
     uint8_t const MAX_QUEUE_SIZE = 10;
     uint8_t const MAX_QUEUE_TRIES = 3;
@@ -59,7 +62,7 @@ private:
 
                 // Only send if the destination is a neighbour.
                 subt::CommsClient::Neighbor_M nb = cc->Neighbors();
-                if (nb.find(dat.dest) == nb.end() || !sendData(dat.data, dat.dest))
+                if (nb.find(dat.dest) == nb.end() || !sendData(dat))
                 {
                     dat.tries++;
                     if (dat.tries < MAX_QUEUE_TRIES)
@@ -71,11 +74,11 @@ private:
         }
     }
 
-    bool sendData(const std::vector<uint8_t>& data, std::string dest)
+    bool sendData(const TxQueueData& data)
     {
-        int dSize = data.size();
+        int dSize = data.data.size();
         int segs = (dSize / Packet::MAX_SEGMENT_SIZE) + ((dSize % Packet::MAX_SEGMENT_SIZE) != 0);
-        uint8_t* ptr = (uint8_t*)data.data();
+        uint8_t* ptr = (uint8_t*)data.data.data();
         uint16_t s = 0;
 
         for (size_t i = 0; i < dSize; i+= Packet::MAX_SEGMENT_SIZE)
@@ -85,18 +88,16 @@ private:
             do
             {
                 cc->SendTo(
-                    Packet(sequence, s, dSize, std::vector<uint8_t>(ptr + i, ptr + last)).serialize(), dest);
+                    Packet(data.seqNum, s, dSize, std::vector<uint8_t>(ptr + i, ptr + last)).serialize(), data.dest);
                 tries++;
-            } while (!_waitAck(sequence, s, dest, 1000) && tries < MAX_SEGMENT_TRIES);
+            } while (!_waitAck(data.seqNum, s, data.dest, 1000) && tries < MAX_SEGMENT_TRIES);
 
             if (tries >= MAX_SEGMENT_TRIES)
             {
-                sequence++;
                 return false;
             }
             s++;
         }
-        sequence++;
         return true;
     }
 
@@ -194,9 +195,10 @@ public:
         }
     }
 
-    bool sendOne(TxQueueData sendData)
+    bool sendOne(std::vector<uint8_t> data, std::string dest)
     {
         std::lock_guard<std::mutex> lock(mTxQ);
+        TxQueueData sendData(data, dest, sequence++);
         return _queueOne(sendData);
     }
 
