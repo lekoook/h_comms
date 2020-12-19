@@ -1,33 +1,29 @@
-# h_comms
+# Point-To-Point Reliable Communication
+This package implements a reliable communication exchange between 2 robots.
 
-High level communications for team NUS SEDS.
+The reliability comes from a basic acknowledgement process:
 
-## Install these prerequisites for ROS message conversion
-sudo apt-get install python3-pip python3-yaml
-sudo pip3 install rospkg catkin_pkg
+1. Sender sends message.
+2. Sender waits for acknowledgement.
+3. Receiver receives message.
+4. Receiver replies with acknowledgement.
 
 ## Start the simulator with 3 robots
-source ~/subt_ws/install/setup.bash
+`catkin_make install`
 
-ign launch -v 4 cave_circuit.ign worldName:=simple_cave_01 robotName1:=X1 robotConfig1:=X1_SENSOR_CONFIG_1 robotName2:=X2 robotConfig2:=X1_SENSOR_CONFIG_1 robotName3:=X3 robotConfig3:=X1_SENSOR_CONFIG_1
+`source ~/subt_ws/install/setup.bash`
 
-## Begin the communication channel using simple comms
-source ~/subt_ws/devel/setup.bash
+`ign launch -v 4 cave_circuit.ign worldName:=simple_cave_01 robotName1:=X1 robotConfig1:=X1_SENSOR_CONFIG_1 robotName2:=X2 robotConfig2:=X1_SENSOR_CONFIG_1 robotName3:=X3 robotConfig3:=X1_SENSOR_CONFIG_1`
 
-rosrun simple_comms simple_comms
+## Begin the communication node for each robot with:
+`roslaunch ptp_comms node.launch name:=[NAME]`
 
-## Use the teleop to control the vehicle
-source ~/subt_ws/install/setup.bash
+where `[NAME]` is the name determined by subt.
 
-rosrun teleop_twist_keyboard teleop_twist_keyboard.py /cmd_vel:=/X1/cmd_vel
+Examples:
 
-## Use noroute_mesh package
-In seperate terminals, run the following
+`roslaunch ptp_comms node.launch name:=X1`
 
-rosrun noroute_mesh msg_converter.py (to run message conversion services)
+`roslaunch ptp_comms node.launch name:=X2`
 
-rosrun noroute_mesh noroute_mesh_node X1 1 (to enable robot X1 CommsClient and communication services)
-
-rosrun noroute_mesh noroute_mesh_node X2 2 (to enable robot X2 CommsClient and communication services))
-
-rqt (to test services)
+`roslaunch ptp_comms node.launch name:=X3`
