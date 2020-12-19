@@ -1,9 +1,11 @@
 #include "ros/ros.h"
 #include "ptp_comms/TxData.h"
+#include "ptp_comms/RxData.h"
 #include "TxerTh.hpp"
 #include "RxerTh.hpp"
 
 RxerTh* pRxTh; // TODO: Is there a better way than using global variable?
+ros::Publisher rxPubber;
 
 void rxCb(const std::string &_srcAddress, const std::string &_dstAddress, const uint32_t _dstPort, const std::string &_data)
 {
@@ -16,6 +18,14 @@ bool txData(ptp_comms::TxData::Request &req, ptp_comms::TxData::Response &res, T
     return res.successful;
 }
 
+void pubRx(std::string src, std::vector<uint8_t> data)
+{
+    ptp_comms::RxData msg;
+    msg.data = data;
+    msg.src = src;
+    rxPubber.publish(msg);
+}
+
 int main(int argc, char** argv)
 {
     // Constants
@@ -25,12 +35,13 @@ int main(int argc, char** argv)
 
     ros::init(argc, argv, robotAddr + "_point_to_point_comms");
     ros::NodeHandle nh;
+    rxPubber = nh.advertise<ptp_comms::RxData>(robotAddr + "/rx_data", 100);
     
     subt::CommsClient cc(robotAddr);
     TxerTh txTh(&cc);
-    RxerTh rxTh(&cc);
+    std::function<void(std::string, std::vector<uint8_t>)> cb = &pubRx;
+    RxerTh rxTh(&cc, pubRx);
     pRxTh = &rxTh;
-    
 
     cc.Bind(rxCb, robotAddr);
     cc.StartBeaconInterval(ros::Duration(PING_INTERVAL));
