@@ -78,6 +78,7 @@ private:
         for (size_t i = 0; i < dSize; i+= Packet::MAX_SEGMENT_SIZE)
         {
             auto last = std::min((unsigned long)dSize, i + Packet::MAX_SEGMENT_SIZE);
+            std::cout << "DATA to " << dest << " for SEQ: " << sequence << " and SEG: " << s << std::endl;
             cc->SendTo(
                 Packet(sequence, s++, dSize, std::vector<uint8_t>(ptr + i, ptr + last)).serialize(), dest);
         }

@@ -53,10 +53,19 @@ private:
                 Packet pkt;
                 pkt.deserialize(dat.data);
 
-                if (segTable.updateSeg(dat.src, pkt))
+                // If this is not an ACK, we reply an ACK and process the segment.
+                if (!pkt.isAck)
                 {
-                    std::vector<uint8_t> v = segTable.getFullData(dat.src, pkt.seqNum);
-                    rxCb(dat.src, v);
+                    _ack(dat.src, pkt);
+                    if (segTable.updateSeg(dat.src, pkt))
+                    {
+                        std::vector<uint8_t> v = segTable.getFullData(dat.src, pkt.seqNum);
+                        rxCb(dat.src, v);
+                    }
+                }
+                else
+                {
+                    // Process ACK here.
                 }
             }
         }
@@ -73,6 +82,13 @@ private:
         {
             return false;
         }
+    }
+
+    void _ack(std::string dest, Packet& received)
+    {
+        Packet pkt(received.seqNum, received.segNum, 0, std::vector<uint8_t>(), true);
+        std::string ser = pkt.serialize();
+        cc->SendTo(ser, dest);
     }
 
     std::string _uint8_to_string(std::vector<uint8_t>& b)
