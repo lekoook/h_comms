@@ -56,9 +56,12 @@ private:
             }
             if (!empty)
             {
-                std::lock_guard<std::mutex> lock(mTxQ);
-                TxQueueData dat = txQ.front();
-                txQ.pop();
+                TxQueueData dat;
+                {
+                    std::lock_guard<std::mutex> lock(mTxQ);
+                    dat = txQ.front();
+                    txQ.pop();
+                }
 
                 // Only send if the destination is a neighbour.
                 subt::CommsClient::Neighbor_M nb = cc->Neighbors();
