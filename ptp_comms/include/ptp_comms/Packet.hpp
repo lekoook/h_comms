@@ -23,7 +23,7 @@ public:
      * @brief Total allowable size (bytes) of a Packet.
      * 
      */
-    static uint32_t const MAX_PACKET_SIZE = 13; // Constrained by subt API
+    static uint32_t const MAX_PACKET_SIZE = 1500; // Constrained by subt API
 
     /**
      * @brief Total allowable size (bytes) of a segment. MAX_SEGMENT_SIZE = MAX_PACKET_SIZE - FIXED_LEN
