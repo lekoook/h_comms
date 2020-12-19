@@ -61,7 +61,7 @@ private:
                     dat.tries++;
                     if (dat.tries < MAX_QUEUE_TRIES)
                     {
-                        _sendOne(dat); // Re-queue the data back into the queue to be processed again later. Give up after MAX_QUEUE_TRIES attempts.
+                        _queueOne(dat); // Re-queue the data back into the queue to be processed again later. Give up after MAX_QUEUE_TRIES attempts.
                     }
                 }
             }
@@ -84,7 +84,7 @@ private:
         sequence++;
     }
 
-    bool _sendOne(TxQueueData& sendData)
+    bool _queueOne(TxQueueData& sendData)
     {
         if (txQ.size() < MAX_QUEUE_SIZE)
         {
@@ -140,7 +140,7 @@ public:
     bool sendOne(TxQueueData sendData)
     {
         std::lock_guard<std::mutex> lock(mTxQ);
-        return _sendOne(sendData);
+        return _queueOne(sendData);
     }
 };
 
