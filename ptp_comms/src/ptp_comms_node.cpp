@@ -33,9 +33,9 @@ int main(int argc, char** argv)
 
     std::string robotAddr = argv[1];
 
-    ros::init(argc, argv, robotAddr + "_point_to_point_comms");
+    ros::init(argc, argv, "point_to_point_comms");
     ros::NodeHandle nh;
-    rxPubber = nh.advertise<ptp_comms::RxData>(robotAddr + "/rx_data", 100);
+    rxPubber = nh.advertise<ptp_comms::RxData>("rx_data", 100);
     
     subt::CommsClient cc(robotAddr);
     TxerTh txTh(&cc);
@@ -49,7 +49,7 @@ int main(int argc, char** argv)
     rxTh.start();
 
     ros::ServiceServer txService = nh.advertiseService<ptp_comms::TxData::Request, ptp_comms::TxData::Response>(
-        robotAddr + "/tx_data", 
+        "tx_data", 
         std::bind(&txData, std::placeholders::_1, std::placeholders::_2, &txTh)
         );
 

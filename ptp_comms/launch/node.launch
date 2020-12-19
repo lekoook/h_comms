@@ -1,0 +1,4 @@
+<launch>
+    <arg name="name" />
+    <node pkg="ptp_comms" type="ptp_comms_node" name="ptp_comms_node" output="screen" args="$(arg name)" ns="$(arg name)"/>
+</launch>
