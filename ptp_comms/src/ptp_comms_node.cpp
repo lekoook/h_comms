@@ -6,15 +6,24 @@
 
 RxerTh* pRxTh; // TODO: Is there a better way than using global variable?
 ros::Publisher rxPubber;
+std::string robotAddr;
 
 void rxCb(const std::string &_srcAddress, const std::string &_dstAddress, const uint32_t _dstPort, const std::string &_data)
 {
-    pRxTh->recvOne(RxQueueData(_data, _srcAddress));
+    while(!pRxTh->recvOne(RxQueueData(_data, _srcAddress)));
 }
 
 bool txData(ptp_comms::TxData::Request &req, ptp_comms::TxData::Response &res, TxerTh* th)
 {
-    res.successful = th->sendOne(req.data, req.dest);
+    if (req.dest != robotAddr)
+    {
+        res.successful = th->sendOne(req.data, req.dest);
+    }
+    else
+    {
+        res.successful = false;
+    }
+    
     return res.successful;
 }
 
@@ -31,7 +40,7 @@ int main(int argc, char** argv)
     // Constants
     const double PING_INTERVAL = 1.0;
 
-    std::string robotAddr = argv[1];
+    robotAddr = argv[1];
 
     ros::init(argc, argv, "point_to_point_comms");
     ros::NodeHandle nh;
