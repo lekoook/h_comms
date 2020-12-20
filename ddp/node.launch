@@ -1,0 +1,4 @@
+<launch>
+    <arg name="name" />
+    <node pkg="ddp" type="ddp_node" name="ddp_node" output="screen" args="$(arg name)" ns="$(arg name)"/>
+</launch>
