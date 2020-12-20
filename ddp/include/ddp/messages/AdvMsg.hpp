@@ -15,7 +15,7 @@ class AdvMsg : public BaseMsg
 private:
     /**
      * @brief Total length of fixed-length fields.
-     * @details Length = Type(1)
+     * @details Length = MsgType(1)
      * 
      */
     const uint8_t FIXED_LEN = 1;
@@ -31,14 +31,14 @@ public:
      * @brief Construct a new Adv Msg object.
      * 
      */
-    AdvMsg() : BaseMsg(Type::Advertisement) {}
+    AdvMsg() : BaseMsg(MsgType::Advertisement) {}
 
     /**
      * @brief Construct a new Adv Msg object.
      * 
      * @param advData Advertisement data.
      */
-    AdvMsg(std::vector<uint8_t> advData) : BaseMsg(Type::Advertisement), data(advData) {}
+    AdvMsg(std::vector<uint8_t> advData) : BaseMsg(MsgType::Advertisement), data(advData) {}
 
     /**
      * @brief Serializes the advertisement message into a bytes vector.
@@ -67,9 +67,9 @@ public:
         uint8_t* temp = bytes.data();
         uint8_t t = serialisers::getU8(&temp[0]);
         
-        if (t != Type::Advertisement)
+        if (t != MsgType::Advertisement)
         {
-            throw std::invalid_argument("Message is not of Type::Advertisement!");
+            throw std::invalid_argument("Message is not of MsgType::Advertisement!");
         }
 
         uint32_t dataLen = bytes.size() - FIXED_LEN;

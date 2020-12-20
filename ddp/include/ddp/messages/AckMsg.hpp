@@ -37,7 +37,7 @@ public:
      * @brief Construct a new Ack Msg object.
      * 
      */
-    AckMsg() : BaseMsg(Type::Acknowledgement) {}
+    AckMsg() : BaseMsg(MsgType::Acknowledgement) {}
 
     /**
      * @brief Construct a new Ack Msg object.
@@ -46,7 +46,7 @@ public:
      * @param entryId The entry ID this acknowledgement message is acknowledging to.
      */
     AckMsg(uint32_t sequence, uint16_t entryId) 
-        : BaseMsg(Type::Acknowledgement), ackSequence(sequence), ackEntryId(entryId) {}
+        : BaseMsg(MsgType::Acknowledgement), ackSequence(sequence), ackEntryId(entryId) {}
 
     /**
      * @brief Serializes the acknowledgement message into a bytes vector.
@@ -75,7 +75,7 @@ public:
         uint8_t* temp = bytes.data();
         uint8_t t = serialisers::getU8(&temp[0]);
         
-        if (t != Type::Acknowledgement)
+        if (t != MsgType::Acknowledgement)
         {
             throw std::invalid_argument("Message is not of Type::Acknowledgement!");
         }

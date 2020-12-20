@@ -15,7 +15,7 @@ class ReqMsg : public BaseMsg
 private:
     /**
      * @brief Total length of fixed-length fields.
-     * @details Length = Type(1) + RequestSequence(4) + RequestEntryID(2)
+     * @details Length = MsgType(1) + RequestSequence(4) + RequestEntryID(2)
      * 
      */
     const uint8_t FIXED_LEN = 7;
@@ -37,7 +37,7 @@ public:
      * @brief Construct a new Req Msg object.
      * 
      */
-    ReqMsg() : BaseMsg(Type::Request) {}
+    ReqMsg() : BaseMsg(MsgType::Request) {}
 
     /**
      * @brief Construct a new Req Msg object.
@@ -45,7 +45,7 @@ public:
      * @param sequence The request sequence number of this message.
      * @param entryId The entry ID this request message is requesting for.
      */
-    ReqMsg(uint32_t sequence, uint16_t entryId) : BaseMsg(Type::Request), reqSequence(sequence), reqEntryId(entryId) {}
+    ReqMsg(uint32_t sequence, uint16_t entryId) : BaseMsg(MsgType::Request), reqSequence(sequence), reqEntryId(entryId) {}
 
     /**
      * @brief Serializes the request message into a bytes vector.
@@ -74,9 +74,9 @@ public:
         uint8_t* temp = bytes.data();
         uint8_t t = serialisers::getU8(&temp[0]);
         
-        if (t != Type::Request)
+        if (t != MsgType::Request)
         {
-            throw std::invalid_argument("Message is not of Type::Request!");
+            throw std::invalid_argument("Message is not of MsgType::Request!");
         }
 
         reqSequence = serialisers::getU32(&temp[1]);

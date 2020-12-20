@@ -5,6 +5,18 @@
 #include <cstdint>
 
 /**
+ * @brief Represents the type of a message. Can be one of the following: advertisement, Acknowledgement, Request or Data.
+ * 
+ */
+enum MsgType
+{
+    Advertisement = 0,
+    Acknowledgement = 1,
+    Request = 2,
+    Data = 3
+};
+
+/**
  * @brief Represents the base message for all message exchanges.
  * 
  */
@@ -12,29 +24,17 @@ class BaseMsg
 {
 protected:
     /**
-     * @brief Represents the type of a message. Can be one of the following: advertisement, Acknowledgement, Request or Data.
-     * 
-     */
-    enum Type
-    {
-        Advertisement = 0,
-        Acknowledgement = 1,
-        Request = 2,
-        Data = 3
-    };
-
-    /**
      * @brief Specific type of this message.
      * 
      */
-    const Type type;
+    const MsgType type;
 
     /**
      * @brief Construct a new Base Msg object.
      * 
      * @param type Specific type of this message.
      */
-    BaseMsg(Type type) : type(type) {}
+    BaseMsg(MsgType type) : type(type) {}
 
 public:
     /**

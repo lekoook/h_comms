@@ -15,7 +15,7 @@ class DataMsg : public BaseMsg
 private:
     /**
      * @brief Total length of fixed-length fields.
-     * @details Length = Type(1) + RequestSequence(4) + EntryID(2) + Timestamp(8)
+     * @details Length = MsgType(1) + RequestSequence(4) + EntryID(2) + Timestamp(8)
      * 
      */
     const uint8_t FIXED_LEN = 15;
@@ -49,7 +49,7 @@ public:
      * @brief Construct a new Data Msg object.
      * 
      */
-    DataMsg() : BaseMsg(Type::Data) {}
+    DataMsg() : BaseMsg(MsgType::Data) {}
 
     /**
      * @brief Construct a new Data Msg object.
@@ -57,7 +57,7 @@ public:
      * @param data Distributing data.
      */
     DataMsg(uint32_t sequence, uint16_t entryId, uint64_t timestamp, std::vector<uint8_t> data) 
-        : BaseMsg(Type::Data), reqSequence(sequence), entryId(entryId), timestamp(timestamp), data(data) {}
+        : BaseMsg(MsgType::Data), reqSequence(sequence), entryId(entryId), timestamp(timestamp), data(data) {}
 
     /**
      * @brief Serializes the data message into a bytes vector.
@@ -89,9 +89,9 @@ public:
         uint8_t* temp = bytes.data();
         uint8_t t = serialisers::getU8(&temp[0]);
         
-        if (t != Type::Data)
+        if (t != MsgType::Data)
         {
-            throw std::invalid_argument("Message is not of Type::Data!");
+            throw std::invalid_argument("Message is not of MsgType::Data!");
         }
         reqSequence = serialisers::getU32(&temp[1]);
         entryId = serialisers::getU16(&temp[5]);
