@@ -31,6 +31,12 @@ public:
     std::string src;
 
     /**
+     * @brief Destination address of this data.
+     * 
+     */
+    std::string dest;
+
+    /**
      * @brief Construct a new Rx Queue Data object.
      * 
      */
@@ -41,8 +47,9 @@ public:
      * 
      * @param data Actual payload data received.
      * @param src Source address of this data.
+     * @param dest Destination address of this data.
      */
-    RxQueueData (std::string data, std::string src) : data(data), src(src)
+    RxQueueData (std::string data, std::string src, std::string dest) : data(data), src(src), dest(dest)
     {}
 };
 
@@ -175,7 +182,7 @@ private:
                 // If this is not an ACK, we reply an ACK and process the segment.
                 if (!pkt.isAck)
                 {
-                    _handleData(pkt, dat.src);
+                    _handleData(pkt, dat.src, dat.dest);
                 }
                 else
                 {
@@ -221,14 +228,19 @@ private:
     /**
      * @brief Handles a data segment.
      * @details This will first check if we have recently received the same segment. If yes, it will disregarded.
-     * If no, it will be processed into the segment table accordingly. The received packets tracking list will also be updated accordingly.
+     * If no, it will be processed into the segment table accordingly. The received packets tracking list will also be 
+     * updated accordingly.
      * 
      * @param packet Packet to process.
      * @param src Source address of the packet.
+     * @param dest Destination address of the packet.
      */
-    void _handleData(Packet& packet, std::string src)
+    void _handleData(Packet& packet, std::string src, std::string dest)
     {
-        _ack(src, packet); // ACK immediately first.
+        if (dest != subt::communication_broker::kBroadcast)
+        {
+            _ack(src, packet); // If this was not a broadcast, ACK immediately.
+        }
 
         // Find out if we have already seen this src, sequence, segment number recently.
         uint32_t currentTime = ros::Time::now().sec;
