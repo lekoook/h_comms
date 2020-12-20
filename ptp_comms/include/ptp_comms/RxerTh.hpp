@@ -261,13 +261,13 @@ private:
     {
         while(cleanRunning.load())
         {
-            int64_t current = ros::Time::now().sec;
+            uint32_t current = ros::Time::now().sec;
             {
                 std::lock_guard<std::mutex> lock(mSeenRx);
                 // Go through all entries and see which one is old enough to be removed.
                 for (auto it = seenRx.begin(); it != seenRx.end();)
                 {
-                    if (current - (int64_t)it->second > MAX_ENTRY_AGE)
+                    if (current - it->second > MAX_ENTRY_AGE)
                     {
                         it = seenRx.erase(it);
                     }

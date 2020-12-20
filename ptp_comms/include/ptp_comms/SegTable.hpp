@@ -137,7 +137,7 @@ public:
         for (auto it = table.begin(); it != table.end();)
         {
             uint32_t et = std::get<2>(it->second);
-            if ((currentTime - et > maxAge) || currentTime < et)
+            if ((currentTime - et > maxAge))
             {
                 it = table.erase(it);
             }
