@@ -101,7 +101,7 @@ public:
      * @param entryId Entry ID to convert from.
      * @param robotId Reference to Robot ID to convert to.
      */
-    uint16_t convertFromEntryId(uint16_t entryId, uint16_t& robotId, uint16_t& dataType)
+    void convertFromEntryId(uint16_t entryId, uint16_t& robotId, uint16_t& dataType)
     {
         robotId = entryId / 1000;
         dataType = entryId % 1000;
