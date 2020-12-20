@@ -189,7 +189,8 @@ private:
 
                 // Only send if the destination is a neighbour.
                 subt::CommsClient::Neighbor_M nb = cc->Neighbors();
-                if (nb.find(dat.dest) == nb.end() || !sendData(dat))
+                if (((dat.dest != subt::communication_broker::kBroadcast) && (nb.find(dat.dest) == nb.end())) 
+                    || !sendData(dat))
                 {
                     dat.tries++;
                     if (dat.tries < MAX_QUEUE_TRIES)
@@ -228,7 +229,11 @@ private:
                 cc->SendTo(
                     Packet(data.seqNum, s, dSize, std::vector<uint8_t>(ptr + i, ptr + last)).serialize(), data.dest);
                 tries++;
-            } while (!_waitAck(data.seqNum, s, data.dest, 1000) && tries < MAX_SEGMENT_TRIES);
+            } while (
+                data.dest != subt::communication_broker::kBroadcast
+                && tries < MAX_SEGMENT_TRIES 
+                && !_waitAck(data.seqNum, s, data.dest, 1000) 
+                );
 
             if (tries >= MAX_SEGMENT_TRIES)
             {

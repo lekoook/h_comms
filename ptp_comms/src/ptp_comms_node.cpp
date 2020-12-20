@@ -10,7 +10,10 @@ std::string robotAddr;
 
 void rxCb(const std::string &_srcAddress, const std::string &_dstAddress, const uint32_t _dstPort, const std::string &_data)
 {
-    while(!pRxTh->recvOne(RxQueueData(_data, _srcAddress)));
+    if (_srcAddress != robotAddr)
+    {
+        while(!pRxTh->recvOne(RxQueueData(_data, _srcAddress, _dstAddress)));
+    }
 }
 
 bool txData(ptp_comms::TxData::Request &req, ptp_comms::TxData::Response &res, TxerTh* th)
