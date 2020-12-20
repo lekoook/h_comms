@@ -34,6 +34,14 @@ namespace serialisers
     void copyU32(uint8_t* dest, uint32_t src);
 
     /**
+     * @brief Copies a uint64_t value into a uint8_t bytes array.
+     * 
+     * @param dest uint8_t array to store the copied bytes. MUST be at least 8 bytes length.
+     * @param src uint64_t value to copy.
+     */
+    void copyU64(uint8_t* dest, uint64_t src);
+
+    /**
      * @brief Retrieves a uint8_t value from a uint8_t bytes array.
      * 
      * @param src uint8_t array to retrieve from. MUST be at least 1 byte length.
@@ -56,6 +64,14 @@ namespace serialisers
      * @return uint32_t value retrieved.
      */
     uint32_t getU32(uint8_t* src);
+
+    /**
+     * @brief Retrieves a uint64_t value from a uint8_t bytes array.
+     * 
+     * @param src uint8_t array to retrieve from. MUST be at least 8 bytes length.
+     * @return uint64_t value retrieved.
+     */
+    uint64_t getU64(uint8_t* src);
 }
 
 #endif // SERIALISERS_H
