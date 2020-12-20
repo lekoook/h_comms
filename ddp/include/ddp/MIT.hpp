@@ -233,6 +233,7 @@ public:
                 | ((uint64_t)buffer[i+8] << 48)
                 | ((uint64_t)buffer[i+9] << 56);
             table[robotId] = timestamp;
+            i += 10;
         }
     }
 };
