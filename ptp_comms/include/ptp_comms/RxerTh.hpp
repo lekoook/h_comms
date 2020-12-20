@@ -231,18 +231,19 @@ private:
         _ack(src, packet); // ACK immediately first.
 
         // Find out if we have already seen this src, sequence, segment number recently.
+        uint32_t currentTime = ros::Time::now().sec;
         auto key = std::make_tuple(src, packet.seqNum, packet.segNum);
         bool notSeen = false;
         {
             std::lock_guard<std::mutex> lock(mSeenRx);
             notSeen = seenRx.find(key) == seenRx.end();
-            seenRx[key] = ros::Time::now().sec; // Update the timestamp of this seen RX entry.
+            seenRx[key] = currentTime; // Update the timestamp of this seen RX entry.
         }
 
         // If we have not seen this recently, process the data.
         if (notSeen)
         {
-            if (segTable.updateSeg(src, packet))
+            if (segTable.updateSeg(src, packet, currentTime))
             {
                 std::vector<uint8_t> v = segTable.getFullData(src, packet.seqNum);
                 rxCb(src, v);
@@ -260,10 +261,10 @@ private:
     {
         while(cleanRunning.load())
         {
+            int64_t current = ros::Time::now().sec;
             {
                 std::lock_guard<std::mutex> lock(mSeenRx);
                 // Go through all entries and see which one is old enough to be removed.
-                int64_t current = ros::Time::now().sec;
                 for (auto it = seenRx.begin(); it != seenRx.end();)
                 {
                     if (current - (int64_t)it->second > MAX_ENTRY_AGE)
@@ -276,6 +277,7 @@ private:
                     }
                 }
             }
+            segTable.clean(MAX_ENTRY_AGE, current);
             ros::Duration(CLEAN_SLEEP_TIME, 0).sleep();
         }
     }

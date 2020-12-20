@@ -15,15 +15,18 @@ private:
     /**
      * @brief This std::map represents the table used to identify existing stored segments for each unique address and 
      * sequence number pair.
-     * @details The key is a unique address and sequence number pair. The value is a bytes std::vector and bitset pair. 
+     * @details The key is a unique address and sequence number pair. The value is a bytes std::vector, bitset and 
+     * timestamp (seconds) tuple. 
      * The bytes std::vector will contain the actual data and the bitset is used to determine which segment has
      * arrived and stored. The index of bitset corresponds to the segment number and a set bit indicates that the 
-     * segment has arrived and vice versa.
+     * segment has arrived and vice versa. The timestamp indicates the time at which this entry was last updated. It is 
+     * used to determine if this entry is too old and subjected for deletion.
      * 
      */
-    std::map<std::pair<std::string, uint32_t>, std::pair<std::vector<uint8_t>, std::vector<bool>>> table;
+    std::map<std::pair<std::string, uint32_t>, std::tuple<std::vector<uint8_t>, std::vector<bool>, uint32_t>> table;
 
     /**
+
      * @brief Mutex for table.
      * 
      */
@@ -41,10 +44,11 @@ public:
      * 
      * @param addr Address that this segment belongs to.
      * @param segment Segment of the Packet type.
+     * @param timestamp Timestamp at which this update occurs.
      * @return true If this segment was the last segment and the full data has been reconstructed.
      * @return false If the full has not yet been fully reconstructed.
      */
-    bool updateSeg(std::string addr, const Packet& segment)
+    bool updateSeg(std::string addr, const Packet& segment, uint32_t timestamp)
     {
         std::pair<std::string, uint32_t> key = std::make_pair(addr, segment.seqNum);
 
@@ -52,8 +56,8 @@ public:
         if (table.find(key) != table.end())
         {
             auto& value = table[key];
-            std::copy(segment.data.begin(), segment.data.end(), value.first.begin() + segment.segNum * Packet::MAX_SEGMENT_SIZE);
-            value.second[segment.segNum] = true;
+            std::copy(segment.data.begin(), segment.data.end(), std::get<0>(value).begin() + segment.segNum * Packet::MAX_SEGMENT_SIZE);
+            std::get<1>(value)[segment.segNum] = true;
         }
         else
         {
@@ -67,11 +71,11 @@ public:
                 false);
             bitset[segment.segNum] = true;
 
-            table[key] = std::make_pair(whole, bitset);
+            table[key] = std::make_tuple(whole, bitset, timestamp);
         }
 
         // Check if all bits in bitset has been set.
-        for (bool b : table[key].second)
+        for (bool b : std::get<1>(table[key]))
         {
             if (!b)
             {
@@ -93,7 +97,7 @@ public:
     {
         std::lock_guard<std::mutex> lock(mTable);
         auto key = std::make_pair(addr, sequence);
-        std::vector<uint8_t> ret = table[key].first;
+        std::vector<uint8_t> ret = std::get<0>(table[key]);
         table.erase(key);
         return ret;
     }
@@ -111,7 +115,7 @@ public:
         std::pair<std::string, uint32_t> key = std::make_pair(addr, sequence);
         std::lock_guard<std::mutex> lock(mTable);
         // Check if all bits in bitset has been set.
-        for (bool b : table[key].second)
+        for (bool b : std::get<1>(table[key]))
         {
             if (!b)
             {
@@ -119,5 +123,28 @@ public:
             }
         }
         return true;
+    }
+
+    /**
+     * @brief Iterates through and erases entries that are too old.
+     * 
+     * @param maxAge Maximum age (seconds) that will be considered old.
+     * @param currentTime Current time (seconds) at which this operation is performed.
+     */
+    void clean(uint32_t maxAge, uint32_t currentTime)
+    {
+        std::lock_guard<std::mutex> lock(mTable);
+        for (auto it = table.begin(); it != table.end();)
+        {
+            uint32_t et = std::get<2>(it->second);
+            if ((currentTime - et > maxAge) || currentTime < et)
+            {
+                it = table.erase(it);
+            }
+            else
+            {
+                it++;
+            }
+        }
     }
 };
