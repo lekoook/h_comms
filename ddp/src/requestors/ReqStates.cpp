@@ -1,4 +1,5 @@
 #include "ReqStates.hpp"
+#include <iostream>
 
 //// ReqState ////
 
@@ -26,6 +27,7 @@ StartReqState::~StartReqState() {}
 void StartReqState::run(ReqMachine& machine)
 {
     ReqMsg m(machine.reqSequence, machine.reqEntryId);
+    std::cout << "REQUESTING FOR: " << m.reqSequence << " , " << m.reqEntryId << std::endl;
     machine.transmitter->transmit(machine.reqTarget, m);
     setState(machine, new DestructReqState());
 }
@@ -58,7 +60,7 @@ void WaitDataReqState::run(ReqMachine& machine)
 
 //// SendAckReqState ////
 
-SendAckReqState::SendAckReqState() : ReqState(ReqStateT::WaitData) {}
+SendAckReqState::SendAckReqState() : ReqState(ReqStateT::SendAckData) {}
 
 SendAckReqState::~SendAckReqState() {}
 
@@ -70,7 +72,7 @@ void SendAckReqState::run(ReqMachine& machine)
 
 //// RequeueReqState ////
 
-RequeueReqState::RequeueReqState() : ReqState(ReqStateT::WaitData) {}
+RequeueReqState::RequeueReqState() : ReqState(ReqStateT::RequeueReq) {}
 
 RequeueReqState::~RequeueReqState() {}
 
@@ -82,7 +84,7 @@ void RequeueReqState::run(ReqMachine& machine)
 
 //// DestructReqState ////
 
-DestructReqState::DestructReqState() : ReqState(ReqStateT::WaitData) {}
+DestructReqState::DestructReqState() : ReqState(ReqStateT::Destruct) {}
 
 DestructReqState::~DestructReqState() {}
 
