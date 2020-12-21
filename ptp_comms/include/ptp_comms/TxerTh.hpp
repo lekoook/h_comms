@@ -173,20 +173,21 @@ private:
     {
         while(thRunning.load())
         {
-            bool empty = false;
+            bool available;
+            TxQueueData dat;
             {
                 std::lock_guard<std::mutex> lock(mTxQ);
-                empty = txQ.empty();
-            }
-            if (!empty)
-            {
-                TxQueueData dat;
+                if (!txQ.empty())
                 {
-                    std::lock_guard<std::mutex> lock(mTxQ);
+                    available = true;
                     dat = txQ.front();
                     txQ.pop();
                 }
+            }
 
+            if (available)
+            {
+                available = false;
                 // Only send if the destination is a neighbour.
                 subt::CommsClient::Neighbor_M nb = cc->Neighbors();
                 if (((dat.dest != subt::communication_broker::kBroadcast) && (nb.find(dat.dest) == nb.end())) 
