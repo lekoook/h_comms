@@ -4,6 +4,7 @@
 #include "ReqMachine.hpp"
 #include "messages/AckMsg.hpp"
 #include "messages/DataMsg.hpp"
+#include "messages/ReqMsg.hpp"
 
 // Forward declaration of required class.
 class ReqMachine;

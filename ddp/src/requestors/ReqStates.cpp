@@ -25,7 +25,7 @@ StartReqState::~StartReqState() {}
 
 void StartReqState::run(ReqMachine& machine)
 {
-    AckMsg m(machine.reqSequence, machine.reqEntryId);
+    ReqMsg m(machine.reqSequence, machine.reqEntryId);
     machine.transmitter->transmit(machine.reqTarget, m);
     setState(machine, new DestructReqState());
 }
