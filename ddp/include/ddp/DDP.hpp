@@ -139,20 +139,21 @@ private:
         // Main thread execution.
         while(mainRunning.load())
         {
-            bool empty = false;
+            bool available;
+            RxQueueData rxData;
             {
                 std::lock_guard<std::mutex> qLock(mRxQ);
-                empty = rxQ.empty();
-            }
-            if (!empty)
-            {
-                RxQueueData rxData;
+                if (!rxQ.empty())
                 {
-                    std::lock_guard<std::mutex> qLock(mRxQ);
+                    available = true;
                     rxData = rxQ.front();
                     rxQ.pop();
                 }
+            }
 
+            if (available)
+            {
+                available = false;
                 msgHandler.notifyRx(rxData.src, rxData.data);
             }
         }
