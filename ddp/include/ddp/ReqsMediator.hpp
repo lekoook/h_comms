@@ -7,6 +7,7 @@
 #include <mutex>
 #include <queue>
 #include "AReqHandler.hpp"
+#include "requestors/Requestor.hpp"
 
 class ReqsMediator : public AReqHandler
 {
@@ -70,6 +71,14 @@ private:
     std::mutex mReqQ;
 
     /**
+     * @brief Interface used to transmit messages.
+     * 
+     */
+    ATransmitter* transmitter;
+
+    Requestor* requestor;
+
+    /**
      * @brief Executes the processing of items in the requests queue.
      * 
      */
@@ -77,6 +86,19 @@ private:
     {
         while(reqRunning.load())
         {
+            ros::Duration(1.0).sleep();
+
+            if (requestor)
+            {
+                if (requestor->hasEnded())
+                {
+                    std::cout << "requestor says it's ended" << std::endl;
+                    delete requestor;
+                    requestor = nullptr;
+                }
+                continue;
+            }
+
             bool available;
             ReqQueueData qData;
             {
@@ -91,20 +113,52 @@ private:
 
             if (available)
             {
-                available = false;
-                // Make a new request.
-
-                ROS_INFO("%s", qData.target.c_str());
-                ROS_INFO("%u", qData.entryId);
+                std::cout << "new requestor" << std::endl;
+                requestor = new Requestor(0, qData.entryId, qData.target, transmitter);
             }
         }
     }
     
 public:
-    ReqsMediator() 
+    /**
+     * @brief Construct a new Reqs Mediator object.
+     * 
+     */
+    ReqsMediator()
     {
+        transmitter = nullptr;
+        requestor = nullptr;
+        reqRunning.store(false);
+    }
+
+    /**
+     * @brief Starts the operation of handling requests.
+     * 
+     * @param transmitter Interface used to transmit messages when handling requests.
+     */
+    void start(ATransmitter* transmitter)
+    {
+        if (reqRunning.load())
+        {
+            return; // Don't start operations twice.
+        }
+        
+        this->transmitter = transmitter;
         reqRunning.store(true);
         reqTh = std::thread(&ReqsMediator::_runReq, this);
+    }
+
+    /**
+     * @brief Stops the operation of handling requests.
+     * 
+     */
+    void stop()
+    {
+        reqRunning.store(false);
+        if (reqTh.joinable())
+        {
+            reqTh.join();
+        }
     }
 
     /**
