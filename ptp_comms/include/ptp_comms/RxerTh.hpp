@@ -165,17 +165,21 @@ private:
     {
         while(thRunning.load())
         {
-            bool empty = false;
+            bool available;
+            RxQueueData dat;
             {
                 std::lock_guard<std::mutex> lock(mRxQ);
-                empty = rxQ.empty();
+                if (!rxQ.empty())
+                {
+                    available = true;
+                    dat = rxQ.front();
+                    rxQ.pop();
+                }
             }
-            if (!empty)
-            {
-                std::lock_guard<std::mutex> lock(mRxQ);
-                RxQueueData dat = rxQ.front();
-                rxQ.pop();
 
+            if (available)
+            {
+                available = false;
                 Packet pkt;
                 pkt.deserialize(dat.data);
 
