@@ -33,20 +33,33 @@ private:
         return (MsgType)data.data()[0];
     }
 
-    void _handleAck(AckMsg& msg)
+    void _handleData(DataMsg& msg, std::string src)
     {
-
+        std::cout << "GOT DATA" << std::endl;
     }
 
-    void _handleAdv(AdvMsg& msg)
+    void _handleReq(ReqMsg& msg, std::string src)
     {
+        std::cout << "GOT REQUEST" << std::endl;
+    }
+
+    void _handleAck(AckMsg& msg, std::string src)
+    {
+        std::cout << "GOT ACK" << std::endl;
+    }
+
+    void _handleAdv(AdvMsg& msg, std::string src)
+    {
+        std::cout << "GOT ADV" << std::endl;
         MIT mit;
         mit.deserialise(msg.data);
 
         // TODO: Compare incoming MIT with our own local one.
 
         // Some example request
-        reqHandler->queueReq(2034, "X3");
+        MIT mock;
+        auto v = mock.compare(mit);
+        reqHandler->queueReq(mit.convertToEntryId(v[0].first, v[0].second), src);
     }
 
 public:
@@ -60,16 +73,33 @@ public:
         switch (t)
         {
         case MsgType::Data:
+        {
+            DataMsg dataM;
+            dataM.deserialize(data);
+            _handleData(dataM, src);
             break;
+        }
         case MsgType::Request:
+        {
+            ReqMsg req;
+            req.deserialize(data);
+            _handleReq(req, src);
             break;
+        }
         case MsgType::Acknowledgement:
+        {
+            AckMsg ack;
+            ack.deserialize(data);
+            _handleAck(ack, src);
             break;
+        }
         default: // Advertisement
-            AdvMsg m;
-            m.deserialize(data);
-            _handleAdv(m);
+        {
+            AdvMsg adv;
+            adv.deserialize(data);
+            _handleAdv(adv, src);
             break;
+        }
         }
     }
 };
