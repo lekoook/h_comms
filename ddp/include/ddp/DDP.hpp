@@ -9,6 +9,7 @@
 #include "ATransmitter.hpp"
 #include "MIT.hpp"
 #include "MsgHandler.hpp"
+#include "ReqsMediator.hpp"
 
 /**
  * @brief Encapsulates all data and logic for the workings of a Data Distribution Protocol (DDP).
@@ -120,6 +121,12 @@ private:
     MsgHandler msgHandler;
 
     /**
+     * @brief Mediator for one or more Requestors.
+     * 
+     */
+    ReqsMediator reqsMediator;
+
+    /**
      * @brief Subscriber callback to receive data. Puts the received data in a reception queue.
      * 
      * @param msg Contains the recieved data.
@@ -174,7 +181,6 @@ private:
 
             // Broadcast this MIT.
             std::vector<uint8_t> mitSer = mit.serialise();
-            std::cout << std::endl;
             AdvMsg msg(mitSer);
             transmit(BROADCAST_ADDR, msg);
 
@@ -194,7 +200,7 @@ public:
         txMsgSrv = nh.serviceClient<ptp_comms::TxData>("tx_data");
         rxMsgSubber = nh.subscribe<ptp_comms::RxData>("rx_data", 100, &DDP::_subCb, this);
 
-        msgHandler = MsgHandler(this);
+        msgHandler = MsgHandler(this, &reqsMediator);
         
         // Begin main thread operation.
         mainRunning.store(true);
