@@ -120,6 +120,7 @@ include_directories(
   include
   include/${PROJECT_NAME}
   include/${PROJECT_NAME}/requestors
+  include/${PROJECT_NAME}/responders
   lib/serialisers/
   ${catkin_INCLUDE_DIRS}
 )
@@ -209,6 +210,12 @@ include_directories(
 ## Add folders to be run by python nosetests
 # catkin_add_nosetests(test)
 
-add_executable(${PROJECT_NAME}_node src/ddp_node.cpp src/requestors/ReqMachine.cpp src/requestors/ReqStates.cpp)
+add_executable(${PROJECT_NAME}_node 
+  src/ddp_node.cpp 
+  src/requestors/ReqMachine.cpp 
+  src/requestors/ReqStates.cpp 
+  src/responders/RespMachine.cpp 
+  src/responders/RespStates.cpp
+)
 target_link_libraries(${PROJECT_NAME}_node ${catkin_LIBRARIES} serialisers_ptp)
 add_dependencies(${PROJECT_NAME}_node ${catkin_EXPORTED_TARGETS} ${PROJECT_NAME}_generate_messages_cpp)
