@@ -147,6 +147,19 @@ public:
     }
 
     /**
+     * @brief Destroy the Reqs Mediator object.
+     * 
+     */
+    ~ReqsMediator()
+    {
+        stop();
+        if (requestor)
+        {
+            delete requestor;
+        }
+    }
+
+    /**
      * @brief Starts the operation of handling requests.
      * 
      * @param transmitter Interface used to transmit messages when handling requests.
