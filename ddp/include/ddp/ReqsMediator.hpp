@@ -86,13 +86,12 @@ private:
     {
         while(reqRunning.load())
         {
-            ros::Duration(1.0).sleep();
+            ros::Duration(0.1).sleep();
 
             if (requestor)
             {
                 if (requestor->hasEnded())
                 {
-                    std::cout << "requestor says it's ended" << std::endl;
                     delete requestor;
                     requestor = nullptr;
                 }
@@ -113,7 +112,6 @@ private:
 
             if (available)
             {
-                std::cout << "new requestor" << std::endl;
                 requestor = new Requestor(0, qData.entryId, qData.target, transmitter);
             }
         }
