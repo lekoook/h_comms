@@ -24,7 +24,7 @@ public:
     /**
      * @brief Notify a requestor of an incoming DATA message.
      * 
-     * @param src Source address of ACK message.
+     * @param src Source address of DATA message.
      * @param dataMsg DATA message.
      */
     virtual void notifyData(std::string src, DataMsg& dataMsg) = 0;
