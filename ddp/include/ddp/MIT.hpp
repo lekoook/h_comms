@@ -175,7 +175,7 @@ public:
      * @param toCompare MIT to compare with.
      * @return std::vector<std::pair<uint16_t, uint16_t>> A vector of robot ID (first) and data type number (second) pairs.
      */
-    std::vector<std::pair<uint16_t, uint16_t>> compare(MIT toCompare)
+    std::vector<std::pair<uint16_t, uint16_t>> compare(MIT& toCompare)
     {
         std::set<uint16_t> compareKeys = toCompare.getIdKeys();
         std::vector<std::pair<uint16_t, uint16_t>> ret;
