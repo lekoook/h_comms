@@ -20,6 +20,12 @@ private:
     {
     public:
         /**
+         * @brief Sequence number for this request.
+         * 
+         */
+        uint32_t sequence;
+
+        /**
          * @brief Entry ID to request for.
          * 
          */
@@ -40,11 +46,18 @@ private:
         /**
          * @brief Construct a new Req Queue Data object.
          * 
+         * @param sequence Sequence number for this request.
          * @param entryId Entry ID to request for.
          * @param target Intended target robot this request is for.
          */
-        ReqQueueData(uint16_t entryId, std::string target) : entryId(entryId), target(target) {}
+        ReqQueueData(uint32_t sequence, uint16_t entryId, std::string target) : sequence(sequence), entryId(entryId), target(target) {}
     };
+
+    /**
+     * @brief Current sequence number used to generate each Request queue item.
+     * 
+     */
+    uint32_t sequence;
 
     /**
      * @brief Request thread to handle new requests submissions.
@@ -76,6 +89,10 @@ private:
      */
     ATransmitter* transmitter;
 
+    /**
+     * @brief Pointer to the current Requestor. If there is no Requestor, this should be null pointer.
+     * 
+     */
     Requestor* requestor;
 
     /**
@@ -112,7 +129,7 @@ private:
 
             if (available)
             {
-                requestor = new Requestor(0, qData.entryId, qData.target, transmitter);
+                requestor = new Requestor(qData.sequence, qData.entryId, qData.target, transmitter);
             }
         }
     }
@@ -190,7 +207,7 @@ public:
     void queueReq(uint16_t entryId, std::string reqTarget)
     {
         std::lock_guard<std::mutex> lock(mReqQ);
-        reqQ.push(ReqQueueData(entryId, reqTarget));
+        reqQ.push(ReqQueueData(sequence++, entryId, reqTarget));
     }
 };
 
