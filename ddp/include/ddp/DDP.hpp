@@ -10,9 +10,17 @@
 #include "MIT.hpp"
 #include "MsgHandler.hpp"
 
+/**
+ * @brief Encapsulates all data and logic for the workings of a Data Distribution Protocol (DDP).
+ * 
+ */
 class DDP : private ATransmitter
 {
 private:
+    /**
+     * @brief Represents an item in the message reception queue.
+     * 
+     */
     class RxQueueData
     {
     public:
@@ -45,19 +53,70 @@ private:
     };
 
     // Constants
+    /**
+     * @brief Address used to broadcast message instead of unicast.
+     * 
+     */
     const std::string BROADCAST_ADDR = "broadcast"; // In accordance with subt API
+
+    /**
+     * @brief Time (seconds) between each advertisement message.
+     * 
+     */
     const double ADV_INTERVAL = 5.0;
 
-    ros::ServiceClient msgSrvC;
-    ros::Subscriber msgSubber;
-    std::thread mainTh;
+    /**
+     * @brief ROS Service client used to transmit messages out.
+     * 
+     */
+    ros::ServiceClient txMsgSrv;
+
+    /**
+     * @brief ROS Subscriber used to receive any incoming messages.
+     * 
+     */
+    ros::Subscriber rxMsgSubber;
+
+    /**
+     * @brief Reception thread that processes all the received and queued messages.
+     * 
+     */
+    std::thread rxHandleTh;
+
+    /**
+     * @brief Flag to control the execution of reception thread.
+     * 
+     */
     std::atomic<bool> mainRunning;
+
+    /**
+     * @brief First-In-First-Out queue to store all received messages.
+     * 
+     */
     std::queue<RxQueueData> rxQ;
+
+    /**
+     * @brief Mutex to protect the received messages queue.
+     * 
+     */
     std::mutex mRxQ;
 
+    /**
+     * @brief Advertisement thread that will broadcast the local robot's MIT regularly.
+     * 
+     */
     std::thread advTh;
+
+    /**
+     * @brief Flag to control the execution of advertisement thread.
+     * 
+     */
     std::atomic<bool> advRunning;
 
+    /**
+     * @brief Processes all received messages accordingly from their type and fields information.
+     * 
+     */
     MsgHandler msgHandler;
 
     /**
@@ -71,6 +130,10 @@ private:
         rxQ.push(RxQueueData(msg->data, msg->src));
     }
 
+    /**
+     * @brief Executes the processing and handling of received messages.
+     * 
+     */
     void _runMain()
     {
         // Main thread execution.
@@ -95,6 +158,10 @@ private:
         }
     }
 
+    /**
+     * @brief Executes the advertisement of local robot's MIT at a regular interval.
+     * 
+     */
     void _runAdv()
     {
         // Advertisement operation
@@ -115,31 +182,40 @@ private:
     }
 
 public:
+    /**
+     * @brief Construct a new DDP object.
+     * 
+     * @param nh ROS NodeHandle object used to create ROS transport structures.
+     */
     DDP(ros::NodeHandle& nh)
     {
         // ROS subscriber and service client
-        msgSrvC = nh.serviceClient<ptp_comms::TxData>("tx_data");
-        msgSubber = nh.subscribe<ptp_comms::RxData>("rx_data", 100, &DDP::_subCb, this);
+        txMsgSrv = nh.serviceClient<ptp_comms::TxData>("tx_data");
+        rxMsgSubber = nh.subscribe<ptp_comms::RxData>("rx_data", 100, &DDP::_subCb, this);
 
         msgHandler = MsgHandler(this);
         
         // Begin main thread operation.
         mainRunning.store(true);
-        mainTh = std::thread(&DDP::_runMain, this);
+        rxHandleTh = std::thread(&DDP::_runMain, this);
 
         // Begin advertisement operation
         advRunning.store(true);
         advTh = std::thread(&DDP::_runAdv, this);
     }
 
+    /**
+     * @brief Destroy the DDP object.
+     * 
+     */
     ~DDP()
     {
         mainRunning.store(false);
         advRunning.store(false);
 
-        if (mainTh.joinable())
+        if (rxHandleTh.joinable())
         {
-            mainTh.join();
+            rxHandleTh.join();
         }
 
         if (advTh.joinable())
@@ -162,6 +238,6 @@ public:
         ptp_comms::TxData tmsg;
         tmsg.request.data = data;
         tmsg.request.dest = dest;
-        return msgSrvC.call(tmsg);
+        return txMsgSrv.call(tmsg);
     }
 };
