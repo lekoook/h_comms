@@ -3,6 +3,8 @@
 
 #include <vector>
 #include <cstdint>
+#include <cstring>
+#include <stdexcept>
 
 /**
  * @brief Represents the type of a message. Can be one of the following: advertisement, Acknowledgement, Request or Data.
