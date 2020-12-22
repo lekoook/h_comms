@@ -199,7 +199,6 @@ public:
         std::lock_guard<std::mutex> lock(mResponder);
         if (responder)
         {
-            std::cout << "RESPONDER MEDIATOR ACK" << std::endl;
             responder->recvAck(ackMsg, src);
         }
     }
