@@ -165,7 +165,7 @@ private:
     {
         while(thRunning.load())
         {
-            bool available;
+            bool available = false;
             RxQueueData dat;
             {
                 std::lock_guard<std::mutex> lock(mRxQ);
@@ -179,7 +179,6 @@ private:
 
             if (available)
             {
-                available = false;
                 Packet pkt;
                 pkt.deserialize(dat.data);
 
