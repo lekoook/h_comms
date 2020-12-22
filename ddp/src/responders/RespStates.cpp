@@ -24,6 +24,7 @@ StartRespState::~StartRespState() {}
 
 void StartRespState::run(RespMachine& machine)
 {
+    setState(machine, new PrepRespState());
 }
 
 //// StartRespState END ////
@@ -36,6 +37,9 @@ PrepRespState::~PrepRespState() {}
 
 void PrepRespState::run(RespMachine& machine)
 {
+    AckMsg msg(machine.respSequence, machine.respEntryId);
+    machine.transmitter->transmit(machine.respTarget, msg);
+    setState(machine, new DestructRespState());
 }
 
 //// PrepRespState END ////
