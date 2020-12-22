@@ -2,7 +2,7 @@
 import rospy
 import sys
 
-#from db_node.msg import item, itemList
+from db_node.msg import item, itemList
 
 from db_node.srv import Compare, CompareResponse
 from db_node.srv import GenerateMit, GenerateMitResponse
@@ -13,12 +13,12 @@ class db_node:
     def __init__(self,robotName="X1"):
         self.name = "/" + robotName
         print("Connecting to Postgres database...")
-        self.db_conn = self.connect_db()
-        print("Done.\nPublishing Services")
-        self.comp_ser = rospy.Service(self.name +'/comparison', self.comparison, Compare)
-        self.gen_ser = rospy.Service(self.name +'/generate_mit', self.generate_mit, GenerateMit)
-        self.read_ser = rospy.Service(self.name +'/retrieve_data', self.retrieve_data, RetrieveData)
-        self.wrote_ser = rospy.Service(self.name +'/write', self.write, Write)
+        #self.db_conn = self.connect_db()
+        print("Completed\nPublishing Services...")
+        self.comp_ser = rospy.Service(self.name +'/db_comparison', Compare, self.comparison)
+        self.gen_ser = rospy.Service(self.name +'/db_generate_mit', GenerateMit, self.generate_mit)
+        self.read_ser = rospy.Service(self.name +'/db_retrieve_data', RetrieveData, self.retrieve_data)
+        self.wrote_ser = rospy.Service(self.name +'/db_write', Write, self.write)
         print("READY")
 
     def connect_db(self):
