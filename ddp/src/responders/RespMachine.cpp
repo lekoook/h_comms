@@ -1,5 +1,19 @@
 #include "RespMachine.hpp"
 
+void RespMachine::_setWaitParams(uint32_t waitSeq, uint16_t waitEntryId)
+{
+    gotMsg = false;
+    std::lock_guard<std::mutex> lock(mWaitParams);
+    this->waitSeq = waitSeq;
+    this->waitEntryId = waitEntryId;
+}
+
+bool RespMachine::_checkWaitParams(uint32_t waitSeq, uint16_t waitEntryId)
+{
+    std::lock_guard<std::mutex> lock(mWaitParams);
+    return (waitSeq == this->waitSeq && waitEntryId == this->waitEntryId);
+}
+
 bool RespMachine::hasEnded()
 {
     isDestructed.load();

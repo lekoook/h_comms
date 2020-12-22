@@ -39,6 +39,7 @@ PrepRespState::~PrepRespState() {}
 void PrepRespState::run(RespMachine& machine)
 {
     std::cout << "RESPONDER: PREPARE" << std::endl;
+    // TODO: Request for data.
     AckMsg msg(machine.respSequence, machine.respEntryId);
     machine.transmitter->transmit(machine.respTarget, msg);
     setState(machine, new SendDataRespState());
@@ -55,11 +56,11 @@ SendDataRespState::~SendDataRespState() {}
 void SendDataRespState::run(RespMachine& machine)
 {
     std::cout << "RESPONDER: SEND DATA" << std::endl;
-    // TODO: Request for data.
     uint64_t mockTs = 1234;
     std::vector<uint8_t> mockData = {5, 6, 7, 8};
     DataMsg msg(machine.respSequence, machine.respEntryId, mockTs, mockData);
     machine.transmitter->transmit(machine.respTarget, msg);
+    machine.sendTries++;
     setState(machine, new WaitAckDataRespState());
 }
 
@@ -74,7 +75,35 @@ WaitAckDataRespState::~WaitAckDataRespState() {}
 void WaitAckDataRespState::run(RespMachine& machine)
 {
     std::cout << "RESPONDER: WAIT ACK DATA" << std::endl;
-    setState(machine, new DestructRespState());
+    machine._setWaitParams(machine.respSequence, machine.respEntryId);
+    std::unique_lock<std::mutex> lock(machine.mGotMsg);
+    bool ackSuccess = machine.cvGotMsg.wait_for(
+        lock,
+        std::chrono::milliseconds(5000),
+        [&machine] () -> bool
+            {
+                return machine.gotMsg;
+            }
+    );
+
+    if (ackSuccess || machine.sendTries >= machine.MAX_SEND_TRIES)
+    {
+        setState(machine, new DestructRespState());
+    }
+    else
+    {
+        setState(machine, new SendDataRespState());
+    }
+}
+
+void WaitAckDataRespState::recvAck(RespMachine& machine, AckMsg& ackMsg, std::string src)
+{
+    if (machine._checkWaitParams(ackMsg.ackSequence, ackMsg.ackEntryId))
+    {
+        std::lock_guard<std::mutex> lock(machine.mGotMsg);
+        machine.gotMsg = true;
+        machine.cvGotMsg.notify_one();
+    }
 }
 
 //// WaitAckDataRespState END ////

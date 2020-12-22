@@ -4,6 +4,8 @@
 #include <cstdint>
 #include <string>
 #include <atomic>
+#include <mutex>
+#include <condition_variable>
 #include "RespStates.hpp"
 #include "messages/AckMsg.hpp"
 #include "messages/DataMsg.hpp"
@@ -27,6 +29,12 @@ class RespMachine
     friend class DestructRespState;
 
 private:
+    /**
+     * @brief Maximum number of attempts to send DATA message.
+     * 
+     */
+    const uint8_t MAX_SEND_TRIES = 3;
+
     /**
      * @brief Sequence number of this response.
      * 
@@ -68,6 +76,68 @@ private:
      * 
      */
     std::atomic<bool> isDestructed;
+
+    /**
+     * @brief Sequence number of the DATA to wait for. This should not be set directly.
+     * 
+     */
+    uint32_t waitSeq;
+
+    /**
+     * @brief EntryID of the DATA to wait for. This should not be set directly.
+     * 
+     */
+    uint16_t waitEntryId;
+
+    /**
+     * @brief Mutex to protect the DATA waiting parameters.
+     * 
+     */
+    std::mutex mWaitParams;
+
+    /**
+     * @brief Flag to help determine a correct DATA has been received.
+     * 
+     */
+    bool gotMsg = false;
+
+    /**
+     * @brief Mutex to protect DATA flag.
+     * 
+     */
+    std::mutex mGotMsg;
+
+    /**
+     * @brief Condition variable to assist with signalling of receiving correct DATA.
+     * 
+     */
+    std::condition_variable cvGotMsg;
+
+    /**
+     * @brief The number of attempts to send DATA message.
+     * 
+     */
+    uint8_t sendTries = 0;
+
+    /**
+     * @brief Sets the parameters of the DATA message to wait for. This method should be used to set the 
+     * parameters instead of directly.
+     * 
+     * @param waitSeq Sequence number of DATA to wait for.
+     * @param waitEntryId EntryID of DATA to wait for.
+     */
+    void _setWaitParams(uint32_t waitSeq, uint16_t waitEntryId);
+
+    /**
+     * @brief Checks against the already set parameters of DATA message to wait for. This method should be used 
+     * to check the parameters instead of directly.
+     * 
+     * @param waitSeq Sequence number of DATA to wait for.
+     * @param waitEntryId EntryID of DATA to wait for.
+     * @return true If the parameters match.
+     * @return false If the parameters do not match.
+     */
+    bool _checkWaitParams(uint32_t waitSeq, uint16_t waitEntryId);
 
 public:
     /**

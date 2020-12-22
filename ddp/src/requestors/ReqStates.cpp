@@ -140,6 +140,8 @@ SendAckReqState::~SendAckReqState() {}
 void SendAckReqState::run(ReqMachine& machine)
 {
     std::cout << "REQUESTOR: SEND DATA ACK" << std::endl;
+    AckMsg msg(machine.reqSequence, machine.reqEntryId, false);
+    machine.transmitter->transmit(machine.reqTarget, msg);
     setState(machine, new DestructReqState());
 }
 

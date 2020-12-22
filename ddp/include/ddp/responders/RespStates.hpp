@@ -175,6 +175,15 @@ public:
      * @param machine The state machine this state is existing under.
      */
     virtual void run(RespMachine& machine);
+
+    /**
+     * @brief Notify the state that an ACK has arrived.
+     * 
+     * @param machine The state machine this state is existing under.
+     * @param ackMsg ACK message arrived.
+     * @param src Source address of the ACK message.
+     */
+    virtual void recvAck(RespMachine& machine, AckMsg& ackMsg, std::string src);
 };
 
 class NoDataRespState : public RespState
