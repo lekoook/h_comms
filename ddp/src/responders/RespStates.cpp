@@ -25,18 +25,18 @@ StartRespState::~StartRespState() {}
 void StartRespState::run(RespMachine& machine)
 {
     std::cout << "RESPONDER: START" << std::endl;
-    setState(machine, new PrepRespState());
+    setState(machine, new SendAckReqRespState());
 }
 
 //// StartRespState END ////
 
-//// PrepRespState ////
+//// SendAckReqRespState ////
 
-PrepRespState::PrepRespState() : RespState(RespStateT::Prep) {}
+SendAckReqRespState::SendAckReqRespState() : RespState(RespStateT::SendAckReq) {}
 
-PrepRespState::~PrepRespState() {}
+SendAckReqRespState::~SendAckReqRespState() {}
 
-void PrepRespState::run(RespMachine& machine)
+void SendAckReqRespState::run(RespMachine& machine)
 {
     std::cout << "RESPONDER: PREPARE" << std::endl;
     // TODO: Request for data.
@@ -49,7 +49,7 @@ void PrepRespState::run(RespMachine& machine)
     setState(machine, new SendDataRespState());
 }
 
-//// PrepRespState END ////
+//// SendAckReqRespState END ////
 
 //// SendDataRespState ////
 

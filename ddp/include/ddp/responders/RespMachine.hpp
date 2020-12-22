@@ -23,7 +23,7 @@ class RespMachine
 {
     friend class RespState;
     friend class StartRespState;
-    friend class PrepRespState;
+    friend class SendAckReqRespState;
     friend class SendDataRespState;
     friend class WaitAckDataRespState;
     friend class NoDataRespState;

@@ -22,7 +22,7 @@ public:
     enum RespStateT
     {
         Start = 0,
-        Prep = 1,
+        SendAckReq = 1,
         SendData = 2,
         WaitAckData = 3,
         NoData = 4,
@@ -109,20 +109,20 @@ public:
     virtual void run(RespMachine& machine);
 };
 
-class PrepRespState : public RespState
+class SendAckReqRespState : public RespState
 {
 public:
     /**
-     * @brief Construct a new Prep Resp State object.
+     * @brief Construct a new Send Ack Req Resp State object.
      * 
      */
-    PrepRespState();
+    SendAckReqRespState();
 
     /**
-     * @brief Destroy the Prep Resp State object.
+     * @brief Destroy the Send Ack Req Resp State object.
      * 
      */
-    virtual ~PrepRespState();
+    virtual ~SendAckReqRespState();
 
     /**
      * @brief Executes the main sequence in this state.
