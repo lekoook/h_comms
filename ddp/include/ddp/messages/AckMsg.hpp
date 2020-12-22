@@ -66,7 +66,7 @@ public:
         : BaseMsg(MsgType::Acknowledgement)
         , ackSequence(other.ackSequence)
         , ackEntryId(other.ackEntryId)
-        , forReq(forReq) {}
+        , forReq(other.forReq) {}
 
     /**
      * @brief Copy constructor.
@@ -77,7 +77,7 @@ public:
         : BaseMsg(MsgType::Acknowledgement)
         , ackSequence(other.ackSequence)
         , ackEntryId(other.ackEntryId)
-        , forReq(forReq) {}
+        , forReq(other.forReq) {}
 
     /**
      * @brief Move assignment operator.
