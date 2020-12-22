@@ -1,17 +1,18 @@
 #include "ReqMachine.hpp"
+#include <iostream>
 
 void ReqMachine::_setWaitParams(uint32_t waitSeq, uint16_t waitEntryId)
 {
     gotMsg = false;
     std::lock_guard<std::mutex> lock(mWaitParams);
-    waitSeq = waitSeq;
-    waitEntryId = waitEntryId;
+    this->waitSeq = waitSeq;
+    this->waitEntryId = waitEntryId;
 }
 
 bool ReqMachine::_checkWaitParams(uint32_t waitSeq, uint16_t waitEntryId)
 {
     std::lock_guard<std::mutex> lock(mWaitParams);
-    return (waitSeq == waitSeq && waitEntryId == waitEntryId);
+    return (waitSeq == this->waitSeq && waitEntryId == this->waitEntryId);
 }
 
 bool ReqMachine::hasEnded()
