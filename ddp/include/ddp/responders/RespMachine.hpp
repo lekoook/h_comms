@@ -26,7 +26,6 @@ class RespMachine
     friend class SendAckReqRespState;
     friend class SendDataRespState;
     friend class WaitAckDataRespState;
-    friend class NoDataRespState;
     friend class DestructRespState;
 
 private:

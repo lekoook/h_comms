@@ -25,8 +25,7 @@ public:
         SendAckReq = 1,
         SendData = 2,
         WaitAckData = 3,
-        NoData = 4,
-        Destruct = 5
+        Destruct = 4
     };
 
     /**
@@ -185,29 +184,6 @@ public:
      * @param src Source address of the ACK message.
      */
     virtual void recvAck(RespMachine& machine, AckMsg& ackMsg, std::string src);
-};
-
-class NoDataRespState : public RespState
-{
-public:
-    /**
-     * @brief Construct a new No Data Resp State object.
-     * 
-     */
-    NoDataRespState();
-
-    /**
-     * @brief Destroy the No Data Resp State object.
-     * 
-     */
-    virtual ~NoDataRespState();
-
-    /**
-     * @brief Executes the main sequence in this state.
-     * 
-     * @param machine The state machine this state is existing under.
-     */
-    virtual void run(RespMachine& machine);
 };
 
 class DestructRespState : public RespState

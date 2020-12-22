@@ -109,19 +109,6 @@ void WaitAckDataRespState::recvAck(RespMachine& machine, AckMsg& ackMsg, std::st
 
 //// WaitAckDataRespState END ////
 
-//// NoDataRespState ////
-
-NoDataRespState::NoDataRespState() : RespState(RespStateT::NoData) {}
-
-NoDataRespState::~NoDataRespState() {}
-
-void NoDataRespState::run(RespMachine& machine)
-{
-    std::cout << "RESPONDER: NO DATA" << std::endl;
-}
-
-//// NoDataRespState END ////
-
 //// DestructRespState ////
 
 DestructRespState::DestructRespState() : RespState(RespStateT::Destruct) {}
