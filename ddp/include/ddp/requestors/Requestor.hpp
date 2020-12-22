@@ -37,7 +37,13 @@ private:
      * @brief Pointer to a Requestor state machine.
      * 
      */
-    ReqMachine* _rsm;
+    ReqMachine* _rsm = nullptr;
+
+    /**
+     * @brief Mutex to protect pointer to Requestor.
+     * 
+     */
+    std::mutex mRsm;
 
     /**
      * @brief Executes the lifetime of the Requestor state machine.
@@ -45,17 +51,23 @@ private:
      */
     void _life()
     {
-        ReqMachine rsm = ReqMachine(reqSequence, reqEntryId, reqTarget, transmitter);
-        _rsm = &rsm;
+        ReqMachine rsm(reqSequence, reqEntryId, reqTarget, transmitter);
+        {
+            std::lock_guard<std::mutex> lock(mRsm);
+            _rsm = &rsm;
+        }
         while(lifeRunning.load())
         {
             rsm.run();
             rsm.checkTransit();
-            if (rsm.isDestructed)
+            if (rsm.hasEnded())
             {
                 lifeRunning.store(false);
             }
         }
+
+        std::lock_guard<std::mutex> lock(mRsm);
+        _rsm = nullptr;
     }
 
 public:
@@ -79,7 +91,11 @@ public:
      */
     void recvAck(AckMsg& ackMsg, std::string src)
     {
-        _rsm->recvAck(ackMsg, src);
+        std::lock_guard<std::mutex> lock(mRsm);
+        if (_rsm)
+        {
+            _rsm->recvAck(ackMsg, src);
+        }
     }
 
     /**
@@ -90,7 +106,11 @@ public:
      */
     void recvData(DataMsg& dataMsg, std::string src)
     {
-        _rsm->recvData(dataMsg, src);
+        std::lock_guard<std::mutex> lock(mRsm);
+        if (_rsm)
+        {
+            _rsm->recvData(dataMsg, src);
+        }
     }
 };
 

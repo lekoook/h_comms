@@ -96,6 +96,12 @@ private:
     Requestor* requestor;
 
     /**
+     * @brief Mutex to protect the Requestor.
+     * 
+     */
+    std::mutex mRequestor;
+
+    /**
      * @brief Executes the processing of items in the requests queue.
      * 
      */
@@ -105,18 +111,7 @@ private:
         {
             ros::Duration(0.1).sleep();
 
-            if (requestor)
-            {
-                if (requestor->hasEnded())
-                {
-                    std::cout << "Requestor dying" << std::endl;
-                    delete requestor;
-                    requestor = nullptr;
-                }
-                continue;
-            }
-
-            bool available;
+            bool available = false;
             ReqQueueData qData;
             {
                 std::lock_guard<std::mutex> lock(mReqQ);
@@ -130,9 +125,19 @@ private:
 
             if (available)
             {
-                available = false;
-                requestor = new Requestor(qData.sequence, qData.entryId, qData.target, transmitter);
-                std::cout << "Requestor born" << std::endl;
+                Requestor req(qData.sequence, qData.entryId, qData.target, transmitter);
+
+                {
+                    std::lock_guard<std::mutex> lock(mRequestor);
+                    requestor = &req;
+                }
+                
+                while (!req.hasEnded()) {}
+
+                {
+                    std::lock_guard<std::mutex> lock(mRequestor);
+                    requestor = nullptr;
+                }
             }
         }
     }
@@ -156,10 +161,6 @@ public:
     ~ReqsMediator()
     {
         stop();
-        if (requestor)
-        {
-            delete requestor;
-        }
     }
 
     /**
@@ -200,7 +201,11 @@ public:
      */
     void notifyAck(std::string src, AckMsg& ackMsg)
     {
-        
+        std::lock_guard<std::mutex> lock(mRequestor);
+        if (requestor)
+        {
+            requestor->recvAck(ackMsg, src);
+        }
     }
 
     /**
@@ -211,7 +216,11 @@ public:
      */
     void notifyData(std::string src, DataMsg& dataMsg)
     {
-
+        std::lock_guard<std::mutex> lock(mRequestor);
+        if (requestor)
+        {
+            requestor->recvData(dataMsg, src);
+        }
     }
 
     /**

@@ -1,12 +1,33 @@
 #include "ReqMachine.hpp"
 
+void ReqMachine::_setWaitParams(uint32_t waitSeq, uint16_t waitEntryId)
+{
+    gotMsg = false;
+    std::lock_guard<std::mutex> lock(mWaitParams);
+    waitSeq = waitSeq;
+    waitEntryId = waitEntryId;
+}
+
+bool ReqMachine::_checkWaitParams(uint32_t waitSeq, uint16_t waitEntryId)
+{
+    std::lock_guard<std::mutex> lock(mWaitParams);
+    return (waitSeq == waitSeq && waitEntryId == waitEntryId);
+}
+
+bool ReqMachine::hasEnded()
+{
+    isDestructed.load();
+}
+
 ReqMachine::ReqMachine(uint32_t reqSequence, uint16_t reqEntryId, std::string reqTarget, ATransmitter* transmitter) 
     : reqSequence(reqSequence), 
     reqEntryId(reqEntryId), 
     reqTarget(reqTarget), 
     currentState(new StartReqState()), 
     transmitter(transmitter)
-{}
+{
+    isDestructed.store(false);
+}
 
 ReqMachine::~ReqMachine()
 {
@@ -35,7 +56,7 @@ void ReqMachine::recvAck(AckMsg& ackMsg, std::string src)
 {
     if (currentState)
     {
-        currentState->recvAck(ackMsg, src);
+        currentState->recvAck(*this, ackMsg, src);
     }
 }
 
@@ -43,6 +64,6 @@ void ReqMachine::recvData(DataMsg& dataMsg, std::string src)
 {
     if (currentState)
     {
-        currentState->recvData(dataMsg, src);
+        currentState->recvData(*this, dataMsg, src);
     }
 }

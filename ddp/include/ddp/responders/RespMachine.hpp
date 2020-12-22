@@ -3,6 +3,7 @@
 
 #include <cstdint>
 #include <string>
+#include <atomic>
 #include "RespStates.hpp"
 #include "messages/AckMsg.hpp"
 #include "messages/DataMsg.hpp"
@@ -62,8 +63,20 @@ private:
      */
     ATransmitter* transmitter;
 
+    /**
+     * @brief Flag to indicate if this state machine has ended.
+     * 
+     */
+    std::atomic<bool> isDestructed;
+
 public:
-    bool isDestructed = false;
+    /**
+     * @brief Queries if the state machine has ended the state sequences.
+     * 
+     * @return true If it has ended.
+     * @return false If it has not yet ended.
+     */
+    bool hasEnded();
 
     /**
      * @brief Construct a new Resp Machine object.

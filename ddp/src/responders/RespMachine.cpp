@@ -1,12 +1,19 @@
 #include "RespMachine.hpp"
 
+bool RespMachine::hasEnded()
+{
+    isDestructed.load();
+}
+
 RespMachine::RespMachine(uint32_t respSequence, uint16_t respEntryId, std::string respTarget, ATransmitter* transmitter) 
     : respSequence(respSequence), 
     respEntryId(respEntryId), 
     respTarget(respTarget), 
     currentState(new StartRespState()), 
     transmitter(transmitter)
-{}
+{
+    isDestructed.store(false);
+}
 
 RespMachine::~RespMachine()
 {

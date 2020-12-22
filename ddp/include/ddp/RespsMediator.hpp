@@ -91,6 +91,12 @@ private:
     Responder* responder;
 
     /**
+     * @brief Mutex to protect the Responder.
+     * 
+     */
+    std::mutex mResponder;
+
+    /**
      * @brief Executes the processing of items in the responses queue.
      * 
      */
@@ -100,18 +106,7 @@ private:
         {
             ros::Duration(0.1).sleep();
 
-            if (responder)
-            {
-                if (responder->hasEnded())
-                {
-                    std::cout << "Responder dying" << std::endl;
-                    delete responder;
-                    responder = nullptr;
-                }
-                continue;
-            }
-
-            bool available;
+            bool available = false;
             RespQueueData qData;
             {
                 std::lock_guard<std::mutex> lock(mRespQ);
@@ -125,9 +120,19 @@ private:
 
             if (available)
             {
-                available = false;
-                responder = new Responder(qData.sequence, qData.entryId, qData.target, transmitter);
-                std::cout << "Responder born" << std::endl;
+                Responder resp(qData.sequence, qData.entryId, qData.target, transmitter);
+
+                {
+                    std::lock_guard<std::mutex> lock(mResponder);
+                    responder = &resp;
+                }
+
+                while (!resp.hasEnded()) {}
+
+                {
+                    std::lock_guard<std::mutex> lock(mResponder);
+                    responder = nullptr;
+                }
             }
         }
     }
@@ -151,10 +156,6 @@ public:
     ~RespsMediator()
     {
         stop();
-        if (responder)
-        {
-            delete responder;
-        }
     }
 
     /**
@@ -195,7 +196,11 @@ public:
      */
     void notifyAck(std::string src, AckMsg& ackMsg)
     {
-        
+        std::lock_guard<std::mutex> lock(mResponder);
+        if (responder)
+        {
+            responder->recvAck(ackMsg, src);
+        }
     }
 
     /**

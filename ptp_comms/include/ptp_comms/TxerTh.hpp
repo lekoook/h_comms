@@ -173,7 +173,7 @@ private:
     {
         while(thRunning.load())
         {
-            bool available;
+            bool available = false;
             TxQueueData dat;
             {
                 std::lock_guard<std::mutex> lock(mTxQ);
@@ -187,7 +187,6 @@ private:
 
             if (available)
             {
-                available = false;
                 // Only send if the destination is a neighbour.
                 subt::CommsClient::Neighbor_M nb = cc->Neighbors();
                 if (((dat.dest != subt::communication_broker::kBroadcast) && (nb.find(dat.dest) == nb.end())) 

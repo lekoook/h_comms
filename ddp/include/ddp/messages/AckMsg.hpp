@@ -15,10 +15,10 @@ class AckMsg : public BaseMsg
 private:
     /**
      * @brief Total length of fixed-length fields.
-     * @details Length = Type(1) + AckSequence(4) + AckEntryID(2)
+     * @details Length = Type(1) + ForReq(1) + AckSequence(4) + AckEntryID(2)
      * 
      */
-    const uint8_t FIXED_LEN = 7;
+    const uint8_t FIXED_LEN = 8;
 
 public:
     /**
@@ -34,6 +34,14 @@ public:
     uint16_t ackEntryId;
 
     /**
+     * @brief Field to indicate if the acknowledgement is for a request or data message.
+     * @details This can only be one of two states. If true, it is acknowledgement for a request message. Otherwise 
+     * false indicates that it is for a data message.
+     * 
+     */
+    bool forReq = true;
+
+    /**
      * @brief Construct a new Ack Msg object.
      * 
      */
@@ -44,9 +52,10 @@ public:
      * 
      * @param sequence The acknowledgement sequence number of this message.
      * @param entryId The entry ID this acknowledgement message is acknowledging to.
+     * @param forReq (Optional) If true, this is acknowledgement for request message. Otherwise it is for data message.
      */
-    AckMsg(uint32_t sequence, uint16_t entryId) 
-        : BaseMsg(MsgType::Acknowledgement), ackSequence(sequence), ackEntryId(entryId) {}
+    AckMsg(uint32_t sequence, uint16_t entryId, bool forReq=true) 
+        : BaseMsg(MsgType::Acknowledgement), ackSequence(sequence), ackEntryId(entryId), forReq(forReq) {}
 
     /**
      * @brief Serializes the acknowledgement message into a bytes vector.
@@ -59,8 +68,9 @@ public:
         uint8_t temp[FIXED_LEN];
 
         serialisers::copyU8(temp, t);
-        serialisers::copyU32(&temp[1], ackSequence);
-        serialisers::copyU16(&temp[5], ackEntryId);
+        serialisers::copyU8(&temp[1], (uint8_t)forReq);
+        serialisers::copyU32(&temp[2], ackSequence);
+        serialisers::copyU16(&temp[6], ackEntryId);
 
         return std::vector<uint8_t>(temp, temp + FIXED_LEN);
     }
@@ -80,8 +90,9 @@ public:
             throw std::invalid_argument("Message is not of Type::Acknowledgement!");
         }
 
-        ackSequence = serialisers::getU32(&temp[1]);
-        ackEntryId = serialisers::getU16(&temp[5]);
+        forReq = serialisers::getU8(&temp[1]);
+        ackSequence = serialisers::getU32(&temp[2]);
+        ackEntryId = serialisers::getU16(&temp[6]);
     }
 };
 
