@@ -26,6 +26,7 @@ ReqMachine::ReqMachine(uint32_t reqSequence, uint16_t reqEntryId, std::string re
     currentState(new StartReqState()), 
     transmitter(transmitter)
 {
+    receivedData.store(false);
     isDestructed.store(false);
 }
 
@@ -66,4 +67,9 @@ void ReqMachine::recvData(DataMsg& dataMsg, std::string src)
     {
         currentState->recvData(*this, dataMsg, src);
     }
+}
+
+bool ReqMachine::hasReceived()
+{
+    return receivedData.load();
 }

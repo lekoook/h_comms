@@ -62,6 +62,16 @@ private:
             rsm.checkTransit();
             if (rsm.hasEnded())
             {
+                if (rsm.hasReceived())
+                {
+                    DataMsg m = rsm.dataReceived;
+                    std::cout << "REQUESTOR RECEIVED DATA: ";
+                    for (auto v : m.data)
+                    {
+                        printf("%u ", v);
+                    }
+                    std::cout << std::endl;
+                }
                 lifeRunning.store(false);
             }
         }

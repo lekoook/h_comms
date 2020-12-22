@@ -72,6 +72,12 @@ private:
     std::atomic<bool> isDestructed;
 
     /**
+     * @brief Flag to indicate if a DATA message was received.
+     * 
+     */
+    std::atomic<bool> receivedData;
+
+    /**
      * @brief Sequence number of the ACK or DATA to wait for. This should not be set directly.
      * 
      */
@@ -129,6 +135,12 @@ private:
 
 public:
     /**
+     * @brief DATA message that was received containing the data.
+     * 
+     */
+    DataMsg dataReceived;
+
+    /**
      * @brief Queries if the state machine has ended the state sequences.
      * 
      * @return true If it has ended.
@@ -179,6 +191,14 @@ public:
      * @param src Source address of this message.
      */
     void recvData(DataMsg& dataMsg, std::string src);
+
+    /**
+     * @brief Queries if a DATA was actually received.
+     * 
+     * @return true If DATA was received.
+     * @return false If DATA was not received.
+     */
+    bool hasReceived();
 };
 
 #endif // H_REQ_MACHINE

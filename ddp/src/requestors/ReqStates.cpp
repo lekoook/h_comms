@@ -105,6 +105,7 @@ void WaitDataReqState::run(ReqMachine& machine)
 
     if (dataSuccess)
     {
+        machine.receivedData.store(true);
         setState(machine, new SendAckReqState());
     }
     else
@@ -120,12 +121,7 @@ void WaitDataReqState::recvData(ReqMachine& machine, DataMsg& dataMsg, std::stri
         std::lock_guard<std::mutex> lock(machine.mGotMsg);
         machine.gotMsg = true;
         machine.cvGotMsg.notify_one();
-        std::cout << "REQUESTOR: GOT DATA - ";
-        for (auto v : dataMsg.data)
-        {
-            printf("%u ", v);
-        }
-        std::cout << std::endl;
+        machine.dataReceived = dataMsg;
     }
 }
 
