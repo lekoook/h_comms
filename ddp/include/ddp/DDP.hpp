@@ -171,7 +171,6 @@ private:
 
             if (available)
             {
-                available = false;
                 msgHandler.notifyRx(rxData.src, rxData.data);
             }
         }
