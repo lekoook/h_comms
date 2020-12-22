@@ -53,10 +53,11 @@ public:
     /**
      * @brief Notifies this state of a received ACK message.
      * 
+     * @param machine State machine this state is exisitng under.
      * @param ackMsg ACK message received.
      * @param src Source address of this message.
      */
-    virtual void recvAck(AckMsg& ackMsg, std::string src);
+    virtual void recvAck(RespMachine& machine, AckMsg& ackMsg, std::string src);
 
     //// External Events END ////
 

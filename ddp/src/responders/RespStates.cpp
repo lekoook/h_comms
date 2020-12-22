@@ -7,7 +7,7 @@ RespState::RespState(RespStateT state) : state(state) {}
 
 RespState::~RespState() {}
 
-void RespState::recvAck(AckMsg& ackMsg, std::string src) {}
+void RespState::recvAck(RespMachine& machine, AckMsg& ackMsg, std::string src) {}
 
 void RespState::setState(RespMachine& machine, RespState* newState)
 {

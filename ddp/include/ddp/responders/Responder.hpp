@@ -101,6 +101,7 @@ public:
         std::lock_guard<std::mutex> lock(mRsm);
         if (_rsm)
         {
+            std::cout << "RESPONDER GOT ACK" << std::endl;
             _rsm->recvAck(ackMsg, src);
         }
     }

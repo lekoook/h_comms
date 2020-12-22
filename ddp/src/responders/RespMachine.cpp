@@ -56,6 +56,6 @@ void RespMachine::recvAck(AckMsg& ackMsg, std::string src)
 {
     if (currentState)
     {
-        currentState->recvAck(ackMsg, src);
+        currentState->recvAck(*this, ackMsg, src);
     }
 }

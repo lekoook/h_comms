@@ -1,5 +1,4 @@
 #include "ReqMachine.hpp"
-#include <iostream>
 
 void ReqMachine::_setWaitParams(uint32_t waitSeq, uint16_t waitEntryId)
 {
