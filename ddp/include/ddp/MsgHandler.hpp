@@ -122,7 +122,7 @@ public:
      * @param src Source address of this message.
      * @param data Data received.
      */
-    void notifyRx(std::string src, std::vector<uint8_t> data)
+    void notifyRx(std::string src, std::vector<uint8_t>& data)
     {
         MsgType t = _peekType(data);
         switch (t)
