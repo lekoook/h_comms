@@ -98,7 +98,7 @@ private:
         // Some example request
         MIT mock;
         auto v = mock.compare(mit);
-        reqHandler->queueReq(mit.convertToEntryId(v[0].first, v[0].second), src);
+        reqHandler->queueReq(1002, src);
     }
 
 public:

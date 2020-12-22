@@ -10,15 +10,17 @@
 #include "ptp_comms/RxData.h"
 #include "messages/AdvMsg.hpp"
 #include "ATransmitter.hpp"
+#include "ADataAccessor.hpp"
 #include "MIT.hpp"
 #include "MsgHandler.hpp"
 #include "ReqsMediator.hpp"
+#include "RespsMediator.hpp"
 
 /**
  * @brief Encapsulates all data and logic for the workings of a Data Distribution Protocol (DDP).
  * 
  */
-class DDP : private ATransmitter
+class DDP : private ATransmitter, private ADataAccessor
 {
 private:
     /**
@@ -130,6 +132,12 @@ private:
     ReqsMediator reqsMediator;
 
     /**
+     * @brief Mediator for one or more Responders.
+     * 
+     */
+    RespsMediator respsMediator;
+
+    /**
      * @brief Subscriber callback to receive data. Puts the received data in a reception queue.
      * 
      * @param msg Contains the recieved data.
@@ -149,7 +157,7 @@ private:
         // Main thread execution.
         while(mainRunning.load())
         {
-            bool available;
+            bool available = false;
             RxQueueData rxData;
             {
                 std::lock_guard<std::mutex> qLock(mRxQ);
@@ -180,7 +188,6 @@ private:
         {
             // TODO: Request MIT from ROS Service
             MIT mit;
-            mit.update(1, 2, 3);
 
             // Broadcast this MIT.
             std::vector<uint8_t> mitSer = mit.serialise();
@@ -203,7 +210,9 @@ public:
         txMsgSrv = nh.serviceClient<ptp_comms::TxData>("tx_data");
         rxMsgSubber = nh.subscribe<ptp_comms::RxData>("rx_data", 100, &DDP::_subCb, this);
 
-        msgHandler = MsgHandler(this, &reqsMediator);
+        reqsMediator.start(this);
+        respsMediator.start(this);
+        msgHandler = MsgHandler(&reqsMediator, &respsMediator);
         
         // Begin main thread operation.
         mainRunning.store(true);
@@ -249,6 +258,34 @@ public:
         tmsg.request.data = data;
         tmsg.request.dest = dest;
         return txMsgSrv.call(tmsg);
+    }
+
+    /**
+     * @brief Pushes new data into the database node to store.
+     * 
+     * @param entryId EntryID of this data.
+     * @param timestamp Timestamp of this data.
+     * @param data Actual data to push.
+     * @return true If the push was successul.
+     * @return false If the push was unsuccessful.
+     */
+    bool pushData(uint16_t entryId, uint64_t timestamp, const std::vector<uint8_t>& data)
+    {
+        return true;
+    }
+
+    /**
+     * @brief Pulls a data from the database node.
+     * 
+     * @param entryId EntryID of data to pull.
+     * @param timestamp Reference to store timestamp of pulled data.
+     * @param data Reference to store pulled data.
+     * @return true If the pull was successul.
+     * @return false If the pull was unsuccessful.
+     */
+    bool pullData(uint16_t entryId, uint64_t& timestamp, std::vector<uint8_t>& data)
+    {
+        return true;
     }
 };
 
