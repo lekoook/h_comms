@@ -37,7 +37,7 @@ private:
      * @brief Pointer to a Requestor state machine.
      * 
      */
-    ReqMachine* _rsm;
+    ReqMachine* _rsm = nullptr;
 
     /**
      * @brief Executes the lifetime of the Requestor state machine.
@@ -51,11 +51,12 @@ private:
         {
             rsm.run();
             rsm.checkTransit();
-            if (rsm.isDestructed)
+            if (rsm.hasEnded())
             {
                 lifeRunning.store(false);
             }
         }
+        _rsm = nullptr;
     }
 
 public:
@@ -79,7 +80,10 @@ public:
      */
     void recvAck(AckMsg& ackMsg, std::string src)
     {
-        _rsm->recvAck(ackMsg, src);
+        if (_rsm)
+        {
+            _rsm->recvAck(ackMsg, src);
+        }
     }
 
     /**
@@ -90,7 +94,10 @@ public:
      */
     void recvData(DataMsg& dataMsg, std::string src)
     {
-        _rsm->recvData(dataMsg, src);
+        if (_rsm)
+        {
+            _rsm->recvData(dataMsg, src);
+        }
     }
 };
 

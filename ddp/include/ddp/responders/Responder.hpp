@@ -49,17 +49,19 @@ private:
      */
     void _life()
     {
-        RespMachine rsm = RespMachine(respSequence, respEntryId, respTarget, transmitter);
+        RespMachine rsm(respSequence, respEntryId, respTarget, transmitter);
         _rsm = &rsm;
         while(lifeRunning.load())
         {
             rsm.run();
             rsm.checkTransit();
-            if (rsm.isDestructed)
+            if (rsm.hasEnded())
             {
                 lifeRunning.store(false);
             }
         }
+
+        _rsm = nullptr;
     }
 
 public:
@@ -83,7 +85,10 @@ public:
      */
     void recvAck(AckMsg& ackMsg, std::string src)
     {
-        _rsm->recvAck(ackMsg, src);
+        if (_rsm)
+        {
+            _rsm->recvAck(ackMsg, src);
+        }
     }
 };
 

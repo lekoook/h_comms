@@ -24,6 +24,7 @@ StartRespState::~StartRespState() {}
 
 void StartRespState::run(RespMachine& machine)
 {
+    std::cout << "RESPONDER: START" << std::endl;
     setState(machine, new PrepRespState());
 }
 
@@ -37,6 +38,7 @@ PrepRespState::~PrepRespState() {}
 
 void PrepRespState::run(RespMachine& machine)
 {
+    std::cout << "RESPONDER: PREPARE" << std::endl;
     AckMsg msg(machine.respSequence, machine.respEntryId);
     machine.transmitter->transmit(machine.respTarget, msg);
     setState(machine, new SendDataRespState());
@@ -52,6 +54,7 @@ SendDataRespState::~SendDataRespState() {}
 
 void SendDataRespState::run(RespMachine& machine)
 {
+    std::cout << "RESPONDER: SEND DATA" << std::endl;
     // TODO: Request for data.
     uint64_t mockTs = 1234;
     std::vector<uint8_t> mockData = {5, 6, 7, 8};
@@ -70,6 +73,7 @@ WaitAckDataRespState::~WaitAckDataRespState() {}
 
 void WaitAckDataRespState::run(RespMachine& machine)
 {
+    std::cout << "RESPONDER: WAIT ACK DATA" << std::endl;
     setState(machine, new DestructRespState());
 }
 
@@ -83,6 +87,7 @@ NoDataRespState::~NoDataRespState() {}
 
 void NoDataRespState::run(RespMachine& machine)
 {
+    std::cout << "RESPONDER: NO DATA" << std::endl;
 }
 
 //// NoDataRespState END ////
@@ -95,6 +100,7 @@ DestructRespState::~DestructRespState() {}
 
 void DestructRespState::run(RespMachine& machine)
 {
+    std::cout << "RESPONDER: DESTRUCT" << std::endl;
     machine.isDestructed = true;
 }
 

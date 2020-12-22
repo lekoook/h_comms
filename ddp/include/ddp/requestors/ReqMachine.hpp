@@ -4,6 +4,7 @@
 #include <cstdint>
 #include <string>
 #include <mutex>
+#include <atomic>
 #include <condition_variable>
 #include "ReqStates.hpp"
 #include "messages/AckMsg.hpp"
@@ -65,63 +66,75 @@ private:
     ATransmitter* transmitter;
 
     /**
-     * @brief Sequence number of the ACK to wait for. This should not be set directly.
+     * @brief Flag to indicate if this state machine has ended.
      * 
      */
-    uint32_t waitAckSeq;
+    std::atomic<bool> isDestructed;
 
     /**
-     * @brief EntryID of the ACK to wait for. This should not be set directly.
+     * @brief Sequence number of the ACK or DATA to wait for. This should not be set directly.
      * 
      */
-    uint16_t waitAckEntryId;
+    uint32_t waitSeq;
 
     /**
-     * @brief Mutex to protect the ACK waiting parameters.
+     * @brief EntryID of the ACK or DATA to wait for. This should not be set directly.
      * 
      */
-    std::mutex mWaitAckParams;
+    uint16_t waitEntryId;
 
     /**
-     * @brief Flag to help determine a correct acknowledgement has been received.
+     * @brief Mutex to protect the ACK or DATA waiting parameters.
      * 
      */
-    bool gotAck = false;
+    std::mutex mWaitParams;
 
     /**
-     * @brief Mutex to protect ACK flag.
+     * @brief Flag to help determine a correct ACK or DATA has been received.
      * 
      */
-    std::mutex mGotAck;
+    bool gotMsg = false;
 
     /**
-     * @brief Condition variable to assist with signalling of receiving correct acknowledgement.
+     * @brief Mutex to protect ACK or DATA flag.
      * 
      */
-    std::condition_variable cvGotAck;
+    std::mutex mGotMsg;
 
     /**
-     * @brief Sets the parameters of the ACK message to wait for. This method should be used to set the parameters 
-     * instead of directly.
+     * @brief Condition variable to assist with signalling of receiving correct ACK or DATA.
      * 
-     * @param waitSeq Sequence number of ACK to wait for.
-     * @param waitEntryId EntryID of ACK to wait for.
      */
-    void _setWaitAckParams(uint32_t waitSeq, uint16_t waitEntryId);
+    std::condition_variable cvGotMsg;
 
     /**
-     * @brief Checks against the already set parameters of ACK message to wait for. This method should be used to check 
-     * the parameters instead of directly.
+     * @brief Sets the parameters of the ACK or DATA message to wait for. This method should be used to set the 
+     * parameters instead of directly.
      * 
-     * @param waitSeq Sequence number of ACK to wait for.
-     * @param waitEntryId EntryID of ACK to wait for.
+     * @param waitSeq Sequence number of ACK or DATA to wait for.
+     * @param waitEntryId EntryID of ACK or DATA to wait for.
+     */
+    void _setWaitParams(uint32_t waitSeq, uint16_t waitEntryId);
+
+    /**
+     * @brief Checks against the already set parameters of ACK or DATA message to wait for. This method should be used 
+     * to check the parameters instead of directly.
+     * 
+     * @param waitSeq Sequence number of ACK or DATA to wait for.
+     * @param waitEntryId EntryID of ACK or DATA to wait for.
      * @return true If the parameters match.
      * @return false If the parameters do not match.
      */
-    bool _checkWaitAckParams(uint32_t waitSeq, uint16_t waitEntryId);
+    bool _checkWaitParams(uint32_t waitSeq, uint16_t waitEntryId);
 
 public:
-    bool isDestructed = false;
+    /**
+     * @brief Queries if the state machine has ended the state sequences.
+     * 
+     * @return true If it has ended.
+     * @return false If it has not yet ended.
+     */
+    bool hasEnded();
 
     /**
      * @brief Construct a new Req Machine object.

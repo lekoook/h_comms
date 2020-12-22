@@ -172,6 +172,15 @@ public:
      * @param machine The state machine this state is existing under.
      */
     virtual void run(ReqMachine& machine);
+
+    /**
+     * @brief Notify the state that an DATA has arrived.
+     * 
+     * @param machine The state machine this state is existing under.
+     * @param dataMsg DATA message arrived.
+     * @param src Source address of the DATA message.
+     */
+    virtual void recvData(ReqMachine& machine, DataMsg& dataMsg, std::string src);
 };
 
 class SendAckReqState : public ReqState

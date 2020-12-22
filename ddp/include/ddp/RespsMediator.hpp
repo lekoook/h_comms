@@ -91,6 +91,12 @@ private:
     Responder* responder;
 
     /**
+     * @brief Mutex to protect the Responder.
+     * 
+     */
+    std::mutex mResponder;
+
+    /**
      * @brief Executes the processing of items in the responses queue.
      * 
      */
@@ -100,34 +106,38 @@ private:
         {
             ros::Duration(0.1).sleep();
 
-            if (responder)
             {
-                if (responder->hasEnded())
-                {
-                    std::cout << "Responder dying" << std::endl;
-                    delete responder;
-                    responder = nullptr;
-                }
-                continue;
-            }
+                std::lock_guard<std::mutex> rLock(mResponder);    
 
-            bool available;
-            RespQueueData qData;
-            {
-                std::lock_guard<std::mutex> lock(mRespQ);
-                if (!respQ.empty())
+                if (responder)
                 {
-                    available = true;
-                    qData = respQ.front();
-                    respQ.pop();
+                    if (responder->hasEnded())
+                    {
+                        std::cout << "Responder dying" << std::endl;
+                        delete responder;
+                        responder = nullptr;
+                    }
+                    continue;
                 }
-            }
 
-            if (available)
-            {
-                available = false;
-                responder = new Responder(qData.sequence, qData.entryId, qData.target, transmitter);
-                std::cout << "Responder born" << std::endl;
+                bool available;
+                RespQueueData qData;
+                {
+                    std::lock_guard<std::mutex> lock(mRespQ);
+                    if (!respQ.empty())
+                    {
+                        available = true;
+                        qData = respQ.front();
+                        respQ.pop();
+                    }
+                }
+
+                if (available)
+                {
+                    available = false;
+                    responder = new Responder(qData.sequence, qData.entryId, qData.target, transmitter);
+                    std::cout << "Responder born" << std::endl;
+                }
             }
         }
     }

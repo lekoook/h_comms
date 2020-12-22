@@ -42,12 +42,8 @@ private:
 
     void _handleData(DataMsg& msg, std::string src)
     {
-        std::cout << "GOT DATA FROM: " << src << std::endl;
-        for (auto v : msg.data)
-        {
-            printf("%u ", v);
-        }
-        std::cout << std::endl;
+        std::cout << "GOT DATA" << std::endl;
+        reqHandler->notifyData(src, msg);
     }
 
     void _handleReq(ReqMsg& msg, std::string src)
@@ -58,13 +54,14 @@ private:
 
     void _handleAck(AckMsg& msg, std::string src)
     {
-        std::cout << "GOT ACK" << std::endl;
         if (msg.forReq)
         {
+            std::cout << "GOT ACK FOR REQ" << std::endl;
             reqHandler->notifyAck(src, msg);
         }
         else
         {
+            std::cout << "GOT ACK FOR DATA" << std::endl;
             respHandler->notifyAck(src, msg);
         }
     }

@@ -96,6 +96,12 @@ private:
     Requestor* requestor;
 
     /**
+     * @brief Mutex to protect the Requestor.
+     * 
+     */
+    std::mutex mRequestor;
+
+    /**
      * @brief Executes the processing of items in the requests queue.
      * 
      */
@@ -105,34 +111,40 @@ private:
         {
             ros::Duration(0.1).sleep();
 
-            if (requestor)
             {
-                if (requestor->hasEnded())
-                {
-                    std::cout << "Requestor dying" << std::endl;
-                    delete requestor;
-                    requestor = nullptr;
-                }
-                continue;
-            }
+                std::lock_guard<std::mutex> rLock(mRequestor);
 
-            bool available;
-            ReqQueueData qData;
-            {
-                std::lock_guard<std::mutex> lock(mReqQ);
-                if (!reqQ.empty())
+                if (requestor)
                 {
-                    available = true;
-                    qData = reqQ.front();
-                    reqQ.pop();
+                    if (requestor->hasEnded())
+                    {
+                        std::cout << "Requestor dying: ";
+                        printf("%p\n", (void*)requestor);
+                        delete requestor;
+                        requestor = nullptr;
+                    }
+                    continue;
                 }
-            }
 
-            if (available)
-            {
-                available = false;
-                requestor = new Requestor(qData.sequence, qData.entryId, qData.target, transmitter);
-                std::cout << "Requestor born" << std::endl;
+                bool available;
+                ReqQueueData qData;
+                {
+                    std::lock_guard<std::mutex> lock(mReqQ);
+                    if (!reqQ.empty())
+                    {
+                        available = true;
+                        qData = reqQ.front();
+                        reqQ.pop();
+                    }
+                }
+
+                if (available)
+                {
+                    available = false;
+                    requestor = new Requestor(qData.sequence, qData.entryId, qData.target, transmitter);
+                    std::cout << "Requestor born: ";
+                    printf("%p\n", (void*)requestor);
+                }
             }
         }
     }
@@ -214,7 +226,10 @@ public:
      */
     void notifyData(std::string src, DataMsg& dataMsg)
     {
-
+        if (requestor)
+        {
+            requestor->recvData(dataMsg, src);
+        }
     }
 
     /**

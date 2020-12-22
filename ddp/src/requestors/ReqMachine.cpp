@@ -1,16 +1,22 @@
 #include "ReqMachine.hpp"
 
-void ReqMachine::_setWaitAckParams(uint32_t waitSeq, uint16_t waitEntryId)
+void ReqMachine::_setWaitParams(uint32_t waitSeq, uint16_t waitEntryId)
 {
-    std::lock_guard<std::mutex> lock(mWaitAckParams);
-    waitAckSeq = waitSeq;
-    waitAckEntryId = waitEntryId;
+    gotMsg = false;
+    std::lock_guard<std::mutex> lock(mWaitParams);
+    waitSeq = waitSeq;
+    waitEntryId = waitEntryId;
 }
 
-bool ReqMachine::_checkWaitAckParams(uint32_t waitSeq, uint16_t waitEntryId)
+bool ReqMachine::_checkWaitParams(uint32_t waitSeq, uint16_t waitEntryId)
 {
-    std::lock_guard<std::mutex> lock(mWaitAckParams);
-    return (waitSeq == waitAckSeq && waitEntryId == waitAckEntryId);
+    std::lock_guard<std::mutex> lock(mWaitParams);
+    return (waitSeq == waitSeq && waitEntryId == waitEntryId);
+}
+
+bool ReqMachine::hasEnded()
+{
+    isDestructed.load();
 }
 
 ReqMachine::ReqMachine(uint32_t reqSequence, uint16_t reqEntryId, std::string reqTarget, ATransmitter* transmitter) 
@@ -19,7 +25,9 @@ ReqMachine::ReqMachine(uint32_t reqSequence, uint16_t reqEntryId, std::string re
     reqTarget(reqTarget), 
     currentState(new StartReqState()), 
     transmitter(transmitter)
-{}
+{
+    isDestructed.store(false);
+}
 
 ReqMachine::~ReqMachine()
 {
