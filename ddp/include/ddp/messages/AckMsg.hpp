@@ -65,7 +65,8 @@ public:
     AckMsg(AckMsg&& other)
         : BaseMsg(MsgType::Acknowledgement)
         , ackSequence(other.ackSequence)
-        , ackEntryId(other.ackEntryId) {}
+        , ackEntryId(other.ackEntryId)
+        , forReq(forReq) {}
 
     /**
      * @brief Copy constructor.
@@ -75,7 +76,8 @@ public:
     AckMsg(const AckMsg& other)
         : BaseMsg(MsgType::Acknowledgement)
         , ackSequence(other.ackSequence)
-        , ackEntryId(other.ackEntryId) {}
+        , ackEntryId(other.ackEntryId)
+        , forReq(forReq) {}
 
     /**
      * @brief Move assignment operator.
@@ -87,6 +89,7 @@ public:
     {
         ackSequence = other.ackSequence;
         ackEntryId = other.ackEntryId;
+        forReq = other.forReq;
         return *this;
     }
 
