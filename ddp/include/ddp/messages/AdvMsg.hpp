@@ -41,6 +41,27 @@ public:
     AdvMsg(std::vector<uint8_t> advData) : BaseMsg(MsgType::Advertisement), data(advData) {}
 
     /**
+     * @brief Move constructor.
+     * 
+     * @param other Source object.
+     */
+    AdvMsg(AdvMsg&& other)
+        : BaseMsg(MsgType::Advertisement)
+        , data(other.data) {}
+
+    /**
+     * @brief Move assignment operator.
+     * 
+     * @param other Source object.
+     * @return AdvMsg& lvalue.
+     */
+    AdvMsg& operator=(AdvMsg&& other)
+    {
+        data = other.data;
+        return *this;
+    }
+
+    /**
      * @brief Serializes the advertisement message into a bytes vector.
      * 
      * @return std::vector<uint8_t> Serialized bytes vector.

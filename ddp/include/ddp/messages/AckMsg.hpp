@@ -58,6 +58,29 @@ public:
         : BaseMsg(MsgType::Acknowledgement), ackSequence(sequence), ackEntryId(entryId), forReq(forReq) {}
 
     /**
+     * @brief Move constructor.
+     * 
+     * @param other Source object.
+     */
+    AckMsg(AckMsg&& other)
+        : BaseMsg(MsgType::Acknowledgement)
+        , ackSequence(other.ackSequence)
+        , ackEntryId(other.ackEntryId) {}
+
+    /**
+     * @brief Move assignment operator.
+     * 
+     * @param other Source object.
+     * @return AckMsg& lvalue.
+     */
+    AckMsg& operator=(AckMsg&& other)
+    {
+        ackSequence = other.ackSequence;
+        ackEntryId = other.ackEntryId;
+        return *this;
+    }
+
+    /**
      * @brief Serializes the acknowledgement message into a bytes vector.
      * 
      * @return std::vector<uint8_t> Serialized bytes vector.

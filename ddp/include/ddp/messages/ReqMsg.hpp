@@ -48,6 +48,29 @@ public:
     ReqMsg(uint32_t sequence, uint16_t entryId) : BaseMsg(MsgType::Request), reqSequence(sequence), reqEntryId(entryId) {}
 
     /**
+     * @brief Move constructor.
+     * 
+     * @param other Source object.
+     */
+    ReqMsg(ReqMsg&& other)
+        : BaseMsg(MsgType::Request)
+        , reqSequence(other.reqSequence)
+        , reqEntryId(other.reqEntryId) {}
+    
+    /**
+     * @brief Move assignment operator.
+     * 
+     * @param other Source object.
+     * @return ReqMsg& lvalue.
+     */
+    ReqMsg& operator=(ReqMsg&& other)
+    {
+        reqSequence = other.reqSequence;
+        reqEntryId = other.reqEntryId;
+        return *this;
+    }
+
+    /**
      * @brief Serializes the request message into a bytes vector.
      * 
      * @return std::vector<uint8_t> Serialized bytes vector.

@@ -63,6 +63,33 @@ public:
         : BaseMsg(MsgType::Data), reqSequence(sequence), entryId(entryId), timestamp(timestamp), data(data) {}
 
     /**
+     * @brief Move constructor.
+     * 
+     * @param other Source object.
+     */
+    DataMsg(DataMsg&& other)
+        : BaseMsg(MsgType::Data)
+        , reqSequence(other.reqSequence)
+        , entryId(other.entryId)
+        , timestamp(other.timestamp)
+        , data(other.data) {}
+
+    /**
+     * @brief Move assignment operator.
+     * 
+     * @param other Source object.
+     * @return DataMsg& lvalue.
+     */
+    DataMsg& operator=(DataMsg&& other)
+    {
+        reqSequence = other.reqSequence;
+        entryId = other.entryId;
+        timestamp = other.timestamp;
+        data = other.data;
+        return *this;
+    }
+
+    /**
      * @brief Serializes the data message into a bytes vector.
      * 
      * @return std::vector<uint8_t> Serialized bytes vector.
