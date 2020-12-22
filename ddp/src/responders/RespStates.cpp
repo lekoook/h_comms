@@ -39,11 +39,6 @@ SendAckReqRespState::~SendAckReqRespState() {}
 void SendAckReqRespState::run(RespMachine& machine)
 {
     std::cout << "RESPONDER: PREPARE" << std::endl;
-    // TODO: Request for data.
-    uint64_t mockTs = 1234;
-    std::vector<uint8_t> mockData = {5, 6, 7, 8};
-    machine.dataToSend = DataMsg(machine.respSequence, machine.respEntryId, mockTs, mockData);
-
     AckMsg msg(machine.respSequence, machine.respEntryId);
     machine.transmitter->transmit(machine.respTarget, msg);
     setState(machine, new SendDataRespState());

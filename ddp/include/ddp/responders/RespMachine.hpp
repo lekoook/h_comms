@@ -160,9 +160,16 @@ public:
      * @param respSequence Sequence number of this response.
      * @param respEntryId Entry ID this response is made for.
      * @param respTarget Intended target address this response is for.
+     * @param dataToSend DATA message to respond with and send.
      * @param transmitter Interface used to send messages.
      */
-    RespMachine(uint32_t respSequence, uint16_t respEntryId, std::string respTarget, ATransmitter* transmitter);
+    RespMachine(
+        uint32_t respSequence, 
+        uint16_t respEntryId, 
+        std::string respTarget, 
+        DataMsg& dataToSend, 
+        ATransmitter* transmitter
+        );
 
     /**
      * @brief Destroy the Resp Machine object.

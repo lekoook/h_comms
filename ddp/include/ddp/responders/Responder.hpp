@@ -55,7 +55,10 @@ private:
      */
     void _life()
     {
-        RespMachine rsm(respSequence, respEntryId, respTarget, transmitter);
+        uint64_t mockTs = 1234;
+        std::vector<uint8_t> mockData = {5, 6, 7, 8};
+        DataMsg msg(respSequence, respEntryId, mockTs, mockData);
+        RespMachine rsm(respSequence, respEntryId, respTarget, msg, transmitter);
         {
             std::lock_guard<std::mutex> lock(mRsm);
             _rsm = &rsm;

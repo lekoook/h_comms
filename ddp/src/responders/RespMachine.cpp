@@ -19,10 +19,16 @@ bool RespMachine::hasEnded()
     return isDestructed.load();
 }
 
-RespMachine::RespMachine(uint32_t respSequence, uint16_t respEntryId, std::string respTarget, ATransmitter* transmitter) 
+RespMachine::RespMachine(
+        uint32_t respSequence, 
+        uint16_t respEntryId, 
+        std::string respTarget, 
+        DataMsg& dataToSend, 
+        ATransmitter* transmitter) 
     : respSequence(respSequence), 
     respEntryId(respEntryId), 
-    respTarget(respTarget), 
+    respTarget(respTarget),
+    dataToSend(dataToSend),
     currentState(new StartRespState()), 
     transmitter(transmitter)
 {
