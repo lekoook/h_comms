@@ -71,6 +71,18 @@ public:
     }
 
     /**
+     * @brief Copy assignment operator.
+     * 
+     * @param other Source object.
+     * @return AdvMsg& lvalue.
+     */
+    AdvMsg& operator=(const AdvMsg& other)
+    {
+        data = other.data;
+        return *this;
+    }
+
+    /**
      * @brief Serializes the advertisement message into a bytes vector.
      * 
      * @return std::vector<uint8_t> Serialized bytes vector.

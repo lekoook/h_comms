@@ -81,6 +81,19 @@ public:
     }
 
     /**
+     * @brief Copy assignment operator.
+     * 
+     * @param other Source object.
+     * @return ReqMsg& lvalue.
+     */
+    ReqMsg& operator=(const ReqMsg& other)
+    {
+        reqSequence = other.reqSequence;
+        reqEntryId = other.reqEntryId;
+        return *this;
+    }
+
+    /**
      * @brief Serializes the request message into a bytes vector.
      * 
      * @return std::vector<uint8_t> Serialized bytes vector.

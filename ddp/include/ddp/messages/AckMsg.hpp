@@ -94,6 +94,20 @@ public:
     }
 
     /**
+     * @brief Copy assignment operator.
+     * 
+     * @param other Source object.
+     * @return AckMsg& lvalue.
+     */
+    AckMsg& operator=(const AckMsg& other)
+    {
+        ackSequence = other.ackSequence;
+        ackEntryId = other.ackEntryId;
+        forReq = other.forReq;
+        return *this;
+    }
+
+    /**
      * @brief Serializes the acknowledgement message into a bytes vector.
      * 
      * @return std::vector<uint8_t> Serialized bytes vector.
