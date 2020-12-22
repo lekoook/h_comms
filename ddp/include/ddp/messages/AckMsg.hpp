@@ -68,6 +68,16 @@ public:
         , ackEntryId(other.ackEntryId) {}
 
     /**
+     * @brief Copy constructor.
+     * 
+     * @param other Source object.
+     */
+    AckMsg(const AckMsg& other)
+        : BaseMsg(MsgType::Acknowledgement)
+        , ackSequence(other.ackSequence)
+        , ackEntryId(other.ackEntryId) {}
+
+    /**
      * @brief Move assignment operator.
      * 
      * @param other Source object.

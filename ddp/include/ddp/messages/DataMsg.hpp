@@ -75,6 +75,18 @@ public:
         , data(other.data) {}
 
     /**
+     * @brief Copy constructor.
+     * 
+     * @param other Source object.
+     */
+    DataMsg(const DataMsg& other)
+        : BaseMsg(MsgType::Data)
+        , reqSequence(other.reqSequence)
+        , entryId(other.entryId)
+        , timestamp(other.timestamp)
+        , data(other.data) {}
+
+    /**
      * @brief Move assignment operator.
      * 
      * @param other Source object.

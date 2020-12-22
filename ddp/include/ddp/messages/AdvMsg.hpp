@@ -50,6 +50,15 @@ public:
         , data(other.data) {}
 
     /**
+     * @brief Copy constructor.
+     * 
+     * @param other Source object.
+     */
+    AdvMsg(const AdvMsg& other)
+        : BaseMsg(MsgType::Advertisement)
+        , data(other.data) {}
+
+    /**
      * @brief Move assignment operator.
      * 
      * @param other Source object.

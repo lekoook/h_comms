@@ -56,6 +56,16 @@ public:
         : BaseMsg(MsgType::Request)
         , reqSequence(other.reqSequence)
         , reqEntryId(other.reqEntryId) {}
+
+    /**
+     * @brief Copy constructor.
+     * 
+     * @param other Source object.
+     */
+    ReqMsg(const ReqMsg& other)
+        : BaseMsg(MsgType::Request)
+        , reqSequence(other.reqSequence)
+        , reqEntryId(other.reqEntryId) {}
     
     /**
      * @brief Move assignment operator.
