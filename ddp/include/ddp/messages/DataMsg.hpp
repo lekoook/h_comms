@@ -52,8 +52,11 @@ public:
     DataMsg() : BaseMsg(MsgType::Data) {}
 
     /**
-     * @brief Construct a new Data Msg object.
+     * @brief Construct a new Data Msg object
      * 
+     * @param sequence Sequence number this data is for.
+     * @param entryId Entry ID of this data.
+     * @param timestamp Timestamp of this data.
      * @param data Distributing data.
      */
     DataMsg(uint32_t sequence, uint16_t entryId, uint64_t timestamp, std::vector<uint8_t> data) 
