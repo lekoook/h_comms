@@ -5,6 +5,7 @@
 #include <string>
 #include <atomic>
 #include <mutex>
+#include <vector>
 #include <condition_variable>
 #include "RespStates.hpp"
 #include "messages/AckMsg.hpp"
@@ -52,6 +53,12 @@ private:
      * 
      */
     std::string respTarget;
+
+    /**
+     * @brief Data that was pulled from database and to be sent.
+     * 
+     */
+    DataMsg dataToSend;
 
     /**
      * @brief The current state of this state machine.
