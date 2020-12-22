@@ -24,6 +24,7 @@ StartRespState::~StartRespState() {}
 
 void StartRespState::run(RespMachine& machine)
 {
+    setState(machine, new PrepRespState());
 }
 
 //// StartRespState END ////
@@ -36,6 +37,9 @@ PrepRespState::~PrepRespState() {}
 
 void PrepRespState::run(RespMachine& machine)
 {
+    AckMsg msg(machine.respSequence, machine.respEntryId);
+    machine.transmitter->transmit(machine.respTarget, msg);
+    setState(machine, new SendDataRespState());
 }
 
 //// PrepRespState END ////
@@ -48,6 +52,12 @@ SendDataRespState::~SendDataRespState() {}
 
 void SendDataRespState::run(RespMachine& machine)
 {
+    // TODO: Request for data.
+    uint64_t mockTs = 1234;
+    std::vector<uint8_t> mockData = {5, 6, 7, 8};
+    DataMsg msg(machine.respSequence, machine.respEntryId, mockTs, mockData);
+    machine.transmitter->transmit(machine.respTarget, msg);
+    setState(machine, new WaitAckDataRespState());
 }
 
 //// SendDataRespState END ////
@@ -60,6 +70,7 @@ WaitAckDataRespState::~WaitAckDataRespState() {}
 
 void WaitAckDataRespState::run(RespMachine& machine)
 {
+    setState(machine, new DestructRespState());
 }
 
 //// WaitAckDataRespState END ////

@@ -57,7 +57,7 @@ private:
      * @brief Current sequence number used to generate each Request queue item.
      * 
      */
-    uint32_t sequence;
+    uint32_t sequence = 0;
 
     /**
      * @brief Request thread to handle new requests submissions.
@@ -109,6 +109,7 @@ private:
             {
                 if (requestor->hasEnded())
                 {
+                    std::cout << "Requestor dying" << std::endl;
                     delete requestor;
                     requestor = nullptr;
                 }
@@ -129,7 +130,9 @@ private:
 
             if (available)
             {
+                available = false;
                 requestor = new Requestor(qData.sequence, qData.entryId, qData.target, transmitter);
+                std::cout << "Requestor born" << std::endl;
             }
         }
     }
