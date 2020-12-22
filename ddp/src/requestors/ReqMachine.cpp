@@ -16,7 +16,7 @@ bool ReqMachine::_checkWaitParams(uint32_t waitSeq, uint16_t waitEntryId)
 
 bool ReqMachine::hasEnded()
 {
-    isDestructed.load();
+    return isDestructed.load();
 }
 
 ReqMachine::ReqMachine(uint32_t reqSequence, uint16_t reqEntryId, std::string reqTarget, ATransmitter* transmitter) 

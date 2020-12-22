@@ -16,7 +16,7 @@ bool RespMachine::_checkWaitParams(uint32_t waitSeq, uint16_t waitEntryId)
 
 bool RespMachine::hasEnded()
 {
-    isDestructed.load();
+    return isDestructed.load();
 }
 
 RespMachine::RespMachine(uint32_t respSequence, uint16_t respEntryId, std::string respTarget, ATransmitter* transmitter) 
