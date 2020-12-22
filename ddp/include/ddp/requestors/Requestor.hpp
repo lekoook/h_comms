@@ -40,13 +40,22 @@ private:
     ReqMachine* _rsm = nullptr;
 
     /**
+     * @brief Mutex to protect pointer to Requestor.
+     * 
+     */
+    std::mutex mRsm;
+
+    /**
      * @brief Executes the lifetime of the Requestor state machine.
      * 
      */
     void _life()
     {
         ReqMachine rsm(reqSequence, reqEntryId, reqTarget, transmitter);
-        _rsm = &rsm;
+        {
+            std::lock_guard<std::mutex> lock(mRsm);
+            _rsm = &rsm;
+        }
         while(lifeRunning.load())
         {
             rsm.run();
@@ -56,6 +65,8 @@ private:
                 lifeRunning.store(false);
             }
         }
+
+        std::lock_guard<std::mutex> lock(mRsm);
         _rsm = nullptr;
     }
 
@@ -80,6 +91,7 @@ public:
      */
     void recvAck(AckMsg& ackMsg, std::string src)
     {
+        std::lock_guard<std::mutex> lock(mRsm);
         if (_rsm)
         {
             _rsm->recvAck(ackMsg, src);
@@ -94,6 +106,7 @@ public:
      */
     void recvData(DataMsg& dataMsg, std::string src)
     {
+        std::lock_guard<std::mutex> lock(mRsm);
         if (_rsm)
         {
             _rsm->recvData(dataMsg, src);

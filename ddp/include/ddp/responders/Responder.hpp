@@ -44,13 +44,22 @@ private:
     RespMachine* _rsm;
 
     /**
+     * @brief Mutex to protect the pointer to Responder state machine.
+     * 
+     */
+    std::mutex mRsm;
+
+    /**
      * @brief Executes the lifetime of the Responder state machine.
      * 
      */
     void _life()
     {
         RespMachine rsm(respSequence, respEntryId, respTarget, transmitter);
-        _rsm = &rsm;
+        {
+            std::lock_guard<std::mutex> lock(mRsm);
+            _rsm = &rsm;
+        }
         while(lifeRunning.load())
         {
             rsm.run();
@@ -61,6 +70,7 @@ private:
             }
         }
 
+        std::lock_guard<std::mutex> lock(mRsm);
         _rsm = nullptr;
     }
 
@@ -75,7 +85,10 @@ public:
      */
     Responder(uint32_t respSequence, uint16_t respEntryId, std::string respTarget, ATransmitter* transmitter)
         : ALifeEntity(), respSequence(respSequence), respEntryId(respEntryId), respTarget(respTarget), 
-            transmitter(transmitter) {}
+            transmitter(transmitter)
+    {
+        _rsm = nullptr;
+    }
 
     /**
      * @brief Notifies the Responder of a received ACK message.
@@ -85,6 +98,7 @@ public:
      */
     void recvAck(AckMsg& ackMsg, std::string src)
     {
+        std::lock_guard<std::mutex> lock(mRsm);
         if (_rsm)
         {
             _rsm->recvAck(ackMsg, src);
