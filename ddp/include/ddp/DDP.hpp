@@ -1,3 +1,6 @@
+#ifndef H_DDP
+#define H_DDP
+
 #include <thread>
 #include <vector>
 #include <queue>
@@ -248,3 +251,5 @@ public:
         return txMsgSrv.call(tmsg);
     }
 };
+
+#endif // H_DDP

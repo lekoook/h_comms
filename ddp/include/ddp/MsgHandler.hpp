@@ -1,3 +1,6 @@
+#ifndef H_MSG_HANDLER
+#define H_MSG_HANDLER
+
 #include <vector>
 #include "ATransmitter.hpp"
 #include "messages/AdvMsg.hpp"
@@ -155,3 +158,5 @@ public:
         }
     }
 };
+
+#endif // H_MSG_HANDLER
