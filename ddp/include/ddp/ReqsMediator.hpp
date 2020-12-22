@@ -111,39 +111,32 @@ private:
         {
             ros::Duration(0.1).sleep();
 
+            bool available = false;
+            ReqQueueData qData;
             {
-                std::lock_guard<std::mutex> rLock(mRequestor);
-
-                if (requestor)
+                std::lock_guard<std::mutex> lock(mReqQ);
+                if (!reqQ.empty())
                 {
-                    if (requestor->hasEnded())
-                    {
-                        std::cout << "Requestor dying: ";
-                        printf("%p\n", (void*)requestor);
-                        delete requestor;
-                        requestor = nullptr;
-                    }
-                    continue;
+                    available = true;
+                    qData = reqQ.front();
+                    reqQ.pop();
                 }
+            }
 
-                bool available;
-                ReqQueueData qData;
+            if (available)
+            {
+                Requestor req(qData.sequence, qData.entryId, qData.target, transmitter);
+
                 {
-                    std::lock_guard<std::mutex> lock(mReqQ);
-                    if (!reqQ.empty())
-                    {
-                        available = true;
-                        qData = reqQ.front();
-                        reqQ.pop();
-                    }
+                    std::lock_guard<std::mutex> lock(mRequestor);
+                    requestor = &req;
                 }
+                
+                while (!req.hasEnded()) {}
 
-                if (available)
                 {
-                    available = false;
-                    requestor = new Requestor(qData.sequence, qData.entryId, qData.target, transmitter);
-                    std::cout << "Requestor born: ";
-                    printf("%p\n", (void*)requestor);
+                    std::lock_guard<std::mutex> lock(mRequestor);
+                    requestor = nullptr;
                 }
             }
         }
@@ -168,10 +161,6 @@ public:
     ~ReqsMediator()
     {
         stop();
-        if (requestor)
-        {
-            delete requestor;
-        }
     }
 
     /**
@@ -212,6 +201,7 @@ public:
      */
     void notifyAck(std::string src, AckMsg& ackMsg)
     {
+        std::lock_guard<std::mutex> lock(mRequestor);
         if (requestor)
         {
             requestor->recvAck(ackMsg, src);
@@ -226,6 +216,7 @@ public:
      */
     void notifyData(std::string src, DataMsg& dataMsg)
     {
+        std::lock_guard<std::mutex> lock(mRequestor);
         if (requestor)
         {
             requestor->recvData(dataMsg, src);

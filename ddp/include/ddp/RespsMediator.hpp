@@ -106,37 +106,32 @@ private:
         {
             ros::Duration(0.1).sleep();
 
+            bool available = false;
+            RespQueueData qData;
             {
-                std::lock_guard<std::mutex> rLock(mResponder);    
-
-                if (responder)
+                std::lock_guard<std::mutex> lock(mRespQ);
+                if (!respQ.empty())
                 {
-                    if (responder->hasEnded())
-                    {
-                        std::cout << "Responder dying" << std::endl;
-                        delete responder;
-                        responder = nullptr;
-                    }
-                    continue;
+                    available = true;
+                    qData = respQ.front();
+                    respQ.pop();
+                }
+            }
+
+            if (available)
+            {
+                Responder resp(qData.sequence, qData.entryId, qData.target, transmitter);
+
+                {
+                    std::lock_guard<std::mutex> lock(mResponder);
+                    responder = &resp;
                 }
 
-                bool available;
-                RespQueueData qData;
-                {
-                    std::lock_guard<std::mutex> lock(mRespQ);
-                    if (!respQ.empty())
-                    {
-                        available = true;
-                        qData = respQ.front();
-                        respQ.pop();
-                    }
-                }
+                while (!resp.hasEnded()) {}
 
-                if (available)
                 {
-                    available = false;
-                    responder = new Responder(qData.sequence, qData.entryId, qData.target, transmitter);
-                    std::cout << "Responder born" << std::endl;
+                    std::lock_guard<std::mutex> lock(mResponder);
+                    responder = nullptr;
                 }
             }
         }
@@ -161,10 +156,6 @@ public:
     ~RespsMediator()
     {
         stop();
-        if (responder)
-        {
-            delete responder;
-        }
     }
 
     /**
@@ -205,7 +196,11 @@ public:
      */
     void notifyAck(std::string src, AckMsg& ackMsg)
     {
-        
+        std::lock_guard<std::mutex> lock(mResponder);
+        if (responder)
+        {
+            responder->recvAck(ackMsg, src);
+        }
     }
 
     /**
