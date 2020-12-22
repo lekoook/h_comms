@@ -2,10 +2,11 @@
 #define H_REQUESTOR
 
 #include <thread>
+#include "ALifeEntity.hpp"
 #include "ReqMachine.hpp"
 #include "ReqStates.hpp"
 
-class Requestor
+class Requestor : public ALifeEntity
 {
 private:
     /**
@@ -31,18 +32,6 @@ private:
      * 
      */
     ATransmitter* transmitter;
-
-    /**
-     * @brief Life thread that runs for the whole duration of the Requestor state machine until it destructs.
-     * 
-     */
-    std::thread lifeTh;
-
-    /**
-     * @brief Flag to indicate if the life thread is running.
-     * 
-     */
-    std::atomic<bool> lifeRunning;
 
     /**
      * @brief Pointer to a Requestor state machine.
@@ -79,36 +68,8 @@ public:
      * @param transmitter Interface used to send messages. 
      */
     Requestor(uint32_t reqSequence, uint16_t reqEntryId, std::string reqTarget, ATransmitter* transmitter)
-        : reqSequence(reqSequence), reqEntryId(reqEntryId), reqTarget(reqTarget), transmitter(transmitter)
-    {
-        lifeRunning.store(true);
-        lifeTh = std::thread(&Requestor::_life, this);
-    }
-
-    /**
-     * @brief Destroy the Requestor object.
-     * 
-     */
-    ~Requestor()
-    {
-        std::cout << "requestor dying" << std::endl;
-        lifeRunning.store(false);
-        if (lifeTh.joinable())
-        {
-            lifeTh.join();
-        }
-    }
-
-    /**
-     * @brief Check if this Requestor has ended it's entire sequence.
-     * 
-     * @return true If the life of the Requestor has ended.
-     * @return false If the life of the Requestor has not yet ended.
-     */
-    bool hasEnded()
-    {
-        return !lifeRunning.load();
-    }
+        : ALifeEntity(), reqSequence(reqSequence), reqEntryId(reqEntryId), reqTarget(reqTarget), 
+            transmitter(transmitter) {}
 
     /**
      * @brief Notifies the Requestor of a received ACK message.
