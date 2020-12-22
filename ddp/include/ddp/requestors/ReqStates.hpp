@@ -54,18 +54,20 @@ public:
     /**
      * @brief Notifies this state of a received ACK message.
      * 
+     * @param machine State machine this state is exisitng under.
      * @param ackMsg ACK message received.
      * @param src Source address of this message.
      */
-    virtual void recvAck(AckMsg& ackMsg, std::string src);
+    virtual void recvAck(ReqMachine& machine, AckMsg& ackMsg, std::string src);
 
     /**
      * @brief Notifies this state of a received DATA message.
      * 
+     * @param machine State machine this state is exisitng under.
      * @param dataMsg DATA message received.
      * @param src Source address of this message.
      */
-    virtual void recvData(DataMsg& dataMsg, std::string src);
+    virtual void recvData(ReqMachine& machine, DataMsg& dataMsg, std::string src);
 
     //// External Events END ////
 
@@ -138,6 +140,15 @@ public:
      * @param machine The state machine this state is existing under.
      */
     virtual void run(ReqMachine& machine);
+
+    /**
+     * @brief Notify the state that an ACK has arrived.
+     * 
+     * @param machine The state machine this state is existing under.
+     * @param ackMsg ACK message arrived.
+     * @param src Source address of the ACK message.
+     */
+    virtual void recvAck(ReqMachine& machine, AckMsg& ackMsg, std::string src);
 };
 
 class WaitDataReqState : public ReqState

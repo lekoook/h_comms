@@ -6,6 +6,7 @@
 #include "messages/DataMsg.hpp"
 #include "MIT.hpp"
 #include "AReqHandler.hpp"
+#include "ARespHandler.hpp"
 
 class MsgHandler
 {
@@ -23,6 +24,12 @@ private:
     AReqHandler* reqHandler;
 
     /**
+     * @brief Handler interface that will manage ACK messages and new responses for data exchange.
+     * 
+     */
+    ARespHandler* respHandler;
+
+    /**
      * @brief Peeks at the type of message the bytes vector contains.
      * 
      * @param data Bytes vector.
@@ -35,17 +42,31 @@ private:
 
     void _handleData(DataMsg& msg, std::string src)
     {
-        std::cout << "GOT DATA" << std::endl;
+        std::cout << "GOT DATA FROM: " << src << std::endl;
+        for (auto v : msg.data)
+        {
+            printf("%u ", v);
+        }
+        std::cout << std::endl;
     }
 
     void _handleReq(ReqMsg& msg, std::string src)
     {
-        std::cout << "GOT REQUEST" << std::endl;
+        std::cout << "GOT REQUEST FOR: " << msg.reqSequence << " , " << msg.reqEntryId << std::endl;
+        respHandler->queueResp(msg.reqSequence, msg.reqEntryId, src);
     }
 
     void _handleAck(AckMsg& msg, std::string src)
     {
         std::cout << "GOT ACK" << std::endl;
+        if (msg.forReq)
+        {
+            reqHandler->notifyAck(src, msg);
+        }
+        else
+        {
+            respHandler->notifyAck(src, msg);
+        }
     }
 
     void _handleAdv(AdvMsg& msg, std::string src)
@@ -65,7 +86,8 @@ private:
 public:
     MsgHandler() {}
     
-    MsgHandler(ATransmitter* transmitter, AReqHandler* reqHandler) : transmitter(transmitter), reqHandler(reqHandler) {}
+    MsgHandler(ATransmitter* transmitter, AReqHandler* reqHandler, ARespHandler* respHandler) 
+        : transmitter(transmitter), reqHandler(reqHandler), respHandler(respHandler) {}
 
     void notifyRx(std::string src, std::vector<uint8_t> data)
     {

@@ -200,7 +200,10 @@ public:
      */
     void notifyAck(std::string src, AckMsg& ackMsg)
     {
-        
+        if (requestor)
+        {
+            requestor->recvAck(ackMsg, src);
+        }
     }
 
     /**

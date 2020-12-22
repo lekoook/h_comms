@@ -45,7 +45,7 @@ private:
      */
     void _life()
     {
-        ReqMachine rsm = ReqMachine(reqSequence, reqEntryId, reqTarget, transmitter);
+        ReqMachine rsm(reqSequence, reqEntryId, reqTarget, transmitter);
         _rsm = &rsm;
         while(lifeRunning.load())
         {

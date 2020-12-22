@@ -7,9 +7,9 @@ ReqState::ReqState(ReqStateT state) : state(state) {}
 
 ReqState::~ReqState() {}
 
-void ReqState::recvAck(AckMsg& ackMsg, std::string src) {}
+void ReqState::recvAck(ReqMachine& machine, AckMsg& ackMsg, std::string src) {}
 
-void ReqState::recvData(DataMsg& dataMsg, std::string src) {}
+void ReqState::recvData(ReqMachine& machine, DataMsg& dataMsg, std::string src) {}
 
 void ReqState::setState(ReqMachine& machine, ReqState* newState)
 {
@@ -28,8 +28,16 @@ void StartReqState::run(ReqMachine& machine)
 {
     ReqMsg m(machine.reqSequence, machine.reqEntryId);
     std::cout << "REQUESTING FOR: " << m.reqSequence << " , " << m.reqEntryId << std::endl;
-    machine.transmitter->transmit(machine.reqTarget, m);
-    setState(machine, new DestructReqState());
+    
+    if (machine.transmitter->transmit(machine.reqTarget, m))
+    {
+        machine._setWaitAckParams(machine.reqSequence, machine.reqEntryId);
+        setState(machine, new WaitAckReqState());
+    }
+    else
+    {
+        setState(machine, new RequeueReqState());
+    }
 }
 
 //// StartReqState END ////
@@ -42,6 +50,35 @@ WaitAckReqState::~WaitAckReqState() {}
 
 void WaitAckReqState::run(ReqMachine& machine)
 {
+    std::cout << "STATE: Wait ACK REQ" << std::endl;
+    std::unique_lock<std::mutex> lock(machine.mGotAck);
+    bool ackSuccess = machine.cvGotAck.wait_for(
+        lock,
+        std::chrono::milliseconds(1000),
+        [&machine] () -> bool
+            {
+                return machine.gotAck;
+            }
+    );
+
+    if (ackSuccess)
+    {
+        setState(machine, new WaitDataReqState());
+    }
+    else
+    {
+        setState(machine, new RequeueReqState());
+    }
+}
+
+void WaitAckReqState::recvAck(ReqMachine& machine, AckMsg& ackMsg, std::string src)
+{
+    if (machine._checkWaitAckParams(ackMsg.ackSequence, ackMsg.ackEntryId))
+    {
+        std::lock_guard<std::mutex> lock(machine.mGotAck);
+        machine.gotAck = true;
+        machine.cvGotAck.notify_one();
+    }
 }
 
 //// WaitAckReqState END ////
@@ -54,6 +91,8 @@ WaitDataReqState::~WaitDataReqState() {}
 
 void WaitDataReqState::run(ReqMachine& machine)
 {
+    std::cout << "STATE: Wait Data" << std::endl;
+    setState(machine, new DestructReqState());
 }
 
 //// WaitDataReqState END ////
@@ -78,6 +117,8 @@ RequeueReqState::~RequeueReqState() {}
 
 void RequeueReqState::run(ReqMachine& machine)
 {
+    std::cout << "STATE: Requeue REQ" << std::endl;
+    setState(machine, new DestructReqState());
 }
 
 //// RequeueReqState END ////

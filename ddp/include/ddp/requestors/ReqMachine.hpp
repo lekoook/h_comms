@@ -3,6 +3,8 @@
 
 #include <cstdint>
 #include <string>
+#include <mutex>
+#include <condition_variable>
 #include "ReqStates.hpp"
 #include "messages/AckMsg.hpp"
 #include "messages/DataMsg.hpp"
@@ -61,6 +63,62 @@ private:
      * 
      */
     ATransmitter* transmitter;
+
+    /**
+     * @brief Sequence number of the ACK to wait for. This should not be set directly.
+     * 
+     */
+    uint32_t waitAckSeq;
+
+    /**
+     * @brief EntryID of the ACK to wait for. This should not be set directly.
+     * 
+     */
+    uint16_t waitAckEntryId;
+
+    /**
+     * @brief Mutex to protect the ACK waiting parameters.
+     * 
+     */
+    std::mutex mWaitAckParams;
+
+    /**
+     * @brief Flag to help determine a correct acknowledgement has been received.
+     * 
+     */
+    bool gotAck = false;
+
+    /**
+     * @brief Mutex to protect ACK flag.
+     * 
+     */
+    std::mutex mGotAck;
+
+    /**
+     * @brief Condition variable to assist with signalling of receiving correct acknowledgement.
+     * 
+     */
+    std::condition_variable cvGotAck;
+
+    /**
+     * @brief Sets the parameters of the ACK message to wait for. This method should be used to set the parameters 
+     * instead of directly.
+     * 
+     * @param waitSeq Sequence number of ACK to wait for.
+     * @param waitEntryId EntryID of ACK to wait for.
+     */
+    void _setWaitAckParams(uint32_t waitSeq, uint16_t waitEntryId);
+
+    /**
+     * @brief Checks against the already set parameters of ACK message to wait for. This method should be used to check 
+     * the parameters instead of directly.
+     * 
+     * @param waitSeq Sequence number of ACK to wait for.
+     * @param waitEntryId EntryID of ACK to wait for.
+     * @return true If the parameters match.
+     * @return false If the parameters do not match.
+     */
+    bool _checkWaitAckParams(uint32_t waitSeq, uint16_t waitEntryId);
 
 public:
     bool isDestructed = false;
