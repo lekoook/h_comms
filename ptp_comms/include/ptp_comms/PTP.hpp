@@ -4,6 +4,7 @@
 #include "ptp_comms/RxData.h"
 #include "TxerTh.hpp"
 #include "RxerTh.hpp"
+#include "PortRegistry.hpp"
 
 /**
  * @brief Class that encapsulates the point-to-point communication exchange sequences.
@@ -54,6 +55,12 @@ private:
      * 
      */
     std::unique_ptr<RxerTh> rxTh;
+
+    /**
+     * @brief Registry to track all registerations of port numbers.
+     * 
+     */
+    std::unique_ptr<PortRegistry> portRegistry;
 
     /**
      * @brief Callback for receive data from subt::CommsClient.
@@ -116,9 +123,6 @@ public:
      */
     PTP(ros::NodeHandle& nh, std::string nodeAddr) : nodeAddr(nodeAddr)
     {
-        // Set up ROS structures.
-        rxPubber = nh.advertise<ptp_comms::RxData>("rx_data", 100);
-
         // Set up communication drivers.
         cc = std::unique_ptr<subt::CommsClient>(new subt::CommsClient(nodeAddr));
         txTh = std::unique_ptr<TxerTh>(new TxerTh(cc.get()));
@@ -128,11 +132,19 @@ public:
             std::bind(&PTP::_pubRx, this, std::placeholders::_1, std::placeholders::_2)));
 
         cc->StartBeaconInterval(ros::Duration(PING_INTERVAL));
-        // Default bind
-        cc->Bind(std::bind(&PTP::_rxCb, this, std::placeholders::_1, std::placeholders::_2, std::placeholders::_3, std::placeholders::_4), nodeAddr);
         txTh->start();
         rxTh->start();
 
+        // Set up ROS structures.
+        portRegistry = std::unique_ptr<PortRegistry>(new PortRegistry(&nh, cc.get(), nodeAddr, 
+            std::bind(
+                &PTP::_rxCb, 
+                this, 
+                std::placeholders::_1, 
+                std::placeholders::_2, 
+                std::placeholders::_3, 
+                std::placeholders::_4
+                )));
         txService = nh.advertiseService<ptp_comms::TxData::Request, ptp_comms::TxData::Response>(
             "tx_data", 
             std::bind(&PTP::_txData, this, std::placeholders::_1, std::placeholders::_2)
