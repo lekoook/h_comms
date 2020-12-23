@@ -37,6 +37,12 @@ public:
     std::string dest;
 
     /**
+     * @brief Port number where this data is coming from.
+     * 
+     */
+    uint16_t port;
+
+    /**
      * @brief Construct a new Rx Queue Data object.
      * 
      */
@@ -48,8 +54,10 @@ public:
      * @param data Actual payload data received.
      * @param src Source address of this data.
      * @param dest Destination address of this data.
+     * @param port Port number of this data.
      */
-    RxQueueData (std::string data, std::string src, std::string dest) : data(data), src(src), dest(dest)
+    RxQueueData (std::string data, std::string src, std::string dest, uint16_t port) 
+        : data(data), src(src), dest(dest), port(port)
     {}
 };
 
@@ -125,7 +133,7 @@ private:
      * @brief Callback function to call deliver a full data that has been reassembled from it's segments.
      * 
      */
-    std::function<void(std::string, std::vector<uint8_t>&)> rxCb;
+    std::function<void(std::string, uint16_t, std::vector<uint8_t>&)> rxCb;
 
     /**
      * @brief Tracks a list of recently received packets.
@@ -185,11 +193,12 @@ private:
                 // If this is not an ACK, we reply an ACK and process the segment.
                 if (!pkt.isAck)
                 {
-                    _handleData(pkt, dat.src, dat.dest);
+                    _handleData(pkt, dat.src, dat.dest, dat.port);
                 }
                 else
                 {
-                    txerTh->notifyAck(pkt.seqNum, pkt.segNum, dat.src); // Notify that an ACK has been received.
+                    // Notify that an ACK has been received.
+                    txerTh->notifyAck(pkt.seqNum, pkt.segNum, dat.src, dat.port); 
                 }
             }
         }
@@ -219,13 +228,14 @@ private:
      * @brief Transmits an acknowledgement (ACK) packet.
      * 
      * @param dest Destination of this ACK.
+     * @param port Port number of this ACK.
      * @param received Packet that this ACK is supposed to respond to.
      */
-    void _ack(std::string dest, Packet& received)
+    void _ack(std::string dest, uint16_t port, Packet& received)
     {
         Packet pkt(received.seqNum, received.segNum, 0, std::vector<uint8_t>(), true);
         std::string ser = pkt.serialize();
-        cc->SendTo(ser, dest);
+        cc->SendTo(ser, dest, port);
     }
 
     /**
@@ -237,12 +247,13 @@ private:
      * @param packet Packet to process.
      * @param src Source address of the packet.
      * @param dest Destination address of the packet.
+     * @param port Port number of the packet.
      */
-    void _handleData(Packet& packet, std::string src, std::string dest)
+    void _handleData(Packet& packet, std::string src, std::string dest, uint16_t port)
     {
         if (dest != subt::communication_broker::kBroadcast)
         {
-            _ack(src, packet); // If this was not a broadcast, ACK immediately.
+            _ack(src, port, packet); // If this was not a broadcast, ACK immediately.
         }
 
         // Find out if we have already seen this src, sequence, segment number recently.
@@ -261,7 +272,7 @@ private:
             if (segTable.updateSeg(src, packet, currentTime))
             {
                 std::vector<uint8_t> v = segTable.getFullData(src, packet.seqNum);
-                rxCb(src, v);
+                rxCb(src, port, v);
             }
         }
     }
@@ -305,7 +316,10 @@ public:
      * @param txerTh Transmission thread used to notify it of acknowledgement packets.
      * @param rxCb Callback function to call deliver a full data that has been reassembled from it's segments.
      */
-    RxerTh(subt::CommsClient* cc, TxerTh* txerTh, std::function<void(std::string, std::vector<uint8_t>&)> rxCb) : cc(cc), txerTh(txerTh), rxCb(rxCb)
+    RxerTh(
+        subt::CommsClient* cc, 
+        TxerTh* txerTh, 
+        std::function<void(std::string, uint16_t, std::vector<uint8_t>&)> rxCb) : cc(cc), txerTh(txerTh), rxCb(rxCb)
     {
         thRunning.store(false);
     }

@@ -112,7 +112,15 @@ private:
         if (missing)
         {
             registry[port] = nh->advertise<ptp_comms::RxData>(TOPIC_PREFIX + std::to_string(port), MAX_QUEUE_SIZE);
-            cc->Bind(rxCallback, localAddr, port);
+            if (cc->Bind(rxCallback, localAddr, port))
+            {
+                ROS_INFO("CommsClient binded to address: %s , port: %u", localAddr.c_str(), port);
+            }
+            else
+            {
+                ROS_ERROR("Cannot bind CommsClient. Could it have already been binded before?");
+            }
+            
             return true;
         }
         return missing;
@@ -176,15 +184,16 @@ public:
      * @return true If the port was not registered in the first place.
      * @return false If the port was registered.
      */
-    bool getPublisher(uint16_t port, ros::Publisher* publisher)
+    bool getPublisher(uint16_t port, std::map<uint16_t, ros::Publisher>::iterator& publisher)
     {
-        if (registry.find(port) == registry.end())
+        auto it = registry.find(port);
+        if (it == registry.end())
         {
             return false;
         }
         else
         {
-            publisher = &registry[port];
+            publisher = it;
             return true;
         }
     }

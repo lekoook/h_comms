@@ -27,12 +27,6 @@ private:
     std::string nodeAddr;
 
     /**
-     * @brief ROS publisher to publish received data.
-     * 
-     */
-    ros::Publisher rxPubber;
-
-    /**
      * @brief ROS service server to respond to transmission requests.
      * 
      */
@@ -74,7 +68,14 @@ private:
     {
         if (_srcAddress != nodeAddr)
         {
-            while(!rxTh->recvOne(RxQueueData(_data, _srcAddress, _dstAddress)));
+            if (!portRegistry->portIsRegistered(_dstPort))
+            {
+                ROS_INFO("Incoming data for unregistered port: %u", _dstPort);
+            }
+            else
+            {
+                while(!rxTh->recvOne(RxQueueData(_data, _srcAddress, _dstAddress, _dstPort)));
+            }
         }
     }
 
@@ -88,13 +89,21 @@ private:
      */
     bool _txData(ptp_comms::TxData::Request &req, ptp_comms::TxData::Response &res)
     {
+        if (!portRegistry->portIsRegistered(req.port))
+        {
+            res.successful = false;
+            res.reason = "Port is not registered!";
+            return false;
+        }
+        
         if (req.dest != nodeAddr)
         {
-            res.successful = txTh->sendOne(req.data, req.dest);
+            res.successful = txTh->sendOne(req.data, req.dest, req.port);
         }
         else
         {
             res.successful = false;
+            res.reason = "Cannot send to self!";
         }
         
         return res.successful;
@@ -104,14 +113,24 @@ private:
      * @brief Callback that should be called to publish received data.
      * 
      * @param src Source address of the data.
+     * @param port Port number of the data.
      * @param data Actual data received.
      */
-    void _pubRx(std::string src, std::vector<uint8_t> data)
+    void _pubRx(std::string src, uint16_t port, std::vector<uint8_t> data)
     {
-        ptp_comms::RxData msg;
-        msg.data = data;
-        msg.src = src;
-        rxPubber.publish(msg);
+        std::map<uint16_t, ros::Publisher>::iterator it;
+        if (portRegistry->getPublisher(port, it))
+        {
+            ptp_comms::RxData msg;
+            msg.data = data;
+            msg.src = src;
+            msg.port = port;
+            it->second.publish(msg);
+        }
+        else
+        {
+            ROS_ERROR("Cannot find publisher for port: %u", port);
+        }
     }
 
 public:
@@ -129,7 +148,7 @@ public:
         rxTh = std::unique_ptr<RxerTh>(new RxerTh(
             cc.get(), 
             txTh.get(), 
-            std::bind(&PTP::_pubRx, this, std::placeholders::_1, std::placeholders::_2)));
+            std::bind(&PTP::_pubRx, this, std::placeholders::_1, std::placeholders::_2, std::placeholders::_3)));
 
         cc->StartBeaconInterval(ros::Duration(PING_INTERVAL));
         txTh->start();
