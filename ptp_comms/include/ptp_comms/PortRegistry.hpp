@@ -2,10 +2,15 @@
 #include <cstdint>
 #include <map>
 #include <memory>
+#include <mutex>
 #include "ptp_comms/RxData.h"
 #include "ptp_comms/RegisterPort.h"
 #include "subt_communication_broker/subt_communication_client.h"
 
+/**
+ * @brief Represents the registry that will track all registerations of port numbers.
+ * 
+ */
 class PortRegistry
 {
 private:
@@ -26,6 +31,12 @@ private:
      * 
      */
     std::map<uint16_t, ros::Publisher> registry;
+
+    /**
+     * @brief Mutex to protect registry.
+     * 
+     */
+    std::mutex mRegistry;
 
     /**
      * @brief Pointer to a ROS NodeHandle. Used to advertise topics.
@@ -73,7 +84,7 @@ private:
      */
     bool _regPort(ptp_comms::RegisterPort::Request &req, ptp_comms::RegisterPort::Response &res)
     {
-        res.successful = registerPort(req.port);
+        res.successful = _registerPort(req.port);
         if (!res.successful)
         {
             res.reason = "Port is already registered!";
@@ -91,7 +102,7 @@ private:
      */
     bool _unregPort(ptp_comms::RegisterPort::Request &req, ptp_comms::RegisterPort::Response &res)
     {
-        res.successful = unregisterPort(req.port);
+        res.successful = _unregisterPort(req.port);
         if (!res.successful)
         {
             res.reason = "Port is not registered in the first place!";
@@ -106,11 +117,12 @@ private:
      * @return true If the port is not already registered and register was successful.
      * @return false If the port is already registered.
      */
-    bool registerPort(uint16_t port)
+    bool _registerPort(uint16_t port)
     {
         bool missing = registry.find(port) == registry.end();
         if (missing)
         {
+            std::lock_guard<std::mutex> lock(mRegistry);
             registry[port] = nh->advertise<ptp_comms::RxData>(TOPIC_PREFIX + std::to_string(port), MAX_QUEUE_SIZE);
             if (cc->Bind(rxCallback, localAddr, port))
             {
@@ -133,8 +145,9 @@ private:
      * @return true If the port was already registered and unregister was successful.
      * @return false If the port was not registered in the first place.
      */
-    bool unregisterPort(uint16_t port)
+    bool _unregisterPort(uint16_t port)
     {
+        std::lock_guard<std::mutex> lock(mRegistry);
         return registry.erase(port) > 0;
     }
 
@@ -173,6 +186,7 @@ public:
      */
     bool portIsRegistered(uint16_t port)
     {
+        std::lock_guard<std::mutex> lock(mRegistry);
         return registry.find(port) != registry.end();
     }
 
@@ -186,6 +200,7 @@ public:
      */
     bool getPublisher(uint16_t port, std::map<uint16_t, ros::Publisher>::iterator& publisher)
     {
+        std::lock_guard<std::mutex> lock(mRegistry);
         auto it = registry.find(port);
         if (it == registry.end())
         {
