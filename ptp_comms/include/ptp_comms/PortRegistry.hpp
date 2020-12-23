@@ -134,7 +134,10 @@ public:
     /**
      * @brief Construct a new Port Registry object.
      * 
-     * @param nh NodeHandle used to construct publishers.
+     * @param nodeHandle NodeHandle used to construct publishers.
+     * @param commsClient subt::CommsClient used to bind callbacks.
+     * @param localAddr Local address of this node.
+     * @param rxCallback Callback to bind for subt::CommsClient.
      */
     PortRegistry(
         ros::NodeHandle* nodeHandle, 
