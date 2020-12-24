@@ -217,5 +217,5 @@ add_executable(${PROJECT_NAME}_node
   src/responders/RespMachine.cpp 
   src/responders/RespStates.cpp
 )
-target_link_libraries(${PROJECT_NAME}_node ${catkin_LIBRARIES} serialisers_ptp)
+target_link_libraries(${PROJECT_NAME}_node ${catkin_LIBRARIES})
 add_dependencies(${PROJECT_NAME}_node ${catkin_EXPORTED_TARGETS} ${PROJECT_NAME}_generate_messages_cpp)
