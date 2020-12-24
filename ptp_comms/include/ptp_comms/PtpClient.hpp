@@ -100,12 +100,12 @@ private:
         {
             subber.shutdown();
             txSvc.shutdown();
-            ROS_INFO("PtpClient unregistration for port %u success", localPort);
+            ROS_INFO("PtpClient unregistration for port %u success.", localPort);
             return true;
         }
         else
         {
-            ROS_ERROR("PtpClient unregistration for port %u failed", localPort);
+            ROS_ERROR("PtpClient unregistration for port %u failed. Reason: %s.", localPort, msg.response.reason.c_str());
             return false;
         }
     }
@@ -192,5 +192,16 @@ public:
         {
             return false;
         }
+    }
+
+    /**
+     * @brief Unregisters the client to free up the port number.
+     * 
+     * @return true If successful.
+     * @return false If unsuccessful.
+     */
+    bool unregister()
+    {
+        return _unreg();
     }
 };
