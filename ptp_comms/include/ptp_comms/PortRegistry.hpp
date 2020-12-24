@@ -89,6 +89,7 @@ private:
         {
             res.reason = "Port is already registered!";
         }
+        res.address = localAddr;
         return res.successful;
     }
 
@@ -107,6 +108,7 @@ private:
         {
             res.reason = "Port is not registered in the first place!";
         }
+        res.address = localAddr;
         return res.successful;
     }
 

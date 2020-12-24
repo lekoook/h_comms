@@ -2,6 +2,7 @@
 #include <cstdint>
 #include "ptp_comms/RegisterPort.h"
 #include "ptp_comms/RxData.h"
+#include "ptp_comms/TxData.h"
 
 class PtpClient
 {
@@ -13,16 +14,28 @@ private:
     const uint32_t MAX_QUEUE_SIZE = 100;
 
     /**
-     * @brief Prefix string for all topics.
+     * @brief Prefix string for all reception topics.
      * 
      */
-    const std::string TOPIC_PREFIX = "rx_data/";
+    const std::string RX_TOPIC_PREFIX = "rx_data/";
+
+    /**
+     * @brief Prefix string for transmission topic.
+     * 
+     */
+    const std::string TX_SVC_PREFIX = "tx_data";
+
+    /**
+     * @brief Address that this client is using.
+     * 
+     */
+    std::string localAddr;
 
     /**
      * @brief Port number this client will use.
      * 
      */
-    uint16_t port;
+    uint16_t localPort;
 
     /**
      * @brief Callback that will be called when data is received.
@@ -37,6 +50,12 @@ private:
     ros::Subscriber subber;
 
     /**
+     * @brief ROS subscriber to the topic for transmitting data.
+     * 
+     */
+    ros::ServiceClient txSvc;
+
+    /**
      * @brief Registers the port number with port registry.
      * 
      * @return true If registration successful.
@@ -47,17 +66,19 @@ private:
         ros::NodeHandle nh;
         ros::ServiceClient regSvc = nh.serviceClient<ptp_comms::RegisterPort>("register");
         ptp_comms::RegisterPort msg;
-        msg.request.port = port;
+        msg.request.port = localPort;
 
         if (regSvc.call(msg))
         {
-            subber = nh.subscribe(TOPIC_PREFIX + std::to_string(port), MAX_QUEUE_SIZE, &PtpClient::_rxCb, this);
-            ROS_INFO("PtpClient registration for port %u success.", port);
+            subber = nh.subscribe(RX_TOPIC_PREFIX + std::to_string(localPort), MAX_QUEUE_SIZE, &PtpClient::_rxCb, this);
+            txSvc = nh.serviceClient<ptp_comms::TxData>(TX_SVC_PREFIX);
+            localAddr = msg.response.address;
+            ROS_INFO("PtpClient registration for port %u success.", localPort);
             return true;
         }
         else
         {
-            ROS_ERROR("PtpClient registration for port %u failed. Reason: %s.", port, msg.response.reason.c_str());
+            ROS_ERROR("PtpClient registration for port %u failed. Reason: %s.", localPort, msg.response.reason.c_str());
             return false;
         }
     }
@@ -73,17 +94,18 @@ private:
         ros::NodeHandle nh;
         ros::ServiceClient regSvc = nh.serviceClient<ptp_comms::RegisterPort>("unregister");
         ptp_comms::RegisterPort msg;
-        msg.request.port = port;
+        msg.request.port = localPort;
 
         if (regSvc.call(msg))
         {
             subber.shutdown();
-            ROS_INFO("PtpClient unregistration for port %u success", port);
+            txSvc.shutdown();
+            ROS_INFO("PtpClient unregistration for port %u success", localPort);
             return true;
         }
         else
         {
-            ROS_ERROR("PtpClient unregistration for port %u failed", port);
+            ROS_ERROR("PtpClient unregistration for port %u failed", localPort);
             return false;
         }
     }
@@ -104,7 +126,7 @@ public:
      * 
      * @param port Port number to use.
      */
-    PtpClient(uint16_t port) : port(port)
+    PtpClient(uint16_t port) : localPort(port)
     {
         _reg();
     }
@@ -126,5 +148,49 @@ public:
     void bind(std::function<void(std::string src, uint16_t, std::vector<uint8_t>)> callback)
     {
         cb = callback;
+    }
+
+    /**
+     * @brief Gets the address associated with this client.
+     * 
+     * @return std::string Address associated with this client.
+     */
+    std::string address()
+    {
+        return localAddr;
+    }
+
+    /**
+     * @brief Gets the port number associated with this client.
+     * 
+     * @return uint16_t Port number associated with this client.
+     */
+    uint16_t port()
+    {
+        return localPort;
+    }
+
+    /**
+     * @brief Attempts to send data to the destination.
+     * 
+     * @param dest Intended destination address of data.
+     * @param data Data to send.
+     * @return true If successful.
+     * @return false If unsuccessful.
+     */
+    bool sendTo(std::string dest, std::vector<uint8_t> data)
+    {
+        if (txSvc.exists())
+        {
+            ptp_comms::TxData msg;
+            msg.request.dest = dest;
+            msg.request.port = localPort;
+            msg.request.data = data;
+            return txSvc.call(msg);
+        }
+        else
+        {
+            return false;
+        }
     }
 };
