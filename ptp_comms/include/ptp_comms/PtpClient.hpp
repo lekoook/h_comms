@@ -4,6 +4,21 @@
 #include "ptp_comms/RxData.h"
 #include "ptp_comms/TxData.h"
 
+/**
+ * @brief This is an interface to provide simplified access to transmit and receive data via the underlying transport
+ * protocol (ptp_comms).
+ * 
+ * @details For each application (purpose) use, you should instantiate a PtpClient with a unique port number for that 
+ * application. Data sent through this PtpClient with this port number will be received on the receiver side with the
+ * a PtpClient using the same port number. This allows multiple applications to use the same underlying transport 
+ * protocol.
+ * 
+ * When a PtpClient is instantiated, the port number is used to register with the transport protocol's registry and data
+ * received from that port number will be published on a dedicated ROS topic identified by `rx_data/[port]`. Therefore,
+ * it is vital that PtpClient instance creators should call unregister() to unregister the port number from the 
+ * transport protocol's registry before the termination of program. This is to free up that port number for reuse. 
+ * Otherwise, that port number is permanently blocked from use.
+ */
 class PtpClient
 {
 private:
