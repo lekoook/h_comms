@@ -4,12 +4,10 @@
 #include "ros/ros.h"
 #include <string>
 #include <functional>
+#include "CommonTypes.hpp"
 
 namespace ptp_comms
 {
-    const uint16_t DEFAULT_PORT = 4100u;
-    const std::string BROADCAST_ADDR = "broadcast";
-    typedef std::map<std::string, std::pair<double, double>> Neighbor_M;
 
 /**
  * @brief Interface that provides the capability to transmit and receive data.
