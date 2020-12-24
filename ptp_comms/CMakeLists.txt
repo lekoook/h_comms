@@ -103,10 +103,10 @@ generate_messages(
 ## CATKIN_DEPENDS: catkin_packages dependent projects also need
 ## DEPENDS: system dependencies of this project that dependent projects also need
 catkin_package(
-#  INCLUDE_DIRS include
-#  LIBRARIES ptp_comms
-#  CATKIN_DEPENDS roscpp message_runtime message_generation std_msgs
-#  DEPENDS system_lib
+  INCLUDE_DIRS include
+#  LIBRARIES ${PROJECT_NAME}
+  CATKIN_DEPENDS roscpp message_runtime message_generation std_msgs
+  DEPENDS system_lib
 )
 
 ###########
@@ -187,11 +187,12 @@ target_link_libraries(${PROJECT_NAME}_node ${catkin_LIBRARIES} subt_communicatio
 # )
 
 ## Mark cpp header files for installation
-# install(DIRECTORY include/${PROJECT_NAME}/
-#   DESTINATION ${CATKIN_PACKAGE_INCLUDE_DESTINATION}
-#   FILES_MATCHING PATTERN "*.h"
-#   PATTERN ".svn" EXCLUDE
-# )
+install(DIRECTORY include/${PROJECT_NAME}/
+  DESTINATION ${CATKIN_PACKAGE_INCLUDE_DESTINATION}
+  FILES_MATCHING 
+  PATTERN "*.h"
+  PATTERN "*.hpp"
+)
 
 ## Mark other files for installation (e.g. launch and bag files, etc.)
 # install(FILES
