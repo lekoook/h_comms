@@ -59,12 +59,6 @@ private:
 
     // Constants
     /**
-     * @brief Address used to broadcast message instead of unicast.
-     * 
-     */
-    const std::string BROADCAST_ADDR = "broadcast"; // In accordance with subt API
-
-    /**
      * @brief Time (seconds) between each advertisement message.
      * 
      */
@@ -186,7 +180,7 @@ private:
             // Broadcast this MIT.
             std::vector<uint8_t> mitSer = mit.serialise();
             AdvMsg msg(mitSer);
-            transmit(BROADCAST_ADDR, msg);
+            transmit(ptp_comms::BROADCAST_ADDR, msg);
 
             ros::Duration(ADV_INTERVAL).sleep();
         }
@@ -200,7 +194,7 @@ public:
      */
     DDP(ros::NodeHandle& nh)
     {
-        ptpClient = std::unique_ptr<ptp_comms::PtpClient>(new ptp_comms::PtpClient(4100));
+        ptpClient = std::unique_ptr<ptp_comms::PtpClient>(new ptp_comms::PtpClient(ptp_comms::DEFAULT_PORT));
         ptpClient->bind(
             std::bind(&DDP::_rxCb, this, std::placeholders::_1, std::placeholders::_2, std::placeholders::_3));
         reqsMediator.start(this);
@@ -222,6 +216,7 @@ public:
      */
     ~DDP()
     {
+        ptpClient->unregister();
         mainRunning.store(false);
         advRunning.store(false);
 
