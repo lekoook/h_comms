@@ -6,10 +6,9 @@
 #include <thread>
 #include <mutex>
 #include <queue>
-#include "AReqHandler.hpp"
 #include "requestors/Requestor.hpp"
 
-class ReqsMediator : public AReqHandler
+class ReqsMediator
 {
 private:
     /**

@@ -11,7 +11,6 @@
 #include "ATransmitter.hpp"
 #include "ADataAccessor.hpp"
 #include "MIT.hpp"
-#include "MsgHandler.hpp"
 #include "ReqsMediator.hpp"
 #include "RespsMediator.hpp"
 
@@ -107,12 +106,6 @@ private:
     std::atomic<bool> advRunning;
 
     /**
-     * @brief Processes all received messages accordingly from their type and fields information.
-     * 
-     */
-    MsgHandler msgHandler;
-
-    /**
      * @brief Mediator for one or more Requestors.
      * 
      */
@@ -160,7 +153,7 @@ private:
 
             if (available)
             {
-                msgHandler.notifyRx(rxData.src, rxData.data);
+                _handleRxData(rxData.src, rxData.data);
             }
         }
     }
@@ -186,6 +179,123 @@ private:
         }
     }
 
+    /**
+     * @brief Handles received bytes data.
+     * 
+     * @param src Source address of this bytes data.
+     * @param data Data received.
+     */
+    void _handleRxData(std::string src, std::vector<uint8_t>& data)
+    {
+        MsgType t = _peekType(data);
+        switch (t)
+        {
+        case MsgType::Data:
+        {
+            DataMsg dataM;
+            dataM.deserialize(data);
+            _handleData(dataM, src);
+            break;
+        }
+        case MsgType::Request:
+        {
+            ReqMsg req;
+            req.deserialize(data);
+            _handleReq(req, src);
+            break;
+        }
+        case MsgType::Acknowledgement:
+        {
+            AckMsg ack;
+            ack.deserialize(data);
+            _handleAck(ack, src);
+            break;
+        }
+        default: // Advertisement
+        {
+            AdvMsg adv;
+            adv.deserialize(data);
+            _handleAdv(adv, src);
+            break;
+        }
+        }
+    }
+
+    /**
+     * @brief Peeks at the type of message the bytes vector contains.
+     * 
+     * @param data Bytes vector.
+     * @return MsgType Type of message.
+     */
+    MsgType _peekType(std::vector<uint8_t>& data)
+    {
+        return (MsgType)data.data()[0];
+    }
+
+    /**
+     * @brief Handles a DATA message.
+     * 
+     * @param msg DATA message to handle.
+     * @param src Source address of DATA message.
+     */
+    void _handleData(DataMsg& msg, std::string src)
+    {
+        std::cout << "GOT DATA" << std::endl;
+        reqsMediator.notifyData(src, msg);
+    }
+
+    /**
+     * @brief Handles a REQ message.
+     * 
+     * @param msg REQ message to handle.
+     * @param src Source address of REQ message.
+     */
+    void _handleReq(ReqMsg& msg, std::string src)
+    {
+        std::cout << "GOT REQUEST FOR: " << msg.reqSequence << " , " << msg.reqEntryId << std::endl;
+        respsMediator.queueResp(msg.reqSequence, msg.reqEntryId, src);
+    }
+
+    /**
+     * @brief Handles an ACK message.
+     * 
+     * @param msg ACK message to handle.
+     * @param src Source address of ACK message.
+     */
+    void _handleAck(AckMsg& msg, std::string src)
+    {
+        if (msg.forReq)
+        {
+            std::cout << "GOT ACK FOR REQ" << std::endl;
+            reqsMediator.notifyAck(src, msg);
+        }
+        else
+        {
+            std::cout << "GOT ACK FOR DATA" << std::endl;
+            respsMediator.notifyAck(src, msg);
+        }
+    }
+
+    /**
+     * @brief Handles an ADV message.
+     * 
+     * @param msg ADV message to handle.
+     * @param src Source address of ACK message.
+     */
+    void _handleAdv(AdvMsg& msg, std::string src)
+    {
+        std::cout << "GOT ADV" << std::endl;
+        MIT mit;
+        mit.deserialise(msg.data);
+
+        // TODO: Compare incoming MIT with our own local one.
+
+        // Some example request
+        MIT mock;
+        auto v = mock.compare(mit);
+        reqsMediator.queueReq(1002, src);
+    }
+
 public:
     /**
      * @brief Construct a new DDP object.
@@ -199,7 +309,6 @@ public:
             std::bind(&DDP::_rxCb, this, std::placeholders::_1, std::placeholders::_2, std::placeholders::_3));
         reqsMediator.start(this);
         respsMediator.start(this);
-        msgHandler = MsgHandler(&reqsMediator, &respsMediator);
         
         // Begin main thread operation.
         mainRunning.store(true);

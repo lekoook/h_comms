@@ -6,10 +6,9 @@
 #include <thread>
 #include <mutex>
 #include <queue>
-#include "ARespHandler.hpp"
 #include "responders/Responder.hpp"
 
-class RespsMediator : public ARespHandler
+class RespsMediator
 {
 private:
     /**
