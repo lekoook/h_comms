@@ -123,7 +123,7 @@ public:
      * 
      * @param callback Callback to call.
      */
-    void Bind(std::function<void(std::string src, uint16_t, std::vector<uint8_t>)> callback)
+    void bind(std::function<void(std::string src, uint16_t, std::vector<uint8_t>)> callback)
     {
         cb = callback;
     }
