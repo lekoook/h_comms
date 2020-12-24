@@ -6,8 +6,12 @@
 #include <queue>
 #include <vector>
 #include <mutex>
-#include "subt_communication_broker/subt_communication_client.h"
+#include <condition_variable>
 #include "Packet.hpp"
+#include "ATransceiver.hpp"
+
+namespace ptp_comms
+{
 
 /**
  * @brief Represents a thread that processes data that needs to be transmitted out.
@@ -48,6 +52,12 @@ private:
         std::string dest;
 
         /**
+         * @brief Port number this piece of data should go to.
+         * 
+         */
+        uint16_t port;
+
+        /**
          * @brief Construct a new Tx Queue Data object.
          * 
          */
@@ -58,10 +68,11 @@ private:
          * 
          * @param data Payload data.
          * @param dest Destination to send to.
+         * @param port Port to send to.
          * @param seqNum Sequence number for this data.
          */
-        TxQueueData (std::vector<uint8_t> data, std::string dest, uint32_t seqNum) 
-            : data(data), dest(dest), seqNum(seqNum)
+        TxQueueData (std::vector<uint8_t> data, std::string dest, uint16_t port, uint32_t seqNum) 
+            : data(data), dest(dest), port(port), seqNum(seqNum)
         {}
     };
 
@@ -109,10 +120,10 @@ private:
     std::mutex mTxQ;
 
     /**
-     * @brief subt::CommsClient that performs the actual transmission.
+     * @brief Interface that performs the actual transmission.
      * 
      */
-    subt::CommsClient* cc;
+    ATransceiver* cc;
 
     /**
      * @brief Mutex to help with the signalling of reception of acknowledgement packets.
@@ -143,6 +154,12 @@ private:
      * 
      */
     std::string waitSrc;
+
+    /**
+     * @brief This will indicate for which port number we are waiting for the ACK.
+     * 
+     */
+    uint16_t waitPort;
 
     /**
      * @brief This will indicate for which sequence number we are waiting for the ACK.
@@ -188,8 +205,8 @@ private:
             if (available)
             {
                 // Only send if the destination is a neighbour.
-                subt::CommsClient::Neighbor_M nb = cc->Neighbors();
-                if (((dat.dest != subt::communication_broker::kBroadcast) && (nb.find(dat.dest) == nb.end())) 
+                ptp_comms::Neighbor_M nb = cc->neighbors();
+                if (((dat.dest != ptp_comms::BROADCAST_ADDR) && (nb.find(dat.dest) == nb.end())) 
                     || !sendData(dat))
                 {
                     dat.tries++;
@@ -226,13 +243,15 @@ private:
             auto last = std::min((unsigned long)dSize, i + Packet::MAX_SEGMENT_SIZE);
             do
             {
-                cc->SendTo(
-                    Packet(data.seqNum, s, dSize, std::vector<uint8_t>(ptr + i, ptr + last)).serialize(), data.dest);
+                cc->sendTo(
+                    Packet(data.seqNum, s, dSize, std::vector<uint8_t>(ptr + i, ptr + last)).serialize(), 
+                    data.dest, 
+                    data.port);
                 tries++;
             } while (
-                data.dest != subt::communication_broker::kBroadcast
+                data.dest != ptp_comms::BROADCAST_ADDR
                 && tries < MAX_SEGMENT_TRIES 
-                && !_waitAck(data.seqNum, s, data.dest, 1000) 
+                && !_waitAck(data.seqNum, s, data.dest, data.port, 1000) 
                 );
 
             if (tries >= MAX_SEGMENT_TRIES)
@@ -270,15 +289,17 @@ private:
      * @param seqNum Sequence number the ACK is to be for.
      * @param segNum Segment number the ACK is to be for.
      * @param src Source address the ACK should be coming from.
+     * @param port Port number the ACK should be coming from.
      * @param timeout The amount of time in milliseconds to wait for before giving up.
      * @return true If ACK was received.
      * @return false If ACK was never received.
      */
-    bool _waitAck(uint32_t seqNum, uint8_t segNum, std::string src, uint32_t timeout)
+    bool _waitAck(uint32_t seqNum, uint8_t segNum, std::string src, uint16_t port, uint32_t timeout)
     {
         {
             std::lock_guard<std::mutex> wLock(mWaitAck);
             waitSrc = src;
+            waitPort = port;
             waitSeq = seqNum;
             waitSeg = segNum;
         }
@@ -303,20 +324,23 @@ private:
      * @param seqNum Sequence number of this incoming ACK.
      * @param segNum Segment number of this incoming ACK.
      * @param src Source address of this incoming ACK.
+     * @param port Port number of this incoming ACK.
      */
-    void _signalAck(uint32_t seqNum, uint8_t segNum, std::string src)
+    void _signalAck(uint32_t seqNum, uint8_t segNum, std::string src, uint16_t port)
     {
         uint32_t tseq;
         uint8_t tseg;
         std::string tsrc;
+        uint16_t tport;
         {
             std::lock_guard<std::mutex> wLock(mWaitAck);
             tseq = waitSeq;
             tseg = waitSeg;
             tsrc = waitSrc;
+            tport = waitPort;
         }
 
-        if (seqNum == tseq && segNum == tseg && src == tsrc)
+        if (seqNum == tseq && segNum == tseg && src == tsrc && port == tport)
         {
             std::lock_guard<std::mutex> lock(mAck);
             gotAck = true;
@@ -328,9 +352,9 @@ public:
     /**
      * @brief Construct a new Txer Th object.
      * 
-     * @param cc subt::CommsClient that performs the actual transmission.
+     * @param cc Interface that performs the actual transmission.
      */
-    TxerTh(subt::CommsClient* cc) : cc(cc)
+    TxerTh(ATransceiver* cc) : cc(cc)
     {
         thRunning.store(false);
     }
@@ -376,13 +400,14 @@ public:
      * 
      * @param data Data to be transmitted.
      * @param dest Destination for data.
+     * @param port Port for data.
      * @return true If queue is not full and successfully queued.
      * @return false If queue is already full.
      */
-    bool sendOne(std::vector<uint8_t> data, std::string dest)
+    bool sendOne(std::vector<uint8_t> data, std::string dest, uint16_t port)
     {
         std::lock_guard<std::mutex> lock(mTxQ);
-        TxQueueData sendData(data, dest, sequence++);
+        TxQueueData sendData(data, dest, port, sequence++);
         return _queueOne(sendData);
     }
 
@@ -392,11 +417,14 @@ public:
      * @param seqNum Sequence number of this ACK.
      * @param segNum Segment number of this ACK.
      * @param src Source address of this ACK.
+     * @param port Port number of this ACK.
      */
-    void notifyAck(uint32_t seqNum, uint8_t segNum, std::string src)
+    void notifyAck(uint32_t seqNum, uint8_t segNum, std::string src, uint16_t port)
     {
-        _signalAck(seqNum, segNum, src);
+        _signalAck(seqNum, segNum, src, port);
     }
 };
+
+}
 
 #endif // H_TXER_TH

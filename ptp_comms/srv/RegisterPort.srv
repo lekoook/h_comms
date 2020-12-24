@@ -1,6 +1,5 @@
-uint8[] data
-string dest
 uint16 port
 ---
+string address
 bool successful
 string reason
