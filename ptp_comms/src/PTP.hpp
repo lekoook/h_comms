@@ -1,10 +1,11 @@
 #include <memory>
-#include "subt_communication_broker/subt_communication_client.h"
 #include "ptp_comms/TxData.h"
 #include "ptp_comms/RxData.h"
 #include "TxerTh.hpp"
 #include "RxerTh.hpp"
 #include "PortRegistry.hpp"
+#include "ATransceiver.hpp"
+#include "CTransceiver.hpp"
 
 /**
  * @brief Class that encapsulates the point-to-point communication exchange sequences.
@@ -33,10 +34,10 @@ private:
     ros::ServiceServer txService;
 
     /**
-     * @brief subt::CommsClient to transmit and receive data.
+     * @brief Interface to transmit and receive data.
      * 
      */
-    std::unique_ptr<subt::CommsClient> cc;
+    std::unique_ptr<ATransceiver> cc;
 
     /**
      * @brief Transmission thread that will handle all messages to be transmitted.
@@ -143,14 +144,14 @@ public:
     PTP(ros::NodeHandle& nh, std::string nodeAddr) : nodeAddr(nodeAddr)
     {
         // Set up communication drivers.
-        cc = std::unique_ptr<subt::CommsClient>(new subt::CommsClient(nodeAddr));
+        cc = std::unique_ptr<ATransceiver>(new CTransceiver(nodeAddr));
         txTh = std::unique_ptr<TxerTh>(new TxerTh(cc.get()));
         rxTh = std::unique_ptr<RxerTh>(new RxerTh(
             cc.get(), 
             txTh.get(), 
             std::bind(&PTP::_pubRx, this, std::placeholders::_1, std::placeholders::_2, std::placeholders::_3)));
 
-        cc->StartBeaconInterval(ros::Duration(PING_INTERVAL));
+        cc->startBeaconInterval(ros::Duration(PING_INTERVAL));
         txTh->start();
         rxTh->start();
 

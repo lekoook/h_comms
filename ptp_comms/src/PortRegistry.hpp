@@ -5,7 +5,6 @@
 #include <mutex>
 #include "ptp_comms/RxData.h"
 #include "ptp_comms/RegisterPort.h"
-#include "subt_communication_broker/subt_communication_client.h"
 
 /**
  * @brief Represents the registry that will track all registerations of port numbers.
@@ -45,10 +44,10 @@ private:
     ros::NodeHandle* nh;
 
     /**
-     * @brief subt::CommsClient used to bind callbacks to a port.
+     * @brief Interface used to bind callbacks to a port.
      * 
      */
-    subt::CommsClient* cc;
+    ATransceiver* cc;
 
     /**
      * @brief ROS service server to handle registering of port numbers.
@@ -126,7 +125,7 @@ private:
         {
             std::lock_guard<std::mutex> lock(mRegistry);
             registry[port] = nh->advertise<ptp_comms::RxData>(TOPIC_PREFIX + std::to_string(port), MAX_QUEUE_SIZE);
-            if (cc->Bind(rxCallback, localAddr, port))
+            if (cc->bind(rxCallback, localAddr, port))
             {
                 ROS_INFO("CommsClient binded to address: %s , port: %u", localAddr.c_str(), port);
             }
@@ -158,16 +157,16 @@ public:
      * @brief Construct a new Port Registry object.
      * 
      * @param nodeHandle NodeHandle used to construct publishers.
-     * @param commsClient subt::CommsClient used to bind callbacks.
+     * @param transceiver Interface used to bind callbacks.
      * @param localAddr Local address of this node.
-     * @param rxCallback Callback to bind for subt::CommsClient.
+     * @param rxCallback Callback to bind for Interface.
      */
     PortRegistry(
         ros::NodeHandle* nodeHandle, 
-        subt::CommsClient* commsClient, 
+        ATransceiver* transceiver, 
         std::string localAddr, 
         std::function<void(const std::string&, const std::string&, const uint32_t, const std::string&)> rxCallback) 
-        : nh(nodeHandle), cc(commsClient), localAddr(localAddr), rxCallback(rxCallback)
+        : nh(nodeHandle), cc(transceiver), localAddr(localAddr), rxCallback(rxCallback)
     {
         registerService = nh->advertiseService<ptp_comms::RegisterPort::Request, ptp_comms::RegisterPort::Response>(
             "register",

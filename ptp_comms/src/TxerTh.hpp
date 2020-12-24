@@ -6,8 +6,9 @@
 #include <queue>
 #include <vector>
 #include <mutex>
-#include "subt_communication_broker/subt_communication_client.h"
+#include <condition_variable>
 #include "Packet.hpp"
+#include "ATransceiver.hpp"
 
 /**
  * @brief Represents a thread that processes data that needs to be transmitted out.
@@ -116,10 +117,10 @@ private:
     std::mutex mTxQ;
 
     /**
-     * @brief subt::CommsClient that performs the actual transmission.
+     * @brief Interface that performs the actual transmission.
      * 
      */
-    subt::CommsClient* cc;
+    ATransceiver* cc;
 
     /**
      * @brief Mutex to help with the signalling of reception of acknowledgement packets.
@@ -201,8 +202,8 @@ private:
             if (available)
             {
                 // Only send if the destination is a neighbour.
-                subt::CommsClient::Neighbor_M nb = cc->Neighbors();
-                if (((dat.dest != subt::communication_broker::kBroadcast) && (nb.find(dat.dest) == nb.end())) 
+                ptp_comms::Neighbor_M nb = cc->neighbors();
+                if (((dat.dest != ptp_comms::BROADCAST_ADDR) && (nb.find(dat.dest) == nb.end())) 
                     || !sendData(dat))
                 {
                     dat.tries++;
@@ -239,13 +240,13 @@ private:
             auto last = std::min((unsigned long)dSize, i + Packet::MAX_SEGMENT_SIZE);
             do
             {
-                cc->SendTo(
+                cc->sendTo(
                     Packet(data.seqNum, s, dSize, std::vector<uint8_t>(ptr + i, ptr + last)).serialize(), 
                     data.dest, 
                     data.port);
                 tries++;
             } while (
-                data.dest != subt::communication_broker::kBroadcast
+                data.dest != ptp_comms::BROADCAST_ADDR
                 && tries < MAX_SEGMENT_TRIES 
                 && !_waitAck(data.seqNum, s, data.dest, data.port, 1000) 
                 );
@@ -348,9 +349,9 @@ public:
     /**
      * @brief Construct a new Txer Th object.
      * 
-     * @param cc subt::CommsClient that performs the actual transmission.
+     * @param cc Interface that performs the actual transmission.
      */
-    TxerTh(subt::CommsClient* cc) : cc(cc)
+    TxerTh(ATransceiver* cc) : cc(cc)
     {
         thRunning.store(false);
     }

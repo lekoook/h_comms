@@ -8,8 +8,8 @@
 #include <mutex>
 #include <functional>
 #include <map>
-#include "subt_communication_broker/subt_communication_client.h"
 #include "SegTable.hpp"
+#include "ATransceiver.hpp"
 
 /**
  * @brief Represents an item in the queue for received data.
@@ -112,10 +112,10 @@ private:
     std::mutex mRxQ;
 
     /**
-     * @brief subt::CommsClient that performs the actual transmission.
+     * @brief Interface that performs the actual transmission.
      * 
      */
-    subt::CommsClient* cc;
+    ATransceiver* cc;
 
     /**
      * @brief Transmission thread used to perform transmission. Used to notify it of ACK messages.
@@ -235,7 +235,7 @@ private:
     {
         Packet pkt(received.seqNum, received.segNum, 0, std::vector<uint8_t>(), true);
         std::string ser = pkt.serialize();
-        cc->SendTo(ser, dest, port);
+        cc->sendTo(ser, dest, port);
     }
 
     /**
@@ -251,7 +251,7 @@ private:
      */
     void _handleData(Packet& packet, std::string src, std::string dest, uint16_t port)
     {
-        if (dest != subt::communication_broker::kBroadcast)
+        if (dest != ptp_comms::BROADCAST_ADDR)
         {
             _ack(src, port, packet); // If this was not a broadcast, ACK immediately.
         }
@@ -312,12 +312,12 @@ public:
     /**
      * @brief Construct a new Rxer Th object.
      * 
-     * @param cc subt::CommsClient that performs the actual transmission.
+     * @param cc Interface that performs the actual transmission.
      * @param txerTh Transmission thread used to notify it of acknowledgement packets.
      * @param rxCb Callback function to call deliver a full data that has been reassembled from it's segments.
      */
     RxerTh(
-        subt::CommsClient* cc, 
+        ATransceiver* cc, 
         TxerTh* txerTh, 
         std::function<void(std::string, uint16_t, std::vector<uint8_t>&)> rxCb) : cc(cc), txerTh(txerTh), rxCb(rxCb)
     {
