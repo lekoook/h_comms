@@ -6,8 +6,7 @@
 #include <queue>
 #include <mutex>
 #include <string>
-#include "ptp_comms/TxData.h"
-#include "ptp_comms/RxData.h"
+#include "ptp_comms/PtpClient.hpp"
 #include "messages/AdvMsg.hpp"
 #include "ATransmitter.hpp"
 #include "ADataAccessor.hpp"
@@ -72,16 +71,10 @@ private:
     const double ADV_INTERVAL = 5.0;
 
     /**
-     * @brief ROS Service client used to transmit messages out.
+     * @brief ptp_comms::PtpClient used to transmit and receive data.
      * 
      */
-    ros::ServiceClient txMsgSrv;
-
-    /**
-     * @brief ROS Subscriber used to receive any incoming messages.
-     * 
-     */
-    ros::Subscriber rxMsgSubber;
+    std::unique_ptr<ptp_comms::PtpClient> ptpClient;
 
     /**
      * @brief Reception thread that processes all the received and queued messages.
@@ -138,14 +131,16 @@ private:
     RespsMediator respsMediator;
 
     /**
-     * @brief Subscriber callback to receive data. Puts the received data in a reception queue.
+     * @brief Callback to receive data.
      * 
-     * @param msg Contains the recieved data.
+     * @param src Source address of received data.
+     * @param port Port of received data.
+     * @param data Actual data received.
      */
-    void _subCb(const ptp_comms::RxData::ConstPtr& msg)
+    void _rxCb(std::string src, uint16_t port, std::vector<uint8_t> data)
     {
         std::lock_guard<std::mutex> lock(mRxQ);
-        rxQ.push(RxQueueData(msg->data, msg->src));
+        rxQ.push(RxQueueData(data, src));
     }
 
     /**
@@ -205,10 +200,9 @@ public:
      */
     DDP(ros::NodeHandle& nh)
     {
-        // ROS subscriber and service client
-        txMsgSrv = nh.serviceClient<ptp_comms::TxData>("tx_data");
-        rxMsgSubber = nh.subscribe<ptp_comms::RxData>("rx_data", 100, &DDP::_subCb, this);
-
+        ptpClient = std::unique_ptr<ptp_comms::PtpClient>(new ptp_comms::PtpClient(4100));
+        ptpClient->bind(
+            std::bind(&DDP::_rxCb, this, std::placeholders::_1, std::placeholders::_2, std::placeholders::_3));
         reqsMediator.start(this);
         respsMediator.start(this);
         msgHandler = MsgHandler(&reqsMediator, &respsMediator);
@@ -253,10 +247,7 @@ public:
     bool transmit(std::string dest, BaseMsg& msg)
     {
         std::vector<uint8_t> data = msg.serialize();
-        ptp_comms::TxData tmsg;
-        tmsg.request.data = data;
-        tmsg.request.dest = dest;
-        return txMsgSrv.call(tmsg);
+        return ptpClient->sendTo(dest, data);
     }
 
     /**
