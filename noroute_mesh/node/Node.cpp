@@ -67,12 +67,7 @@ namespace aodv
             uint16_t segLen = aodv::ETH_NONVAR_LEN + seg.srcLength + seg.dstLength + seg.payloadLength;
             uint8_t msg[segLen] = { 0 };
             seg.serialise(msg);
-
-            // TODO: Use max tries to indicate failure to send.
-            do
-            {
-                commsClient->SendTo(this->uint8_to_string(msg, segLen), this->broadcastAddr);
-            } while (waitAck(seg.seq, seg.segSeq, seg.dst, 500));
+            commsClient->SendTo(this->uint8_to_string(msg, segLen), this->broadcastAddr);
 
             /* 
                 The subt data rate cap is 6750 bytes per second.
@@ -102,15 +97,6 @@ namespace aodv
         uint8_t msg[data.length()];
         this->string_to_uint8(msg, data);
         seg.deserialise(msg);
-
-        if (seg.isAck && ackSeq == seg.seq && ackSegSeq == seg.segSeq && seg.src == ackSrcAddr)
-        {
-            std::lock_guard<std::mutex> lock(mAck);
-            gotAck = true;
-            cvAck.notify_one(); // Inform that an ACK has been received.
-            return tl::nullopt;
-        }
-        Eth ack = sendAck(seg.seq, seg.segSeq, seg.src, commsClient);
 
         if (seg.src == this->addr) {
             return tl::nullopt;
@@ -209,36 +195,5 @@ namespace aodv
         {
             b[i] = s[i];
         }
-    }
-
-    bool Node::waitAck(uint32_t seq, uint32_t segSeq, std::string src, uint32_t timeout)
-    {
-        ackSeq = seq;
-        ackSegSeq = segSeq;
-        ackSrcAddr = src;
-        gotAck = false;
-        std::unique_lock<std::mutex> lock(mAck);
-        bool res = cvAck.wait_for(
-            lock, 
-            std::chrono::milliseconds(timeout),
-            [this] () -> bool
-                {
-                    return gotAck;
-                }
-            );
-        
-        // Reset the ack seq and segSeq used to check.
-        ackSeq = -1;
-        ackSegSeq = -1;
-        ackSrcAddr = "";
-            
-        return res;
-    }
-
-    Eth Node::sendAck(uint32_t seq, uint32_t segSeq, std::string dst, subt::CommsClient* commsClient)
-    {
-        Eth eth(seq, segSeq, 0, dst.length(), dst, this->addr.length(), this->addr, 0, true);
-        send(eth, commsClient, true);
-        return eth;
     }
 }
