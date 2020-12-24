@@ -1,8 +1,12 @@
+#ifndef H_PTP_CLIENT
+#define H_PTP_CLIENT
+
 #include "ros/ros.h"
 #include <cstdint>
 #include "ptp_comms/RegisterPort.h"
 #include "ptp_comms/RxData.h"
 #include "ptp_comms/TxData.h"
+#include "CommonTypes.hpp"
 
 namespace ptp_comms
 {
@@ -225,3 +229,5 @@ public:
 };
 
 }
+
+#endif // H_PTP_CLIENT

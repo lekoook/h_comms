@@ -36,6 +36,7 @@ catkin_package(
 
 include_directories(
   include
+  include/${PROJECT_NAME}
   ${catkin_INCLUDE_DIRS}
 )
 
