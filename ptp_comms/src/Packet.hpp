@@ -6,6 +6,9 @@
 #include <vector>
 #include "serialisers.hpp"
 
+namespace ptp_comms
+{
+
 /**
  * @brief Represents a single packet that can be transmitted or received.
  * 
@@ -116,5 +119,7 @@ public:
         data = std::vector<uint8_t>(dStart, dStart + dataLen);
     }
 };
+
+}
 
 #endif // H_PACKET

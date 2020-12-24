@@ -5,6 +5,9 @@
 #include "ATransceiver.hpp"
 #include "subt_communication_broker/subt_communication_client.h"
 
+namespace ptp_comms
+{
+
 /**
  * @brief Concrete implementation of the ATransceiver interface.
  * 
@@ -110,5 +113,7 @@ public:
         cc->StartBeaconInterval(period);
     }
 };
+
+}
 
 #endif // H_CTRANSCEIVER

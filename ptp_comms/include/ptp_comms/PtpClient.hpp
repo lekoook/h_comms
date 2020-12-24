@@ -4,6 +4,9 @@
 #include "ptp_comms/RxData.h"
 #include "ptp_comms/TxData.h"
 
+namespace ptp_comms
+{
+
 /**
  * @brief This is an interface to provide simplified access to transmit and receive data via the underlying transport
  * protocol (ptp_comms).
@@ -220,3 +223,5 @@ public:
         return _unreg();
     }
 };
+
+}

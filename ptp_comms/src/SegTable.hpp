@@ -4,6 +4,9 @@
 #include <mutex>
 #include "Packet.hpp"
 
+namespace ptp_comms
+{
+
 /**
  * @brief Represents a table that tracks and reconstructs multiple segments uniquely identified by a address and sequence
  * number.
@@ -148,3 +151,5 @@ public:
         }
     }
 };
+
+}

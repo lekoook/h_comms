@@ -8,7 +8,7 @@ int main(int argc, char** argv)
     ros::init(argc, argv, "point_to_point_comms");
     ros::NodeHandle nh;
 
-    PTP ptp(nh, robotAddr);
+    ptp_comms::PTP ptp(nh, robotAddr);
 
     ros::spin();
 }

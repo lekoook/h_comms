@@ -10,6 +10,9 @@
 #include "Packet.hpp"
 #include "ATransceiver.hpp"
 
+namespace ptp_comms
+{
+
 /**
  * @brief Represents a thread that processes data that needs to be transmitted out.
  * 
@@ -421,5 +424,7 @@ public:
         _signalAck(seqNum, segNum, src, port);
     }
 };
+
+}
 
 #endif // H_TXER_TH

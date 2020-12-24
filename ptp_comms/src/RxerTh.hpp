@@ -11,6 +11,9 @@
 #include "SegTable.hpp"
 #include "ATransceiver.hpp"
 
+namespace ptp_comms
+{
+
 /**
  * @brief Represents an item in the queue for received data.
  * 
@@ -380,5 +383,7 @@ public:
         return _recvOne(recvData);
     }
 };
+
+}
 
 #endif // H_RXER_TH

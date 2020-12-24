@@ -6,6 +6,9 @@
 #include "ptp_comms/RxData.h"
 #include "ptp_comms/RegisterPort.h"
 
+namespace ptp_comms
+{
+
 /**
  * @brief Represents the registry that will track all registerations of port numbers.
  * 
@@ -214,3 +217,5 @@ public:
         }
     }
 };
+
+}

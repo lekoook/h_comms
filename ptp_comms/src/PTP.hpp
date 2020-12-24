@@ -7,6 +7,9 @@
 #include "ATransceiver.hpp"
 #include "CTransceiver.hpp"
 
+namespace ptp_comms
+{
+
 /**
  * @brief Class that encapsulates the point-to-point communication exchange sequences.
  * 
@@ -171,3 +174,5 @@ public:
             );
     }
 };
+
+}

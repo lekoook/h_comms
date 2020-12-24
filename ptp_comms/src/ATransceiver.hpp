@@ -10,7 +10,6 @@ namespace ptp_comms
     const uint16_t DEFAULT_PORT = 4100u;
     const std::string BROADCAST_ADDR = "broadcast";
     typedef std::map<std::string, std::pair<double, double>> Neighbor_M;
-}
 
 /**
  * @brief Interface that provides the capability to transmit and receive data.
@@ -77,5 +76,7 @@ public:
      */
     virtual void startBeaconInterval(ros::Duration period) = 0;
 };
+
+}
 
 #endif // H_ATRANSCEIVER
