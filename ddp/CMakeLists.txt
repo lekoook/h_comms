@@ -6,11 +6,11 @@ find_package(catkin REQUIRED COMPONENTS
   ptp_comms
 )
 
-#catkin_package(
-#  INCLUDE_DIRS include
-#  LIBRARIES ddp
-#  CATKIN_DEPENDS ptp_comms roscpp
-#)
+catkin_package(
+  INCLUDE_DIRS include
+  LIBRARIES ddp
+  CATKIN_DEPENDS ptp_comms roscpp
+)
 
 include_directories(
   include

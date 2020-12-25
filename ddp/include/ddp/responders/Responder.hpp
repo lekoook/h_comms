@@ -5,6 +5,7 @@
 #include "ALifeEntity.hpp"
 #include "RespMachine.hpp"
 #include "RespStates.hpp"
+#include "ADataAccessor.hpp"
 
 /**
  * @brief Represents the life time of a Responder in a data exchange.
@@ -38,6 +39,12 @@ private:
     ATransmitter* transmitter;
 
     /**
+     * @brief Interface used to access data in database.
+     * 
+     */
+    ADataAccessor* dataAccessor;
+
+    /**
      * @brief Pointer to a Responder state machine.
      * 
      */
@@ -55,9 +62,10 @@ private:
      */
     void _life()
     {
-        uint64_t mockTs = 1234;
-        std::vector<uint8_t> mockData = {5, 6, 7, 8};
-        DataMsg msg(respSequence, respEntryId, mockTs, mockData);
+        DataMsg msg;
+        msg.reqSequence = respSequence;
+        msg.entryId = respEntryId;
+        dataAccessor->pullData(respEntryId, msg.timestamp, msg.data);
         RespMachine rsm(respSequence, respEntryId, respTarget, msg, transmitter);
         {
             std::lock_guard<std::mutex> lock(mRsm);
@@ -86,12 +94,10 @@ public:
      * @param respTarget Intended target address this response is to be made to.
      * @param transmitter Interface used to send messages. 
      */
-    Responder(uint32_t respSequence, uint16_t respEntryId, std::string respTarget, ATransmitter* transmitter)
+    Responder(uint32_t respSequence, uint16_t respEntryId, std::string respTarget, 
+        ATransmitter* transmitter, ADataAccessor* dataAccessor)
         : ALifeEntity(), respSequence(respSequence), respEntryId(respEntryId), respTarget(respTarget), 
-            transmitter(transmitter)
-    {
-        _rsm = nullptr;
-    }
+            transmitter(transmitter), dataAccessor(dataAccessor), _rsm(nullptr) {}
 
     /**
      * @brief Notifies the Responder of a received ACK message.

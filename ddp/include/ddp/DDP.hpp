@@ -307,8 +307,8 @@ public:
         ptpClient = std::unique_ptr<ptp_comms::PtpClient>(new ptp_comms::PtpClient(ptp_comms::DEFAULT_PORT));
         ptpClient->bind(
             std::bind(&DDP::_rxCb, this, std::placeholders::_1, std::placeholders::_2, std::placeholders::_3));
-        reqsMediator = std::unique_ptr<ReqsMediator>(new ReqsMediator(this));
-        respsMediator = std::unique_ptr<RespsMediator>(new RespsMediator(this));
+        reqsMediator = std::unique_ptr<ReqsMediator>(new ReqsMediator(this, this));
+        respsMediator = std::unique_ptr<RespsMediator>(new RespsMediator(this, this));
         
         // Begin main thread operation.
         mainRunning.store(true);
@@ -365,6 +365,12 @@ public:
      */
     bool pushData(uint16_t entryId, uint64_t timestamp, const std::vector<uint8_t>& data)
     {
+        std::cout << "Pushing data for Entry ID " << entryId << " with timestamp " << timestamp << ": ";
+        for (auto v : data)
+        {
+            printf("%u ", v);
+        }
+        std::cout << std::endl;
         return true;
     }
 
@@ -379,6 +385,18 @@ public:
      */
     bool pullData(uint16_t entryId, uint64_t& timestamp, std::vector<uint8_t>& data)
     {
+        uint64_t mockTs = 1234;
+        std::vector<uint8_t> mockData = {5, 6, 7, 8};
+        timestamp = mockTs;
+        data = mockData;
+
+        std::cout << "Pulling data for Entry ID " << entryId << " with timestamp " << timestamp << ": ";
+        for (auto v : data)
+        {
+            printf("%u ", v);
+        }
+        std::cout << std::endl;
+
         return true;
     }
 };

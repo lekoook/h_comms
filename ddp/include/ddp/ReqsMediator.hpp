@@ -7,6 +7,7 @@
 #include <mutex>
 #include <queue>
 #include "requestors/Requestor.hpp"
+#include "ADataAccessor.hpp"
 
 class ReqsMediator
 {
@@ -89,6 +90,12 @@ private:
     ATransmitter* transmitter;
 
     /**
+     * @brief Interface used to access data in database.
+     * 
+     */
+    ADataAccessor* dataAccessor;
+
+    /**
      * @brief Pointer to the current Requestor. If there is no Requestor, this should be null pointer.
      * 
      */
@@ -124,7 +131,7 @@ private:
 
             if (available)
             {
-                Requestor req(qData.sequence, qData.entryId, qData.target, transmitter);
+                Requestor req(qData.sequence, qData.entryId, qData.target, transmitter, dataAccessor);
 
                 {
                     std::lock_guard<std::mutex> lock(mRequestor);
@@ -146,8 +153,10 @@ public:
      * @brief Construct a new Reqs Mediator object that will handle one or more Requestors to conduct data requests.
      * 
      * @param transmitter Transmitter used to send messages.
+     * @param dataAccessor Interface used to access data from the database.
      */
-    ReqsMediator(ATransmitter* transmitter) : transmitter(transmitter)
+    ReqsMediator(ATransmitter* transmitter, ADataAccessor* dataAccessor) 
+        : transmitter(transmitter), dataAccessor(dataAccessor)
     {
         reqRunning.store(true);
         reqTh = std::thread(&ReqsMediator::_runReq, this);

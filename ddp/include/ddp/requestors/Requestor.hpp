@@ -5,6 +5,7 @@
 #include "ALifeEntity.hpp"
 #include "ReqMachine.hpp"
 #include "ReqStates.hpp"
+#include "ADataAccessor.hpp"
 
 class Requestor : public ALifeEntity
 {
@@ -32,6 +33,12 @@ private:
      * 
      */
     ATransmitter* transmitter;
+
+    /**
+     * @brief Interface used to access data in database.
+     * 
+     */
+    ADataAccessor* dataAccessor;
 
     /**
      * @brief Pointer to a Requestor state machine.
@@ -65,12 +72,7 @@ private:
                 if (rsm.hasReceived())
                 {
                     DataMsg m = rsm.dataReceived;
-                    std::cout << "REQUESTOR RECEIVED DATA: ";
-                    for (auto v : m.data)
-                    {
-                        printf("%u ", v);
-                    }
-                    std::cout << std::endl;
+                    dataAccessor->pushData(m.entryId, m.timestamp, m.data);
                 }
                 lifeRunning.store(false);
             }
@@ -89,9 +91,10 @@ public:
      * @param reqTarget Intended target address this request is to be made to.
      * @param transmitter Interface used to send messages. 
      */
-    Requestor(uint32_t reqSequence, uint16_t reqEntryId, std::string reqTarget, ATransmitter* transmitter)
+    Requestor(uint32_t reqSequence, uint16_t reqEntryId, std::string reqTarget, 
+        ATransmitter* transmitter, ADataAccessor* dataAccessor)
         : ALifeEntity(), reqSequence(reqSequence), reqEntryId(reqEntryId), reqTarget(reqTarget), 
-            transmitter(transmitter) {}
+            transmitter(transmitter), dataAccessor(dataAccessor), _rsm(nullptr) {}
 
     /**
      * @brief Notifies the Requestor of a received ACK message.

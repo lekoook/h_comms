@@ -7,6 +7,7 @@
 #include <mutex>
 #include <queue>
 #include "responders/Responder.hpp"
+#include "ADataAccessor.hpp"
 
 class RespsMediator
 {
@@ -84,6 +85,12 @@ private:
     ATransmitter* transmitter;
 
     /**
+     * @brief Interface used to access data from the database.
+     * 
+     */
+    ADataAccessor* dataAccessor;
+
+    /**
      * @brief Pointer to the current Responder. If there is no Responder, this should be null pointer.
      * 
      */
@@ -119,7 +126,7 @@ private:
 
             if (available)
             {
-                Responder resp(qData.sequence, qData.entryId, qData.target, transmitter);
+                Responder resp(qData.sequence, qData.entryId, qData.target, transmitter, dataAccessor);
 
                 {
                     std::lock_guard<std::mutex> lock(mResponder);
@@ -141,8 +148,10 @@ public:
      * @brief Construct a new Resps Mediator object.
      * 
      * @param transmitter Transmitter used to send messages.
+     * @param dataAccessor Interface used to access data from the database.
      */
-    RespsMediator(ATransmitter* transmitter) : transmitter(transmitter)
+    RespsMediator(ATransmitter* transmitter, ADataAccessor* dataAccessor) 
+        : transmitter(transmitter), dataAccessor(dataAccessor)
     {
         respRunning.store(true);
         respTh = std::thread(&RespsMediator::_runReq, this);
