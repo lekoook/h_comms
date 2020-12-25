@@ -114,7 +114,11 @@ public:
     Responder(std::string reqSrc, uint32_t respSequence, uint16_t respEntryId, std::string respTarget, 
         ATransmitter* transmitter, ADataAccessor* dataAccessor, ARespManager* respManager)
         : ALifeEntity(), reqSrc(reqSrc), respSequence(respSequence), respEntryId(respEntryId), respTarget(respTarget), 
-            transmitter(transmitter), dataAccessor(dataAccessor), respManager(respManager), _rsm(nullptr) {}
+            transmitter(transmitter), dataAccessor(dataAccessor), respManager(respManager), _rsm(nullptr) 
+    {
+        lifeRunning.store(true);
+        lifeTh = std::thread(&Responder::_life, this);
+    }
 
     /**
      * @brief Notifies the Responder of a received ACK message.

@@ -108,7 +108,11 @@ public:
     Requestor(uint32_t reqSequence, uint16_t reqEntryId, std::string reqTarget, 
         ATransmitter* transmitter, ADataAccessor* dataAccessor, AReqManager* reqManager)
         : ALifeEntity(), reqSequence(reqSequence), reqEntryId(reqEntryId), reqTarget(reqTarget), 
-            transmitter(transmitter), dataAccessor(dataAccessor), reqManager(reqManager), _rsm(nullptr) {}
+            transmitter(transmitter), dataAccessor(dataAccessor), reqManager(reqManager), _rsm(nullptr) 
+    {
+        lifeRunning.store(false);
+        lifeTh = std::thread(&Requestor::_life, this);
+    }
 
     /**
      * @brief Notifies the Requestor of a received ACK message.

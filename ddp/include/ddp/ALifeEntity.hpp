@@ -28,16 +28,6 @@ protected:
 
 public:
     /**
-     * @brief Construct a new Life Entity object.
-     * 
-     */
-    ALifeEntity()
-    {
-        lifeRunning.store(true);
-        lifeTh = std::thread(&ALifeEntity::_life, this);
-    }
-
-    /**
      * @brief Destroy the ALifeEntity object.
      * 
      */
