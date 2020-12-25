@@ -33,11 +33,6 @@ public:
      */
     virtual ~ALifeEntity()
     {
-        lifeRunning.store(false);
-        if (lifeTh.joinable())
-        {
-            lifeTh.join();
-        }
     }
 
 

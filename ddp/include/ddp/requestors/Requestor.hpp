@@ -110,9 +110,48 @@ public:
         : ALifeEntity(), reqSequence(reqSequence), reqEntryId(reqEntryId), reqTarget(reqTarget), 
             transmitter(transmitter), dataAccessor(dataAccessor), reqManager(reqManager), _rsm(nullptr) 
     {
-        lifeRunning.store(false);
+        lifeRunning.store(true);
         lifeTh = std::thread(&Requestor::_life, this);
     }
+
+    /**
+     * @brief Destroy the Requestor object.
+     * 
+     */
+    ~Requestor()
+    {
+        lifeRunning.store(false);
+        if (lifeTh.joinable())
+        {
+            lifeTh.join();
+        }
+    }
+
+    /**
+     * @brief Requestor is not CopyConstructible.
+     * 
+     */
+    Requestor(const Requestor& other) = delete;
+
+    /**
+     * @brief Requestor is not CopyAssignable.
+     * 
+     * @param other 
+     * @return Requestor& 
+     */
+    Requestor& operator=(const Requestor& other) = delete;
+
+    /**
+     * @brief Requestor is not MoveConstructible.
+     * 
+     */
+    Requestor(const Requestor&& other) = delete;
+
+    /**
+     * @brief Requestor is not MoveAssignable.
+     * 
+     */
+    Requestor& operator=(const Requestor&& other) = delete;
 
     /**
      * @brief Notifies the Requestor of a received ACK message.

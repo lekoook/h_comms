@@ -121,6 +121,44 @@ public:
     }
 
     /**
+     * @brief Destroy the Responder object.
+     * 
+     */
+    ~Responder()
+    {
+        lifeRunning.store(false);
+        if (lifeTh.joinable())
+        {
+            lifeTh.join();
+        }
+    }
+
+    /**
+     * @brief Responder is not CopyConstructible.
+     * 
+     */
+    Responder(const Responder& other) = delete;
+    
+    /**
+     * @brief Responder is not CopyAssignable.
+     * 
+     */
+    Responder& operator=(const Responder& other) = delete;
+
+
+    /**
+     * @brief Responder is not MoveConstructible.
+     * 
+     */
+    Responder(const Responder&& other) = delete;
+
+    /**
+     * @brief Responder is not MoveAssignable.
+     * 
+     */
+    Responder& operator=(const Responder&& other) = delete;
+
+    /**
      * @brief Notifies the Responder of a received ACK message.
      * 
      * @param ackMsg ACK message received.
