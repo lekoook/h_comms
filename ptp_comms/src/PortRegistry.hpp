@@ -123,10 +123,11 @@ private:
      */
     bool _registerPort(uint16_t port)
     {
-        bool missing = registry.find(port) == registry.end();
-        if (missing)
+        std::lock_guard<std::mutex> lock(mRegistry);
+        auto it = registry.find(port);
+
+        if (it == registry.end() || it->second.getNumSubscribers() == 0)
         {
-            std::lock_guard<std::mutex> lock(mRegistry);
             registry[port] = nh->advertise<ptp_comms::RxData>(TOPIC_PREFIX + std::to_string(port), MAX_QUEUE_SIZE);
             if (cc->bind(rxCallback, localAddr, port))
             {
@@ -136,10 +137,9 @@ private:
             {
                 ROS_ERROR("Cannot bind CommsClient. Could it have already been binded before?");
             }
-            
             return true;
         }
-        return missing;
+        return false;
     }
 
     /**
