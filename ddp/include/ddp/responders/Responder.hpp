@@ -6,6 +6,7 @@
 #include "RespMachine.hpp"
 #include "RespStates.hpp"
 #include "ADataAccessor.hpp"
+#include "ARespManager.hpp"
 
 /**
  * @brief Represents the life time of a Responder in a data exchange.
@@ -14,6 +15,12 @@
 class Responder  : public ALifeEntity
 {
 private:
+    /**
+     * @brief Source address of the Requestor to which this Responder is responding to.
+     * 
+     */
+    std::string reqSrc;
+
     /**
      * @brief Sequence number for response.
      * 
@@ -43,6 +50,12 @@ private:
      * 
      */
     ADataAccessor* dataAccessor;
+
+    /**
+     * @brief Interface of Responders manager that owns this Responder.
+     * 
+     */
+    ARespManager* respManager;
 
     /**
      * @brief Pointer to a Responder state machine.
@@ -83,21 +96,25 @@ private:
 
         std::lock_guard<std::mutex> lock(mRsm);
         _rsm = nullptr;
+        respManager->removeResp(reqSrc, respSequence);
     }
 
 public:
     /**
      * @brief Construct a new Responder object.
      * 
+     * @param reqSrc Source address of the Requestor to which this Responder is responding to.
      * @param respSequence Sequence number of this response.
      * @param respEntryId Entry ID this response is made for.
      * @param respTarget Intended target address this response is to be made to.
      * @param transmitter Interface used to send messages. 
+     * @param dataAccessor Interface used to access data in database.
+     * @param respManager Interface of Responders manager that owns this Responder.
      */
-    Responder(uint32_t respSequence, uint16_t respEntryId, std::string respTarget, 
-        ATransmitter* transmitter, ADataAccessor* dataAccessor)
-        : ALifeEntity(), respSequence(respSequence), respEntryId(respEntryId), respTarget(respTarget), 
-            transmitter(transmitter), dataAccessor(dataAccessor), _rsm(nullptr) {}
+    Responder(std::string reqSrc, uint32_t respSequence, uint16_t respEntryId, std::string respTarget, 
+        ATransmitter* transmitter, ADataAccessor* dataAccessor, ARespManager* respManager)
+        : ALifeEntity(), reqSrc(reqSrc), respSequence(respSequence), respEntryId(respEntryId), respTarget(respTarget), 
+            transmitter(transmitter), dataAccessor(dataAccessor), respManager(respManager), _rsm(nullptr) {}
 
     /**
      * @brief Notifies the Responder of a received ACK message.

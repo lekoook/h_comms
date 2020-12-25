@@ -6,10 +6,12 @@
 #include <thread>
 #include <mutex>
 #include <queue>
+#include <map>
 #include "responders/Responder.hpp"
 #include "ADataAccessor.hpp"
+#include "ARespManager.hpp"
 
-class RespsMediator
+class RespsMediator : public ARespManager
 {
 private:
     /**
@@ -55,6 +57,12 @@ private:
     };
 
     /**
+     * @brief Maximum number of concurrent Requestors allowed.
+     * 
+     */
+    const int MAX_RESPONDERS = 10;
+
+    /**
      * @brief Response thread to handle new responses submissions.
      * 
      */
@@ -91,16 +99,31 @@ private:
     ADataAccessor* dataAccessor;
 
     /**
-     * @brief Pointer to the current Responder. If there is no Responder, this should be null pointer.
+     * @brief A record to track all concurrent Responders running at once.
+     * @details The key is a pair with the first being the source address of Requestor and second being the sequence 
+     * number of the request. The value is the Responder instance.
      * 
      */
-    Responder* responder;
+    std::map<std::pair<std::string, uint32_t>, Responder> respRecord;
 
     /**
-     * @brief Mutex to protect the Responder.
+     * @brief Mutex to protect the Responders record.
      * 
      */
-    std::mutex mResponder;
+    std::mutex mRespRecord;
+
+    /**
+     * @brief Queue that tracks the Requestor address and sequence number of all Responder that have ended it's life 
+     * and marked for removal.
+     * 
+     */
+    std::queue<std::pair<std::string, uint32_t>> respToRemove;
+
+    /**
+     * @brief Mutex to protect the queue that marks Responders for removal.
+     * 
+     */
+    std::mutex mRespToRemove;
 
     /**
      * @brief Executes the processing of items in the responses queue.
@@ -110,36 +133,35 @@ private:
     {
         while(respRunning.load())
         {
-            ros::Duration(0.1).sleep();
-
-            bool available = false;
-            RespQueueData qData;
+            // Remove all Responders marked for removal.
             {
+                std::lock_guard<std::mutex> rLock(mRespToRemove);
+                while (respToRemove.size() > 0)
+                {
+                    auto key = respToRemove.front();
+                    respToRemove.pop();
+                    std::lock_guard<std::mutex> qLock(mRespRecord);
+                    respRecord.erase(key);
+                }
+            }
+
+            // We spawn as many Responders as we can to service data requests.
+            {
+                std::lock_guard<std::mutex> qLock(mRespRecord);
                 std::lock_guard<std::mutex> lock(mRespQ);
-                if (!respQ.empty())
+                while ((respRecord.size() < MAX_RESPONDERS) && (!respQ.empty()))
                 {
-                    available = true;
-                    qData = respQ.front();
+                    RespQueueData qData = respQ.front();
                     respQ.pop();
+                    respRecord.emplace(
+                        std::piecewise_construct, 
+                        std::forward_as_tuple(std::make_pair(qData.target, qData.sequence)), 
+                        std::forward_as_tuple(qData.target, qData.sequence, qData.entryId, qData.target, 
+                                                transmitter, dataAccessor, this));
                 }
             }
 
-            if (available)
-            {
-                Responder resp(qData.sequence, qData.entryId, qData.target, transmitter, dataAccessor);
-
-                {
-                    std::lock_guard<std::mutex> lock(mResponder);
-                    responder = &resp;
-                }
-
-                while (!resp.hasEnded()) {}
-
-                {
-                    std::lock_guard<std::mutex> lock(mResponder);
-                    responder = nullptr;
-                }
-            }
+            ros::Duration(0.1).sleep();
         }
     }
     
@@ -211,10 +233,11 @@ public:
      */
     void notifyAck(std::string src, AckMsg& ackMsg)
     {
-        std::lock_guard<std::mutex> lock(mResponder);
-        if (responder)
+        std::lock_guard<std::mutex> lock(mRespRecord);
+        auto it = respRecord.find(std::make_pair(src, ackMsg.ackSequence));
+        if (it != respRecord.end())
         {
-            responder->recvAck(ackMsg, src);
+            it->second.recvAck(ackMsg, src);
         }
     }
 
@@ -229,6 +252,18 @@ public:
     {
         std::lock_guard<std::mutex> lock(mRespQ);
         respQ.push(RespQueueData(sequence, entryId, respTarget));
+    }
+
+    /**
+     * @brief Mark a Responder for removal from tracking.
+     * 
+     * @param src Source address of request to remove.
+     * @param sequence Sequence number of request to remove.
+     */
+    void removeResp(std::string src, uint32_t sequence)
+    {
+        std::lock_guard<std::mutex> lock(mRespToRemove);
+        respToRemove.push(std::make_pair(src, sequence));
     }
 };
 

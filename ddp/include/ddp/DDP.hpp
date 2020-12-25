@@ -293,7 +293,12 @@ private:
         // Some example request
         MIT mock;
         auto v = mock.compare(mit);
+        reqsMediator->queueReq(1001, src);
         reqsMediator->queueReq(1002, src);
+        reqsMediator->queueReq(1003, src);
+        reqsMediator->queueReq(1004, src);
+        reqsMediator->queueReq(1005, src);
+        reqsMediator->queueReq(1006, src);
     }
 
 public:
