@@ -19,6 +19,11 @@ bool ReqMachine::hasEnded()
     return isDestructed.load();
 }
 
+bool ReqMachine::needRequeue()
+{
+    return needReqeue.load();
+}
+
 ReqMachine::ReqMachine(uint32_t reqSequence, uint16_t reqEntryId, std::string reqTarget, ATransmitter* transmitter) 
     : reqSequence(reqSequence), 
     reqEntryId(reqEntryId), 
@@ -28,6 +33,7 @@ ReqMachine::ReqMachine(uint32_t reqSequence, uint16_t reqEntryId, std::string re
 {
     receivedData.store(false);
     isDestructed.store(false);
+    needReqeue.store(false);
 }
 
 ReqMachine::~ReqMachine()

@@ -102,6 +102,12 @@ private:
     bool gotMsg = false;
 
     /**
+     * @brief Flag to determine if the the REQUEUE state was reached.
+     * 
+     */
+    std::atomic<bool> needReqeue;
+
+    /**
      * @brief Mutex to protect ACK or DATA flag.
      * 
      */
@@ -147,6 +153,14 @@ public:
      * @return false If it has not yet ended.
      */
     bool hasEnded();
+
+    /**
+     * @brief Queries if the state machine passed through the REQUEUE state and requires a requeue of request.
+     * 
+     * @return true If requeue of request is needed.
+     * @return false If requeue of request is not needed.
+     */
+    bool needRequeue();
 
     /**
      * @brief Construct a new Req Machine object.

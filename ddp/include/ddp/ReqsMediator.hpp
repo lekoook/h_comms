@@ -7,6 +7,7 @@
 #include <mutex>
 #include <queue>
 #include <unordered_map>
+#include <unordered_set>
 #include "requestors/Requestor.hpp"
 #include "ADataAccessor.hpp"
 #include "AReqManager.hpp"
@@ -63,7 +64,13 @@ private:
      * @brief Maximum number of concurrent Requestors allowed.
      * 
      */
-    const int MAX_REQUESTORS = 10;
+    const int MAX_REQUESTORS = 2;
+
+    /**
+     * @brief The maximum number of times a particular request can be requeued.
+     * 
+     */
+    const int MAX_REQUEST_ATTEMPTS = 3;
 
     /**
      * @brief Current sequence number used to generate each Request queue item.
@@ -133,6 +140,18 @@ private:
     std::mutex mReqToRemove;
 
     /**
+     * @brief Tracks the number of attempts a request sequence number has appeared.
+     * 
+     */
+    std::unordered_multiset<uint32_t> reqTries;
+
+    /**
+     * @brief Mutex to protect the record for request sequence number appearances.
+     * 
+     */
+    std::mutex mReqTries;
+
+    /**
      * @brief Executes the processing of items in the requests queue.
      * 
      */
@@ -170,6 +189,19 @@ private:
 
             ros::Duration(0.1).sleep();
         }
+    }
+
+    /**
+     * @brief Internal method to submit a new request for data exchange.
+     * 
+     * @param sequence Sequence number for this request.
+     * @param entryId Entry ID in the MIT to request.
+     * @param reqTarget Target robot this request is intended for.
+     */
+    void _queueReq(uint32_t sequence, uint16_t entryId, std::string reqTarget)
+    {
+        std::lock_guard<std::mutex> lock(mReqQ);
+        reqQ.push(ReqQueueData(sequence, entryId, reqTarget));
     }
     
 public:
@@ -272,8 +304,7 @@ public:
      */
     void queueReq(uint16_t entryId, std::string reqTarget)
     {
-        std::lock_guard<std::mutex> lock(mReqQ);
-        reqQ.push(ReqQueueData(sequence++, entryId, reqTarget));
+        _queueReq(sequence++, entryId, reqTarget);
     }
 
     /**
@@ -285,6 +316,28 @@ public:
     {
         std::lock_guard<std::mutex> lock(mReqToRemove);
         reqToRemove.push(sequence);
+    }
+
+    /**
+     * @brief Requeues a request that was queued previously.
+     * 
+     * @param sequence Sequence number that was assigned to this request initially.
+     * @param entryId Entry ID in the MIT to request.
+     * @param reqTarget Target robot this request is intended for.
+     */
+    void requeueReq(uint32_t sequence, uint16_t entryId, std::string reqTarget)
+    {
+        std::lock_guard<std::mutex> lock(mReqTries);
+        size_t counts = reqTries.count(sequence);
+        if (counts < MAX_REQUEST_ATTEMPTS - 1)
+        {
+            reqTries.insert(sequence);
+            _queueReq(sequence, entryId, reqTarget);
+        }
+        else
+        {
+            reqTries.erase(sequence);
+        }
     }
 };
 

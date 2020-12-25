@@ -76,7 +76,11 @@ private:
             rsm.checkTransit();
             if (rsm.hasEnded())
             {
-                if (rsm.hasReceived())
+                if (rsm.needRequeue())
+                {
+                    reqManager->requeueReq(reqSequence, reqEntryId, reqTarget);
+                }
+                else if (rsm.hasReceived())
                 {
                     DataMsg m = rsm.dataReceived;
                     dataAccessor->pushData(m.entryId, m.timestamp, m.data);

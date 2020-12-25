@@ -152,6 +152,7 @@ RequeueReqState::~RequeueReqState() {}
 void RequeueReqState::run(ReqMachine& machine)
 {
     std::cout << "REQUESTOR: REQUEUE REQ" << std::endl;
+    machine.needReqeue.store(true);
     setState(machine, new DestructReqState());
 }
 
