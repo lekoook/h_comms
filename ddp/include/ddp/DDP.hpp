@@ -109,13 +109,13 @@ private:
      * @brief Mediator for one or more Requestors.
      * 
      */
-    ReqsMediator reqsMediator;
+    std::unique_ptr<ReqsMediator> reqsMediator;
 
     /**
      * @brief Mediator for one or more Responders.
      * 
      */
-    RespsMediator respsMediator;
+    std::unique_ptr<RespsMediator> respsMediator;
 
     /**
      * @brief Callback to receive data.
@@ -241,7 +241,7 @@ private:
     void _handleData(DataMsg& msg, std::string src)
     {
         std::cout << "GOT DATA" << std::endl;
-        reqsMediator.notifyData(src, msg);
+        reqsMediator->notifyData(src, msg);
     }
 
     /**
@@ -253,7 +253,7 @@ private:
     void _handleReq(ReqMsg& msg, std::string src)
     {
         std::cout << "GOT REQUEST FOR: " << msg.reqSequence << " , " << msg.reqEntryId << std::endl;
-        respsMediator.queueResp(msg.reqSequence, msg.reqEntryId, src);
+        respsMediator->queueResp(msg.reqSequence, msg.reqEntryId, src);
     }
 
     /**
@@ -267,12 +267,12 @@ private:
         if (msg.forReq)
         {
             std::cout << "GOT ACK FOR REQ" << std::endl;
-            reqsMediator.notifyAck(src, msg);
+            reqsMediator->notifyAck(src, msg);
         }
         else
         {
             std::cout << "GOT ACK FOR DATA" << std::endl;
-            respsMediator.notifyAck(src, msg);
+            respsMediator->notifyAck(src, msg);
         }
     }
 
@@ -293,7 +293,7 @@ private:
         // Some example request
         MIT mock;
         auto v = mock.compare(mit);
-        reqsMediator.queueReq(1002, src);
+        reqsMediator->queueReq(1002, src);
     }
 
 public:
@@ -307,8 +307,8 @@ public:
         ptpClient = std::unique_ptr<ptp_comms::PtpClient>(new ptp_comms::PtpClient(ptp_comms::DEFAULT_PORT));
         ptpClient->bind(
             std::bind(&DDP::_rxCb, this, std::placeholders::_1, std::placeholders::_2, std::placeholders::_3));
-        reqsMediator.start(this);
-        respsMediator.start(this);
+        reqsMediator = std::unique_ptr<ReqsMediator>(new ReqsMediator(this));
+        respsMediator = std::unique_ptr<RespsMediator>(new RespsMediator(this));
         
         // Begin main thread operation.
         mainRunning.store(true);

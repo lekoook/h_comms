@@ -143,14 +143,14 @@ private:
     
 public:
     /**
-     * @brief Construct a new Reqs Mediator object.
+     * @brief Construct a new Reqs Mediator object that will handle one or more Requestors to conduct data requests.
      * 
+     * @param transmitter Transmitter used to send messages.
      */
-    ReqsMediator()
+    ReqsMediator(ATransmitter* transmitter) : transmitter(transmitter)
     {
-        transmitter = nullptr;
-        requestor = nullptr;
-        reqRunning.store(false);
+        reqRunning.store(true);
+        reqTh = std::thread(&ReqsMediator::_runReq, this);
     }
 
     /**
@@ -163,22 +163,29 @@ public:
     }
 
     /**
-     * @brief Starts the operation of handling requests.
+     * @brief ReqsMediator is not CopyConstructible.
      * 
-     * @param transmitter Interface used to transmit messages when handling requests.
      */
-    void start(ATransmitter* transmitter)
-    {
-        if (reqRunning.load())
-        {
-            return; // Don't start operations twice.
-        }
-        
-        this->transmitter = transmitter;
-        reqRunning.store(true);
-        reqTh = std::thread(&ReqsMediator::_runReq, this);
-    }
+    ReqsMediator(const ReqsMediator& other) = delete;
 
+    /**
+     * @brief ReqsMediator is not CopyAssignable.
+     * 
+     */
+    ReqsMediator& operator=(const ReqsMediator& other) = delete;
+
+    /**
+     * @brief ReqsMediator is not MoveConstructible.
+     * 
+     */
+    ReqsMediator(ReqsMediator&& other) = delete;
+
+    /**
+     * @brief ReqsMediator is not MoveAssignable.
+     * 
+     */
+    ReqsMediator& operator=(const ReqsMediator&& other) = delete;
+    
     /**
      * @brief Stops the operation of handling requests.
      * 

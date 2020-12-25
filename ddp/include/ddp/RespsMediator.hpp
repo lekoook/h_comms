@@ -140,12 +140,12 @@ public:
     /**
      * @brief Construct a new Resps Mediator object.
      * 
+     * @param transmitter Transmitter used to send messages.
      */
-    RespsMediator()
+    RespsMediator(ATransmitter* transmitter) : transmitter(transmitter)
     {
-        transmitter = nullptr;
-        responder = nullptr;
-        respRunning.store(false);
+        respRunning.store(true);
+        respTh = std::thread(&RespsMediator::_runReq, this);
     }
 
     /**
@@ -158,21 +158,28 @@ public:
     }
 
     /**
-     * @brief Starts the operation of handling responses.
+     * @brief RespsMediator is not CopyConstructible.
      * 
-     * @param transmitter Interface used to transmit messages when handling responses.
      */
-    void start(ATransmitter* transmitter)
-    {
-        if (respRunning.load())
-        {
-            return; // Don't start operations twice.
-        }
-        
-        this->transmitter = transmitter;
-        respRunning.store(true);
-        respTh = std::thread(&RespsMediator::_runReq, this);
-    }
+    RespsMediator(const RespsMediator& other) = delete;
+
+    /**
+     * @brief RespsMediator is not CopyAssignable.
+     * 
+     */
+    RespsMediator& operator=(const RespsMediator& other) = delete;
+
+    /**
+     * @brief RespsMediator is not MoveConstructible.
+     * 
+     */
+    RespsMediator(const RespsMediator&& other) = delete;
+
+    /**
+     * @brief RespsMediator is not MoveAssignable.
+     * 
+     */
+    RespsMediator& operator=(const RespsMediator&& other) = delete;
 
     /**
      * @brief Stops the operation of handling requests.
