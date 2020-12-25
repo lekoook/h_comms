@@ -11,6 +11,10 @@
 #include "ADataAccessor.hpp"
 #include "AReqManager.hpp"
 
+/**
+ * @brief A Mediator class that will spawn and manage all Requestors used to service data requests.
+ * 
+ */
 class ReqsMediator : public AReqManager
 {
 private:

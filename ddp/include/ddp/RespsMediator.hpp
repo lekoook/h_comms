@@ -11,6 +11,10 @@
 #include "ADataAccessor.hpp"
 #include "ARespManager.hpp"
 
+/**
+ * @brief A Mediator class that will spawn and manage all the Responders used to service data requests.
+ * 
+ */
 class RespsMediator : public ARespManager
 {
 private:
