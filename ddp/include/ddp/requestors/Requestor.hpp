@@ -6,6 +6,7 @@
 #include "ReqMachine.hpp"
 #include "ReqStates.hpp"
 #include "ADataAccessor.hpp"
+#include "AReqManager.hpp"
 
 class Requestor : public ALifeEntity
 {
@@ -39,6 +40,12 @@ private:
      * 
      */
     ADataAccessor* dataAccessor;
+
+    /**
+     * @brief Interface of Requestors manager that owns this Requestor.
+     * 
+     */
+    AReqManager* reqManager;
 
     /**
      * @brief Pointer to a Requestor state machine.
@@ -80,6 +87,7 @@ private:
 
         std::lock_guard<std::mutex> lock(mRsm);
         _rsm = nullptr;
+        reqManager->removeReq(reqSequence);
     }
 
 public:
@@ -90,11 +98,13 @@ public:
      * @param reqEntryId Entry ID this request is made for.
      * @param reqTarget Intended target address this request is to be made to.
      * @param transmitter Interface used to send messages. 
+     * @param dataAccessor Interface used to access data in database.
+     * @param reqManager Interface of Requestors manager that owns this Requestor.
      */
     Requestor(uint32_t reqSequence, uint16_t reqEntryId, std::string reqTarget, 
-        ATransmitter* transmitter, ADataAccessor* dataAccessor)
+        ATransmitter* transmitter, ADataAccessor* dataAccessor, AReqManager* reqManager)
         : ALifeEntity(), reqSequence(reqSequence), reqEntryId(reqEntryId), reqTarget(reqTarget), 
-            transmitter(transmitter), dataAccessor(dataAccessor), _rsm(nullptr) {}
+            transmitter(transmitter), dataAccessor(dataAccessor), reqManager(reqManager), _rsm(nullptr) {}
 
     /**
      * @brief Notifies the Requestor of a received ACK message.

@@ -6,10 +6,12 @@
 #include <thread>
 #include <mutex>
 #include <queue>
+#include <unordered_map>
 #include "requestors/Requestor.hpp"
 #include "ADataAccessor.hpp"
+#include "AReqManager.hpp"
 
-class ReqsMediator
+class ReqsMediator : public AReqManager
 {
 private:
     /**
@@ -54,6 +56,12 @@ private:
     };
 
     /**
+     * @brief Maximum number of concurrent Requestors allowed.
+     * 
+     */
+    const int MAX_REQUESTORS = 10;
+
+    /**
      * @brief Current sequence number used to generate each Request queue item.
      * 
      */
@@ -96,16 +104,29 @@ private:
     ADataAccessor* dataAccessor;
 
     /**
-     * @brief Pointer to the current Requestor. If there is no Requestor, this should be null pointer.
+     * @brief A record to track all concurrent Requestors running at once.
+     * @details The key is the sequence number for the Requestor and value is the Requestor instance.
      * 
      */
-    Requestor* requestor;
+    std::unordered_map<uint32_t, Requestor> reqRecord;
 
     /**
-     * @brief Mutex to protect the Requestor.
+     * @brief Mutex to protect the Requestors record.
      * 
      */
-    std::mutex mRequestor;
+    std::mutex mReqRecord;
+
+    /**
+     * @brief Queue that tracks the sequence number of all Requestors that have ended it's life and marked for removal.
+     * 
+     */
+    std::queue<uint32_t> reqToRemove;
+
+    /**
+     * @brief Mutex to protect the queue that marks Requestors for removal.
+     * 
+     */
+    std::mutex mReqToRemove;
 
     /**
      * @brief Executes the processing of items in the requests queue.
@@ -115,36 +136,35 @@ private:
     {
         while(reqRunning.load())
         {
-            ros::Duration(0.1).sleep();
-
-            bool available = false;
-            ReqQueueData qData;
+            // Remove all Requestors marked for removal.
             {
+                std::lock_guard<std::mutex> rLock(mReqToRemove);
+                while (reqToRemove.size() > 0)
+                {
+                    uint32_t key = reqToRemove.front();
+                    reqToRemove.pop();
+                    std::lock_guard<std::mutex> qLock(mReqRecord);
+                    reqRecord.erase(key);
+                }
+            }
+
+            // We spawn as many Requestors as we can to service data requests.
+            {
+                std::lock_guard<std::mutex> qLock(mReqRecord);
                 std::lock_guard<std::mutex> lock(mReqQ);
-                if (!reqQ.empty())
+                while ((reqRecord.size() < MAX_REQUESTORS) && (!reqQ.empty()))
                 {
-                    available = true;
-                    qData = reqQ.front();
+                    ReqQueueData qData = reqQ.front();
                     reqQ.pop();
+                    reqRecord.emplace(
+                        std::piecewise_construct, 
+                        std::forward_as_tuple(qData.sequence), 
+                        std::forward_as_tuple(qData.sequence, qData.entryId, qData.target, 
+                                                transmitter, dataAccessor, this));
                 }
             }
 
-            if (available)
-            {
-                Requestor req(qData.sequence, qData.entryId, qData.target, transmitter, dataAccessor);
-
-                {
-                    std::lock_guard<std::mutex> lock(mRequestor);
-                    requestor = &req;
-                }
-                
-                while (!req.hasEnded()) {}
-
-                {
-                    std::lock_guard<std::mutex> lock(mRequestor);
-                    requestor = nullptr;
-                }
-            }
+            ros::Duration(0.1).sleep();
         }
     }
     
@@ -209,32 +229,34 @@ public:
     }
 
     /**
-     * @brief Notify that a ACK message has arrived.
+     * @brief Notify the intended Requestor that a ACK message has arrived.
      * 
      * @param src Source address of ACK message.
      * @param ackMsg Acknowledgement (ACK) message.
      */
     void notifyAck(std::string src, AckMsg& ackMsg)
     {
-        std::lock_guard<std::mutex> lock(mRequestor);
-        if (requestor)
+        std::lock_guard<std::mutex> lock(mReqRecord);
+        auto it = reqRecord.find(ackMsg.ackSequence);
+        if (it != reqRecord.end())
         {
-            requestor->recvAck(ackMsg, src);
+            it->second.recvAck(ackMsg, src);
         }
     }
 
     /**
-     * @brief Notify that a DATA message has arrived.
+     * @brief Notify the intended Requestor that a DATA message has arrived.
      * 
      * @param src Source address of DATA message.
      * @param dataMsg DATA message.
      */
     void notifyData(std::string src, DataMsg& dataMsg)
     {
-        std::lock_guard<std::mutex> lock(mRequestor);
-        if (requestor)
+        std::lock_guard<std::mutex> lock(mReqRecord);
+        auto it = reqRecord.find(dataMsg.reqSequence);
+        if (it != reqRecord.end())
         {
-            requestor->recvData(dataMsg, src);
+            it->second.recvData(dataMsg, src);
         }
     }
 
@@ -248,6 +270,17 @@ public:
     {
         std::lock_guard<std::mutex> lock(mReqQ);
         reqQ.push(ReqQueueData(sequence++, entryId, reqTarget));
+    }
+
+    /**
+     * @brief Mark a Requestor by their sequence number for removal from tracking.
+     * 
+     * @param sequence Sequence number of Requestor to remove.
+     */
+    void removeReq(uint32_t sequence)
+    {
+        std::lock_guard<std::mutex> lock(mReqToRemove);
+        reqToRemove.push(sequence);
     }
 };
 
