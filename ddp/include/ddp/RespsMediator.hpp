@@ -157,11 +157,11 @@ private:
                 {
                     RespQueueData qData = respQ.front();
                     respQ.pop();
-                    // respRecord.emplace(
-                    //     std::piecewise_construct, 
-                    //     std::forward_as_tuple(std::make_pair(qData.target, qData.sequence)), 
-                    //     std::forward_as_tuple(qData.target, qData.sequence, qData.entryId, qData.target, 
-                    //                             transmitter, dataAccessor, this));
+                    respRecord.emplace(
+                        std::piecewise_construct, 
+                        std::forward_as_tuple(std::make_pair(qData.target, qData.sequence)), 
+                        std::forward_as_tuple(qData.target, qData.sequence, qData.entryId, qData.target, 
+                                                transmitter, dataAccessor, this));
                 }
             }
 
