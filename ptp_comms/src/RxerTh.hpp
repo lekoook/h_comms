@@ -107,12 +107,6 @@ private:
      * 
      */
     std::queue<RxQueueData> rxQ;
-    
-    /**
-     * @brief Mutex to protect the reception queue.
-     * 
-     */
-    std::mutex mRxQ;
 
     /**
      * @brief Interface that performs the actual transmission.
@@ -166,6 +160,18 @@ private:
     std::atomic<bool> cleanRunning;
 
     /**
+     * @brief Condition variable used to signal that a RX has arrived.
+     * 
+     */
+    std::condition_variable cvGotRx;
+
+    /**
+     * @brief Mutex used for RX signal condition variable.
+     * 
+     */
+    std::mutex mGotRx;
+
+    /**
      * @brief Executes the processing of data.
      * @details A piece of data is removed from the reception queue and handled according. If it is a data segment, it
      * be handled with the received packets tracking list and segment table. If it is an ACK message, it will used to 
@@ -176,33 +182,30 @@ private:
     {
         while(thRunning.load())
         {
-            bool available = false;
-            RxQueueData dat;
-            {
-                std::lock_guard<std::mutex> lock(mRxQ);
-                if (!rxQ.empty())
+            // We wait until a signal is given that a RX has arrived.
+            std::unique_lock<std::mutex> rLock(mGotRx);
+            cvGotRx.wait(rLock,
+                [this] () -> bool
                 {
-                    available = true;
-                    dat = rxQ.front();
-                    rxQ.pop();
-                }
+                    return !rxQ.empty();
+                });
+
+            // Get data from queue.
+            RxQueueData dat = rxQ.front();
+            rxQ.pop();
+
+            Packet pkt;
+            pkt.deserialize(dat.data);
+
+            // If this is not an ACK, we reply an ACK and process the segment.
+            if (!pkt.isAck)
+            {
+                _handleData(pkt, dat.src, dat.dest, dat.port);
             }
-
-            if (available)
+            else
             {
-                Packet pkt;
-                pkt.deserialize(dat.data);
-
-                // If this is not an ACK, we reply an ACK and process the segment.
-                if (!pkt.isAck)
-                {
-                    _handleData(pkt, dat.src, dat.dest, dat.port);
-                }
-                else
-                {
-                    // Notify that an ACK has been received.
-                    txerTh->notifyAck(pkt.seqNum, pkt.segNum, dat.src, dat.port); 
-                }
+                // Notify that an ACK has been received.
+                txerTh->notifyAck(pkt.seqNum, pkt.segNum, dat.src, dat.port); 
             }
         }
     }
@@ -216,9 +219,11 @@ private:
      */
     bool _recvOne(RxQueueData& recvData)
     {
+        std::lock_guard<std::mutex> lock(mGotRx);
         if (rxQ.size() < MAX_QUEUE_SIZE)
         {
             rxQ.push(recvData);
+            cvGotRx.notify_one();
             return true;
         }
         else
@@ -379,7 +384,6 @@ public:
      */
     bool recvOne(RxQueueData recvData)
     {
-        std::lock_guard<std::mutex> lock(mRxQ);
         return _recvOne(recvData);
     }
 };

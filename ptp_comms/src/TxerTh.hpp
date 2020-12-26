@@ -179,6 +179,9 @@ private:
      */
     uint32_t sequence = 0;
 
+    std::condition_variable cvGotTx;
+    std::mutex mGotTx;
+
     /**
      * @brief Executes the processing of data.
      * @details A piece of data is removed from the transmission queue and prepared for transmission. If the data fails
@@ -190,30 +193,30 @@ private:
     {
         while(thRunning.load())
         {
-            bool available = false;
             TxQueueData dat;
+            
+            // We wait until a signal is given that a TX has arrived.
             {
-                std::lock_guard<std::mutex> lock(mTxQ);
-                if (!txQ.empty())
-                {
-                    available = true;
-                    dat = txQ.front();
-                    txQ.pop();
-                }
+                std::unique_lock<std::mutex> tLock(mGotTx);
+                cvGotTx.wait(tLock,
+                    [this] () -> bool
+                    {
+                        return !txQ.empty();
+                    });
+                
+                // Get data from queue.
+                dat = txQ.front();
+                txQ.pop();
             }
 
-            if (available)
+            ptp_comms::Neighbor_M nb = cc->neighbors();
+            if (((dat.dest != ptp_comms::BROADCAST_ADDR) && (nb.find(dat.dest) == nb.end())) 
+                || !sendData(dat))
             {
-                // Only send if the destination is a neighbour.
-                ptp_comms::Neighbor_M nb = cc->neighbors();
-                if (((dat.dest != ptp_comms::BROADCAST_ADDR) && (nb.find(dat.dest) == nb.end())) 
-                    || !sendData(dat))
+                dat.tries++;
+                if (dat.tries < MAX_QUEUE_TRIES)
                 {
-                    dat.tries++;
-                    if (dat.tries < MAX_QUEUE_TRIES)
-                    {
-                        _queueOne(dat); // Re-queue the data back into the queue to be processed again later. Give up after MAX_QUEUE_TRIES attempts.
-                    }
+                    _queueOne(dat); // Re-queue the data back into the queue to be processed again later. Give up after MAX_QUEUE_TRIES attempts.
                 }
             }
         }
@@ -275,6 +278,7 @@ private:
         if (txQ.size() < MAX_QUEUE_SIZE)
         {
             txQ.push(sendData);
+            cvGotTx.notify_one();
             return true;
         }
         else
@@ -283,6 +287,7 @@ private:
         }
     }
 
+    // TODO: The waiting should be done using sim time or ros wall time instead of system time.
     /**
      * @brief Waits for the acknowledgement (ACK) for a specific source address, sequence and segment number.
      * 
@@ -406,7 +411,7 @@ public:
      */
     bool sendOne(std::vector<uint8_t> data, std::string dest, uint16_t port)
     {
-        std::lock_guard<std::mutex> lock(mTxQ);
+        std::lock_guard<std::mutex> lock(mGotTx);
         TxQueueData sendData(data, dest, port, sequence++);
         return _queueOne(sendData);
     }
