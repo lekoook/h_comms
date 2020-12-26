@@ -287,6 +287,7 @@ private:
         }
     }
 
+    // TODO: The waiting should be done using sim time or ros wall time instead of system time.
     /**
      * @brief Waits for the acknowledgement (ACK) for a specific source address, sequence and segment number.
      * 
