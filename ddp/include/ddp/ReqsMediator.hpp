@@ -97,6 +97,12 @@ private:
     std::queue<ReqQueueData> reqQ;
 
     /**
+     * @brief Tracks the current entry IDs and target address in the request queue to prevent duplicated requests.
+     * 
+     */
+    std::set<std::pair<std::string, uint16_t>> dupReq;
+
+    /**
      * @brief Mutext to protect the requests queue.
      * 
      */
@@ -179,6 +185,7 @@ private:
                 {
                     ReqQueueData qData = reqQ.front();
                     reqQ.pop();
+                    dupReq.erase(std::make_pair(qData.target, qData.entryId));
                     reqRecord.emplace(
                         std::piecewise_construct, 
                         std::forward_as_tuple(qData.sequence), 
@@ -201,7 +208,12 @@ private:
     void _queueReq(uint32_t sequence, uint16_t entryId, std::string reqTarget)
     {
         std::lock_guard<std::mutex> lock(mReqQ);
-        reqQ.push(ReqQueueData(sequence, entryId, reqTarget));
+        auto key = std::make_pair(reqTarget, entryId);
+        if (dupReq.find(key) == dupReq.end()) // Only queue the request if it is not already in the queue.
+        {
+            dupReq.insert(key);
+            reqQ.push(ReqQueueData(sequence, entryId, reqTarget));
+        }
     }
     
 public:
