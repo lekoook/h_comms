@@ -64,7 +64,7 @@ private:
      * @brief Maximum number of concurrent Requestors allowed.
      * 
      */
-    const int MAX_REQUESTORS = 10;
+    const int MAX_REQUESTORS = 2;
 
     /**
      * @brief The maximum number of times a particular request can be requeued.

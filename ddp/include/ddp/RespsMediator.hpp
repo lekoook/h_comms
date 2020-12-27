@@ -64,7 +64,7 @@ private:
      * @brief Maximum number of concurrent Requestors allowed.
      * 
      */
-    const int MAX_RESPONDERS = 10;
+    const int MAX_RESPONDERS = 6;
 
     /**
      * @brief Response thread to handle new responses submissions.
