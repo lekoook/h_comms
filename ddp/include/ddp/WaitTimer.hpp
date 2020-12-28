@@ -33,7 +33,35 @@ public:
         timer = nh.createTimer(ros::Duration(waitTime), &WaitTimer::timerCallback, this, true, false);
     }
 
+    WaitTimer(const WaitTimer& other)
+    {
+        interrupted = false;
+        timeout = false;
+        waitTime = other.waitTime;
+        ros::NodeHandle nh;
+        timer = nh.createTimer(ros::Duration(waitTime), &WaitTimer::timerCallback, this, true, false);
+    }
+
+    WaitTimer(const WaitTimer&& other)
+    {
+        interrupted = false;
+        timeout = false;
+        waitTime = other.waitTime;
+        ros::NodeHandle nh;
+        timer = nh.createTimer(ros::Duration(waitTime), &WaitTimer::timerCallback, this, true, false);
+    }
+
     WaitTimer& operator=(const WaitTimer& other)
+    {
+        interrupted = false;
+        timeout = false;
+        waitTime = other.waitTime;
+        ros::NodeHandle nh;
+        timer = nh.createTimer(ros::Duration(waitTime), &WaitTimer::timerCallback, this, true, false);
+        return *this;
+    }
+
+    WaitTimer& operator=(const WaitTimer&& other)
     {
         interrupted = false;
         timeout = false;

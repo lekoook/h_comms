@@ -28,13 +28,11 @@ ReqMachine::ReqMachine(uint32_t reqSequence, uint16_t reqEntryId, std::string re
     reqEntryId(reqEntryId), 
     reqTarget(reqTarget), 
     currentState(new StartReqState()), 
-    transmitter(transmitter)
-{
-    receivedData.store(false);
-    isDestructed.store(false);
-    needReqeue.store(false);
-    waitTimer = WaitTimer(WAIT_TIME);
-}
+    transmitter(transmitter),
+    receivedData(false),
+    isDestructed(false),
+    needReqeue(false),
+    waitTimer(WaitTimer(WAIT_TIME)) {}
 
 ReqMachine::~ReqMachine()
 {

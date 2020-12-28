@@ -29,11 +29,9 @@ RespMachine::RespMachine(
     respTarget(respTarget),
     dataToSend(dataToSend),
     currentState(new StartRespState()), 
-    transmitter(transmitter)
-{
-    isDestructed.store(false);
-    waitTimer = WaitTimer(WAIT_TIME);
-}
+    transmitter(transmitter),
+    isDestructed(false),
+    waitTimer(WaitTimer(WAIT_TIME)) {}
 
 RespMachine::~RespMachine()
 {
