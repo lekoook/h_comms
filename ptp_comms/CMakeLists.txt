@@ -20,6 +20,7 @@ add_service_files(
   FILES
   TxData.srv
   RegisterPort.srv
+  Neighbors.srv
 )
 
 generate_messages(

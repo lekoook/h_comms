@@ -1,6 +1,7 @@
 #include <memory>
 #include "ptp_comms/TxData.h"
 #include "ptp_comms/RxData.h"
+#include "ptp_comms/Neighbors.h"
 #include "TxerTh.hpp"
 #include "RxerTh.hpp"
 #include "PortRegistry.hpp"
@@ -25,6 +26,14 @@ private:
     const double PING_INTERVAL = 1.0;
 
     /**
+     * @brief Maximum time between the last beacon broadcast received from a neighbor and the current time. Decides if a
+     *  neighbor is alive and nearby recently.
+     * @details This value should be sufficiently greater than PING_INTERVAL to allow some overhead from code execution.
+     * 
+     */
+    const double MAX_NEIGHB_TIME = 1.5;
+
+    /**
      * @brief Local address of this node.
      * 
      */
@@ -35,6 +44,12 @@ private:
      * 
      */
     ros::ServiceServer txService;
+
+    /**
+     * @brief ROS service server to allow querying of nearby neighbors.
+     * 
+     */
+    ros::ServiceServer neighborsService;
 
     /**
      * @brief Interface to transmit and receive data.
@@ -137,6 +152,29 @@ private:
         }
     }
 
+    /**
+     * @brief Callback for neighbors query service calls.
+     * 
+     * @param req Request message.
+     * @param resp Response message.
+     * @return true If there is at least one neighbor.
+     * @return false If there is no neighbor.
+     */
+    bool _neighb(ptp_comms::Neighbors::Request& req, ptp_comms::Neighbors::Response& resp)
+    {
+        Neighbor_M nb = cc->neighbors();
+        for (auto it : nb)
+        {
+            if ((ros::Time::now().toSec() - it.second.first < MAX_NEIGHB_TIME) && !std::isinf(it.second.second))
+            {
+                resp.names.push_back(it.first);
+                resp.timestamps.push_back(it.second.first);
+                resp.rssi.push_back(it.second.second);
+            }
+        }
+        return resp.names.size() > 0;
+    }
+
 public:
     /**
      * @brief Construct a new PTP object.
@@ -171,6 +209,11 @@ public:
         txService = nh.advertiseService<ptp_comms::TxData::Request, ptp_comms::TxData::Response>(
             "tx_data", 
             std::bind(&PTP::_txData, this, std::placeholders::_1, std::placeholders::_2)
+            );
+        
+        neighborsService = nh.advertiseService<ptp_comms::Neighbors::Request, ptp_comms::Neighbors::Response>(
+            "neighbors",
+            std::bind(&PTP::_neighb, this, std::placeholders::_1, std::placeholders::_2)
             );
     }
 };
