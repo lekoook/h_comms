@@ -173,6 +173,31 @@ private:
         {
             // TODO: Request MIT from ROS Service
             MIT mit;
+            std::string ns = ros::this_node::getNamespace();
+            if (ns == "/X1")
+            {
+                mit.update(1, 1, 1001);
+                mit.update(1, 2, 1002);
+                mit.update(1, 3, 1003);
+                mit.update(1, 4, 1004);
+                mit.update(1, 5, 1005);
+            }
+            else if (ns == "/X2")
+            {
+                mit.update(2, 1, 2001);
+                mit.update(2, 2, 2002);
+                mit.update(2, 3, 2003);
+                mit.update(2, 4, 2004);
+                mit.update(2, 5, 2005);
+            }
+            else
+            {
+                mit.update(3, 1, 3001);
+                mit.update(3, 2, 3002);
+                mit.update(3, 3, 3003);
+                mit.update(3, 4, 3004);
+                mit.update(3, 5, 3005);
+            }
 
             // Broadcast this MIT.
             std::vector<uint8_t> mitSer = mit.serialise();
@@ -244,7 +269,7 @@ private:
      */
     void _handleData(DataMsg& msg, std::string src)
     {
-        std::cout << "GOT DATA" << std::endl;
+        // std::cout << "GOT DATA" << std::endl;
         reqsMediator->notifyData(src, msg);
     }
 
@@ -256,7 +281,6 @@ private:
      */
     void _handleReq(ReqMsg& msg, std::string src)
     {
-        std::cout << "GOT REQUEST FOR: " << msg.reqSequence << " , " << msg.reqEntryId << std::endl;
         respsMediator->queueResp(msg.reqSequence, msg.reqEntryId, src);
     }
 
@@ -270,12 +294,12 @@ private:
     {
         if (msg.forReq)
         {
-            std::cout << "GOT ACK FOR REQ" << std::endl;
+            // std::cout << "GOT ACK FOR REQ" << std::endl;
             reqsMediator->notifyAck(src, msg);
         }
         else
         {
-            std::cout << "GOT ACK FOR DATA" << std::endl;
+            // std::cout << "GOT ACK FOR DATA" << std::endl;
             respsMediator->notifyAck(src, msg);
         }
     }
@@ -288,21 +312,19 @@ private:
      */
     void _handleAdv(AdvMsg& msg, std::string src)
     {
-        std::cout << "GOT ADV" << std::endl;
+        // std::cout << "GOT ADV" << std::endl;
         MIT mit;
         mit.deserialise(msg.data);
 
         // TODO: Compare incoming MIT with our own local one.
-
+        std::cout << "GOT ADV from " << src << std::endl;
         // Some example request
         MIT mock;
         auto v = mock.compare(mit);
-        reqsMediator->queueReq(1001, src);
-        reqsMediator->queueReq(1002, src);
-        reqsMediator->queueReq(1003, src);
-        reqsMediator->queueReq(1004, src);
-        reqsMediator->queueReq(1005, src);
-        reqsMediator->queueReq(1006, src);
+        for (auto val : v)
+        {
+            reqsMediator->queueReq(mock.convertToEntryId(val.first, val.second), src);
+        }
     }
 
 public:
