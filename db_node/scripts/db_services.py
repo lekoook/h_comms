@@ -2,31 +2,26 @@
 import rospy
 import sys
 
+import interface
 from db_node.msg import item, itemList
 
-from db_node.srv import Compare, CompareResponse
 from db_node.srv import GenerateMit, GenerateMitResponse
 from db_node.srv import RetrieveData, RetrieveDataResponse
 from db_node.srv import Write, WriteResponse
 
-class db_node:
+class db_services:
     def __init__(self,robotName="X1"):
         self.name = "/" + robotName
         print("Connecting to Postgres database...")
         #self.db_conn = self.connect_db()
         print("Completed\nPublishing Services...")
-        self.comp_ser = rospy.Service(self.name +'/db_comparison', Compare, self.comparison)
         self.gen_ser = rospy.Service(self.name +'/db_generate_mit', GenerateMit, self.generate_mit)
         self.read_ser = rospy.Service(self.name +'/db_retrieve_data', RetrieveData, self.retrieve_data)
-        self.wrote_ser = rospy.Service(self.name +'/db_write', Write, self.write)
+        self.wrote_ser = rospy.Service(self.name +'/db_write', Write, self.write_to_db)
         print("READY")
 
     def connect_db(self):
-        return psycopg2.connect(host="localhost",database=self.name[1:],user="postgres",password="Abcd1234")
-
-    def comparison(self,req):
-        mit = self.generate_mit()
-        return 
+        return interface.connect
 
     def generate_mit(self,req):
         return 
@@ -34,7 +29,7 @@ class db_node:
     def retrieve_data(self,req):
         return
 
-    def write(self,req):
+    def write_to_db(self,req):
         return
 
 if __name__ == "__main__":
@@ -46,5 +41,5 @@ if __name__ == "__main__":
     rospy.init_node('db_node')
     robotName = sys.argv[1]
     print("Robot Name:",robotName)
-    n = db_node(robotName)
+    n = db_services(robotName)
     rospy.spin()
