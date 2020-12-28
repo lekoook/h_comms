@@ -2,7 +2,6 @@
 
 void ReqMachine::_setWaitParams(uint32_t waitSeq, uint16_t waitEntryId)
 {
-    gotMsg = false;
     std::lock_guard<std::mutex> lock(mWaitParams);
     this->waitSeq = waitSeq;
     this->waitEntryId = waitEntryId;
@@ -34,6 +33,7 @@ ReqMachine::ReqMachine(uint32_t reqSequence, uint16_t reqEntryId, std::string re
     receivedData.store(false);
     isDestructed.store(false);
     needReqeue.store(false);
+    waitTimer = WaitTimer(WAIT_TIME);
 }
 
 ReqMachine::~ReqMachine()

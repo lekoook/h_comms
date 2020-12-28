@@ -27,7 +27,7 @@ StartReqState::~StartReqState() {}
 void StartReqState::run(ReqMachine& machine)
 {
     ReqMsg m(machine.reqSequence, machine.reqEntryId);
-    std::cout << "REQUESTOR: REQUESTING - " << m.reqSequence << " , " << m.reqEntryId << std::endl;
+    // std::cout << "REQUESTOR: REQUESTING - " << m.reqSequence << " , " << m.reqEntryId << std::endl;
     
     if (machine.transmitter->transmit(machine.reqTarget, m))
     {
@@ -49,24 +49,17 @@ WaitAckReqState::~WaitAckReqState() {}
 
 void WaitAckReqState::run(ReqMachine& machine)
 {
-    std::cout << "REQUESTOR: WAIT ACK REQ" << std::endl;
+    // std::cout << "REQUESTOR: WAIT ACK REQ" << std::endl;
     machine._setWaitParams(machine.reqSequence, machine.reqEntryId);
-    std::unique_lock<std::mutex> lock(machine.mGotMsg);
-    bool ackSuccess = machine.cvGotMsg.wait_for(
-        lock,
-        std::chrono::milliseconds(5000),
-        [&machine] () -> bool
-            {
-                return machine.gotMsg;
-            }
-    );
+    machine.waitTimer.wait();
 
-    if (ackSuccess)
+    if (machine.waitTimer.isInterrupted())
     {
         setState(machine, new WaitDataReqState());
     }
     else
     {
+        std::cout << "Requestor " << machine.reqSequence << " to " << machine.reqTarget << " for " << machine.reqEntryId << " REQ timeout" << std::endl;
         setState(machine, new RequeueReqState());
     }
 }
@@ -75,9 +68,7 @@ void WaitAckReqState::recvAck(ReqMachine& machine, AckMsg& ackMsg, std::string s
 {
     if (machine._checkWaitParams(ackMsg.ackSequence, ackMsg.ackEntryId))
     {
-        std::lock_guard<std::mutex> lock(machine.mGotMsg);
-        machine.gotMsg = true;
-        machine.cvGotMsg.notify_one();
+        machine.waitTimer.interrupt();
     }
 }
 
@@ -91,21 +82,12 @@ WaitDataReqState::~WaitDataReqState() {}
 
 void WaitDataReqState::run(ReqMachine& machine)
 {
-    std::cout << "REQUESTOR: WAIT DATA" << std::endl;
+    // std::cout << "REQUESTOR: WAIT DATA" << std::endl;
     machine._setWaitParams(machine.reqSequence, machine.reqEntryId);
-    std::unique_lock<std::mutex> lock(machine.mGotMsg);
-    bool dataSuccess = machine.cvGotMsg.wait_for(
-        lock,
-        std::chrono::milliseconds(1000),
-        [&machine] () -> bool
-            {
-                return machine.gotMsg;
-            }
-    );
+    machine.waitTimer.wait();
 
-    if (dataSuccess)
+    if (machine.waitTimer.isInterrupted())
     {
-        machine.receivedData.store(true);
         setState(machine, new SendAckReqState());
     }
     else
@@ -118,10 +100,9 @@ void WaitDataReqState::recvData(ReqMachine& machine, DataMsg& dataMsg, std::stri
 {
     if (machine._checkWaitParams(dataMsg.reqSequence, dataMsg.entryId))
     {
-        std::lock_guard<std::mutex> lock(machine.mGotMsg);
-        machine.gotMsg = true;
-        machine.cvGotMsg.notify_one();
+        machine.waitTimer.interrupt();
         machine.dataReceived = dataMsg;
+        machine.receivedData = true;
     }
 }
 
@@ -135,7 +116,7 @@ SendAckReqState::~SendAckReqState() {}
 
 void SendAckReqState::run(ReqMachine& machine)
 {
-    std::cout << "REQUESTOR: SEND DATA ACK" << std::endl;
+    // std::cout << "REQUESTOR: SEND DATA ACK" << std::endl;
     AckMsg msg(machine.reqSequence, machine.reqEntryId, false);
     machine.transmitter->transmit(machine.reqTarget, msg);
     setState(machine, new DestructReqState());
@@ -151,7 +132,7 @@ RequeueReqState::~RequeueReqState() {}
 
 void RequeueReqState::run(ReqMachine& machine)
 {
-    std::cout << "REQUESTOR: REQUEUE REQ" << std::endl;
+    std::cout << "REQUESTOR " << machine.reqSequence << ": REQUEUE REQ to " << machine.reqTarget << " for " << machine.reqEntryId << " DATA timeout" << std::endl;
     machine.needReqeue.store(true);
     setState(machine, new DestructReqState());
 }
@@ -166,7 +147,7 @@ DestructReqState::~DestructReqState() {}
 
 void DestructReqState::run(ReqMachine& machine)
 {
-    std::cout << "REQUESTOR: DESTRUCT" << std::endl;
+    // std::cout << "REQUESTOR: DESTRUCT" << std::endl;
     machine.isDestructed = true;
 }
 

@@ -11,6 +11,7 @@
 #include "messages/AckMsg.hpp"
 #include "messages/DataMsg.hpp"
 #include "ATransmitter.hpp"
+#include "WaitTimer.hpp"
 
 // Forward declaration of required class.
 class RespState;
@@ -34,6 +35,12 @@ private:
      * 
      */
     const uint8_t MAX_SEND_TRIES = 3;
+    
+    /**
+     * @brief Amount of time to wait before the wait timer elapses and callback is called.
+     * 
+     */
+    const double WAIT_TIME = 5.0;
 
     /**
      * @brief Sequence number of this response.
@@ -102,28 +109,16 @@ private:
     std::mutex mWaitParams;
 
     /**
-     * @brief Flag to help determine a correct DATA has been received.
-     * 
-     */
-    bool gotMsg = false;
-
-    /**
-     * @brief Mutex to protect DATA flag.
-     * 
-     */
-    std::mutex mGotMsg;
-
-    /**
-     * @brief Condition variable to assist with signalling of receiving correct DATA.
-     * 
-     */
-    std::condition_variable cvGotMsg;
-
-    /**
      * @brief The number of attempts to send DATA message.
      * 
      */
     uint8_t sendTries = 0;
+
+    /**
+     * @brief Timer to used to wait for acknowledgement of sent DATA.
+     * 
+     */
+    WaitTimer waitTimer;
 
     /**
      * @brief Sets the parameters of the DATA message to wait for. This method should be used to set the 

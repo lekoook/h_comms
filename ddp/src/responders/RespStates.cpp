@@ -24,7 +24,7 @@ StartRespState::~StartRespState() {}
 
 void StartRespState::run(RespMachine& machine)
 {
-    std::cout << "RESPONDER: START" << std::endl;
+    // std::cout << "RESPONDER: START" << std::endl;
     setState(machine, new SendAckReqRespState());
 }
 
@@ -38,7 +38,7 @@ SendAckReqRespState::~SendAckReqRespState() {}
 
 void SendAckReqRespState::run(RespMachine& machine)
 {
-    std::cout << "RESPONDER: PREPARE" << std::endl;
+    // std::cout << "RESPONDER: PREPARE" << std::endl;
     AckMsg msg(machine.respSequence, machine.respEntryId);
     machine.transmitter->transmit(machine.respTarget, msg);
     setState(machine, new SendDataRespState());
@@ -54,7 +54,7 @@ SendDataRespState::~SendDataRespState() {}
 
 void SendDataRespState::run(RespMachine& machine)
 {
-    std::cout << "RESPONDER: SEND DATA" << std::endl;
+    // std::cout << "RESPONDER: SEND DATA" << std::endl;
     machine.transmitter->transmit(machine.respTarget, machine.dataToSend);
     machine.sendTries++;
     setState(machine, new WaitAckDataRespState());
@@ -70,19 +70,11 @@ WaitAckDataRespState::~WaitAckDataRespState() {}
 
 void WaitAckDataRespState::run(RespMachine& machine)
 {
-    std::cout << "RESPONDER: WAIT ACK DATA" << std::endl;
+    // std::cout << "RESPONDER: WAIT ACK DATA" << std::endl;
     machine._setWaitParams(machine.respSequence, machine.respEntryId);
-    std::unique_lock<std::mutex> lock(machine.mGotMsg);
-    bool ackSuccess = machine.cvGotMsg.wait_for(
-        lock,
-        std::chrono::milliseconds(5000),
-        [&machine] () -> bool
-            {
-                return machine.gotMsg;
-            }
-    );
+    machine.waitTimer.wait();
 
-    if (ackSuccess || machine.sendTries >= machine.MAX_SEND_TRIES)
+    if (machine.waitTimer.isInterrupted() || machine.sendTries >= machine.MAX_SEND_TRIES)
     {
         setState(machine, new DestructRespState());
     }
@@ -96,9 +88,7 @@ void WaitAckDataRespState::recvAck(RespMachine& machine, AckMsg& ackMsg, std::st
 {
     if (machine._checkWaitParams(ackMsg.ackSequence, ackMsg.ackEntryId))
     {
-        std::lock_guard<std::mutex> lock(machine.mGotMsg);
-        machine.gotMsg = true;
-        machine.cvGotMsg.notify_one();
+        machine.waitTimer.interrupt();
     }
 }
 
@@ -112,7 +102,7 @@ DestructRespState::~DestructRespState() {}
 
 void DestructRespState::run(RespMachine& machine)
 {
-    std::cout << "RESPONDER: DESTRUCT" << std::endl;
+    // std::cout << "RESPONDER: DESTRUCT" << std::endl;
     machine.isDestructed = true;
 }
 

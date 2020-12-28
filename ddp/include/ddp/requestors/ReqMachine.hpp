@@ -1,6 +1,7 @@
 #ifndef H_REQ_MACHINE
 #define H_REQ_MACHINE
 
+#include "ros/ros.h"
 #include <cstdint>
 #include <string>
 #include <mutex>
@@ -10,6 +11,7 @@
 #include "messages/AckMsg.hpp"
 #include "messages/DataMsg.hpp"
 #include "ATransmitter.hpp"
+#include "WaitTimer.hpp"
 
 // Forward declaration of required class.
 class ReqState;
@@ -29,6 +31,12 @@ class ReqMachine
     friend class DestructReqState;
 
 private:
+    /**
+     * @brief Amount of time to wait before the wait timer elapses and callback is called.
+     * 
+     */
+    const double WAIT_TIME = 5.0;
+
     /**
      * @brief Sequence number of this request.
      * 
@@ -96,28 +104,16 @@ private:
     std::mutex mWaitParams;
 
     /**
-     * @brief Flag to help determine a correct ACK or DATA has been received.
-     * 
-     */
-    bool gotMsg = false;
-
-    /**
      * @brief Flag to determine if the the REQUEUE state was reached.
      * 
      */
     std::atomic<bool> needReqeue;
 
     /**
-     * @brief Mutex to protect ACK or DATA flag.
+     * @brief Timer used to wait for ACK or DATA.
      * 
      */
-    std::mutex mGotMsg;
-
-    /**
-     * @brief Condition variable to assist with signalling of receiving correct ACK or DATA.
-     * 
-     */
-    std::condition_variable cvGotMsg;
+    WaitTimer waitTimer;
 
     /**
      * @brief Sets the parameters of the ACK or DATA message to wait for. This method should be used to set the 
@@ -138,6 +134,25 @@ private:
      * @return false If the parameters do not match.
      */
     bool _checkWaitParams(uint32_t waitSeq, uint16_t waitEntryId);
+
+    /**
+     * @brief Starts the wait timer.
+     * 
+     */
+    // void _startTimer();
+
+    /**
+     * @brief Stops the wait timer.
+     * 
+     */
+    // void _stopTimer();
+
+    /**
+     * @brief Callback for the wait timer.
+     * 
+     * @param event Event information when the timer elapses.
+     */
+    // void _waitTimerCb(const ros::TimerEvent& event);
 
 public:
     /**

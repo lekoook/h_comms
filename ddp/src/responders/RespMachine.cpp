@@ -2,7 +2,6 @@
 
 void RespMachine::_setWaitParams(uint32_t waitSeq, uint16_t waitEntryId)
 {
-    gotMsg = false;
     std::lock_guard<std::mutex> lock(mWaitParams);
     this->waitSeq = waitSeq;
     this->waitEntryId = waitEntryId;
@@ -33,6 +32,7 @@ RespMachine::RespMachine(
     transmitter(transmitter)
 {
     isDestructed.store(false);
+    waitTimer = WaitTimer(WAIT_TIME);
 }
 
 RespMachine::~RespMachine()
