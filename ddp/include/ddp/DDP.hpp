@@ -94,6 +94,12 @@ private:
     std::mutex mRxQ;
 
     /**
+     * @brief Condition variable to signal the main thread that new message has been received.
+     * 
+     */
+    std::condition_variable cvRxQ;
+
+    /**
      * @brief Advertisement thread that will broadcast the local robot's MIT regularly.
      * 
      */
@@ -128,6 +134,7 @@ private:
     {
         std::lock_guard<std::mutex> lock(mRxQ);
         rxQ.push(RxQueueData(data, src));
+        cvRxQ.notify_one();
     }
 
     /**
@@ -139,22 +146,19 @@ private:
         // Main thread execution.
         while(mainRunning.load())
         {
-            bool available = false;
             RxQueueData rxData;
             {
-                std::lock_guard<std::mutex> qLock(mRxQ);
-                if (!rxQ.empty())
-                {
-                    available = true;
-                    rxData = rxQ.front();
-                    rxQ.pop();
-                }
+                std::unique_lock<std::mutex> lock(mRxQ);
+                cvRxQ.wait(lock,
+                    [this] () -> bool
+                    {
+                        return !rxQ.empty();
+                    });
+                rxData = rxQ.front();
+                rxQ.pop();
             }
 
-            if (available)
-            {
-                _handleRxData(rxData.src, rxData.data);
-            }
+            _handleRxData(rxData.src, rxData.data);
         }
     }
 
