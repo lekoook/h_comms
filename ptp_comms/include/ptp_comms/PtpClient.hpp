@@ -37,6 +37,12 @@ private:
     const uint32_t MAX_QUEUE_SIZE = 100;
 
     /**
+     * @brief Time between each attempt to register at constructor.
+     * 
+     */
+    const double RETRY_INTERVAL = 3.0f;
+
+    /**
      * @brief Prefix string for all reception topics.
      * 
      */
@@ -161,10 +167,18 @@ public:
      * @brief Construct a new Ptp Client object.
      * 
      * @param port Port number to use.
+     * @param autoRetry If set to true, this call will be blocking until registration is successful.
      */
-    PtpClient(uint16_t port) : localPort(port)
+    PtpClient(uint16_t port, bool autoRetry=false) : localPort(port)
     {
-        _reg();
+        while (!_reg())
+        {
+            if (!autoRetry)
+            {
+                break;
+            }
+            ros::Duration(RETRY_INTERVAL).sleep();
+        }
     }
 
     /**
