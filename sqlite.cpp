@@ -78,7 +78,6 @@ class Database {
 
 		/** Insert a vector of rows. */
 		void insert(std::vector<Schema> rows) {
-			std::string zSql;
 			for (Schema row : rows) {
 				std::ostringstream oss;
 				oss << "insert into metadata values(" << row.id << "," << row.timestamp << ",'" << row.data << "');";
@@ -88,7 +87,6 @@ class Database {
 
 		/** Update a vector of rows. */
 		void update(std::vector<Schema> rows) {
-			std::string zSql;
 			for (Schema row : rows) {
 				std::ostringstream oss;
 				oss << "update metadata set timestamp=" << row.timestamp << ", data='" << row.data << "' where id=" << row.id << ";";
