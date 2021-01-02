@@ -94,6 +94,20 @@ class Database {
 			}
 		}
 
+		/** Select rows by their ids. */
+		std::vector<Schema> select(std::vector<uint16_t> ids) {
+			std::ostringstream oss;
+			oss << "select * from metadata where id in (";
+			for (size_t i=0; i<ids.size(); ++i) {
+				if (i != 0) {
+					oss << ",";
+				}
+				oss << ids[i];
+			}
+			oss << ");";
+			return execute(oss.str());
+		}
+
 		void print(std::vector<Schema> rows, std::ostream& os = std::cout) const {
 			for (Schema row : rows) {
 				os << row.id << ',' << row.timestamp << ',' << row.data << std::endl;
@@ -114,6 +128,7 @@ int main(int argc, char** argv)
 	Database db = Database();
 	std::cout << db << std::endl;
 	db.insert({Schema{1001, 1609590167, "data1"}, Schema{1002, 1609590168, "data2"}, Schema{1003, 1609590169, "data3"}, Schema{1004, 1609590170, "data4"}, Schema{1005, 1609590171, "data5"}});
-	//db.update({Schema{1001, 1609590172, "data6"}, Schema{1002, 1609590173, "data7"}, Schema{1003, 1609590174, "data8"}, Schema{1004, 1609590175, "data9"}, Schema{1005, 1609590176, "data10"}});
+	db.update({Schema{1001, 1609590172, "data6"}, Schema{1002, 1609590173, "data7"}, Schema{1003, 1609590174, "data8"}, Schema{1004, 1609590175, "data9"}, Schema{1005, 1609590176, "data10"}});
+	db.print(db.select({1001, 1007}));
 	std::cout << db << std::endl;
 }
