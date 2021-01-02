@@ -94,14 +94,18 @@ class Database {
 			}
 		}
 
+		void print(std::vector<Schema> rows, std::ostream& os = std::cout) const {
+			for (Schema row : rows) {
+				os << row.id << ',' << row.timestamp << ',' << row.data << std::endl;
+			}
+		}
+
 		/** Return all rows as an `ostream`. */
 		friend std::ostream& operator<<(std::ostream& os, const Database& obj);
 };
 
 std::ostream& operator<<(std::ostream& os, const Database& obj) { 
-	for (Schema row : obj.execute("select * from metadata")) {
-		os << row.id << ',' << row.timestamp << ',' << row.data << std::endl;
-	}
+	obj.print(obj.execute("select * from metadata"), os);
 	return os;
 }
 
