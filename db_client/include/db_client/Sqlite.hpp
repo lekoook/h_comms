@@ -41,6 +41,17 @@ class Database {
             execute("create table if not exists metadata (id int2 primary key not null, timestamp int8 not null, data text not null);");
         }
 
+    public:
+
+        Database() {
+            open();
+            createTable();
+        }
+
+        ~Database() {
+            close();
+        }
+
         /** Execute only one SQL statement.
          * @param zSql SQL statement, UTF-8 encoded.
          */
@@ -62,17 +73,6 @@ class Database {
             dieOnError(rc, SQLITE_DONE);
             sqlite3_finalize(stmt);
             return rows;
-        }
-
-    public:
-
-        Database() {
-            open();
-            createTable();
-        }
-
-        ~Database() {
-            close();
         }
 
         /** Insert a vector of rows. */
