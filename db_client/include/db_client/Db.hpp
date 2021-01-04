@@ -184,12 +184,12 @@ class Db {
 
         /** Select all timestamps. */
         MIT select() {
-            return execute("select id, timestamp from metadata");
+            return execute("select id, timestamp from metadata;");
         }
 
         /** Select all data. */
         ROWS_ID_DATA select() {
-            return execute("select id, data from metadata");
+            return execute("select id, data from metadata;");
         }
 
         void print(std::vector<Schema> rows, std::ostream& os = std::cout) const {
