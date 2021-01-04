@@ -8,6 +8,14 @@
 typedef ROW_ID_DATA std::pair<uint16_t, std::string>
 typedef ROWS_ID_DATA std::vector<ROW_ID_DATA>
 
+// Define tags per https://en.cppreference.com/w/cpp/thread/lock_tag
+struct SUBROW_SCHEMA_T { explicit SUBROW_SCHEMA_T() = default; };
+struct SUBROW_TIMESTAMP_T { explicit SUBROW_TIMESTAMP_T() = default; };
+struct SUBROW_DATA_T { explicit SUBROW_DATA_T() = default; };
+inline constexpr SUBROW_SCHEMA_T SUBROW_SCHEMA {};
+inline constexpr SUBROW_TIMESTAMP_T SUBROW_TIMESTAMP {};
+inline constexpr SUBROW_DATA_T SUBROW_DATA {};
+
 struct Schema {
     uint16_t id;
     uint64_t timestamp;
@@ -42,13 +50,13 @@ class Db {
 
         /** Create table if it does not exist. */
         void createTable() {
-            execute("create table if not exists metadata (id int2 primary key not null, timestamp int8 not null, data text not null);");
+            execute("create table if not exists metadata (id int2 primary key not null, timestamp int8 not null, data text not null);", SUBROW_SCHEMA);
         }
 
         /** Execute only one SQL statement.
          * @param zSql SQL statement, UTF-8 encoded.
          */
-        std::vector<Schema> execute(std::string zSql) const {
+        std::vector<Schema> execute(std::string zSql, SUBROW_SCHEMA_T t) const {
             std::vector<Schema> rows;
             sqlite3_stmt* stmt;
             int32_t rc;
@@ -72,7 +80,7 @@ class Db {
          * @param zSql SQL statement, UTF-8 encoded.
          * @return MIT.
          */
-        MIT execute(std::string zSql) const {
+        MIT execute(std::string zSql, SUBROW_MIT_T t) const {
             MIT mit = MIT();
             sqlite3_stmt* stmt;
             int32_t rc;
@@ -92,7 +100,7 @@ class Db {
          * @param zSql SQL statement, UTF-8 encoded.
          * @return ROWS_ID_DATA.
          */
-        ROWS_ID_DATA execute(std::string zSql) const {
+        ROWS_ID_DATA execute(std::string zSql, SUBROW_DATA_T t) const {
             ROWS_ID_DATA rows = ROWS_ID_DATA();
             sqlite3_stmt* stmt;
             int32_t rc;
@@ -127,7 +135,7 @@ class Db {
             for (Schema row : rows) {
                 std::ostringstream oss;
                 oss << "insert into metadata values(" << row.id << "," << row.timestamp << ",'" << row.data << "');";
-                execute(oss.str());
+                execute(oss.str(), SUBROW_SCHEMA);
             }
         }
 
@@ -136,12 +144,12 @@ class Db {
             for (Schema row : rows) {
                 std::ostringstream oss;
                 oss << "update metadata set timestamp=" << row.timestamp << ", data='" << row.data << "' where id=" << row.id << ";";
-                execute(oss.str());
+                execute(oss.str(), SUBROW_SCHEMA);
             }
         }
 
         /** Select rows by their ids. */
-        std::vector<Schema> select(std::vector<uint16_t> ids) {
+        std::vector<Schema> select(std::vector<uint16_t> ids, SUBROW_SCHEMA_T t) {
             std::ostringstream oss;
             oss << "select * from metadata where id in (";
             for (size_t i=0; i<ids.size(); ++i) {
@@ -151,11 +159,11 @@ class Db {
                 oss << ids[i];
             }
             oss << ");";
-            return execute(oss.str());
+            return execute(oss.str(), t);
         }
 
         /** Select timestamps by their ids. */
-        MIT select(std::vector<uint16_t> ids) {
+        MIT select(std::vector<uint16_t> ids, SUBROW_MIT_T t) {
             std::ostringstream oss;
             oss << "select id, timestamp from metadata where id in (";
             for (size_t i=0; i<ids.size(); ++i) {
@@ -165,11 +173,11 @@ class Db {
                 oss << ids[i];
             }
             oss << ");";
-            return execute(oss.str());
+            return execute(oss.str(), t);
         }
 
         /** Select data by their ids. */
-        ROWS_ID_DATA select(std::vector<uint16_t> ids) {
+        ROWS_ID_DATA select(std::vector<uint16_t> ids, SUBROW_DATA_T t) {
             std::ostringstream oss;
             oss << "select id, data from metadata where id in (";
             for (size_t i=0; i<ids.size(); ++i) {
@@ -179,17 +187,17 @@ class Db {
                 oss << ids[i];
             }
             oss << ");";
-            return execute(oss.str());
+            return execute(oss.str(), t);
         }
 
         /** Select all timestamps. */
-        MIT select() {
-            return execute("select id, timestamp from metadata;");
+        MIT select(SUBROW_MIT_T t) {
+            return execute("select id, timestamp from metadata;", t);
         }
 
         /** Select all data. */
-        ROWS_ID_DATA select() {
-            return execute("select id, data from metadata;");
+        ROWS_ID_DATA select(SUBROW_DATA_T t) {
+            return execute("select id, data from metadata;", t);
         }
 
         void print(std::vector<Schema> rows, std::ostream& os = std::cout) const {
@@ -203,6 +211,6 @@ class Db {
 };
 
 std::ostream& operator<<(std::ostream& os, const Db& obj) { 
-    obj.print(obj.execute("select * from metadata"), os);
+    obj.print(obj.execute("select * from metadata", SUBROW_SCHEMA), os);
     return os;
 }
