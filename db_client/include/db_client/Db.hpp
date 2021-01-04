@@ -3,6 +3,10 @@
 #include <sstream>
 #include <vector>
 #include <sqlite3.h>
+#include "MIT.hpp"
+
+typedef ROW_ID_DATA std::pair<uint16_t, std::string>
+typedef ROWS_ID_DATA std::vector<ROW_ID_DATA>
 
 struct Schema {
     uint16_t id;
@@ -64,6 +68,49 @@ class Db {
             return rows;
         }
 
+        /** Execute only one SQL statement.
+         * @param zSql SQL statement, UTF-8 encoded.
+         * @return MIT.
+         */
+        MIT execute(std::string zSql) const {
+            MIT mit = MIT();
+            sqlite3_stmt* stmt;
+            int32_t rc;
+
+            rc = sqlite3_prepare_v2(db, zSql.c_str(), -1, &stmt, NULL);
+            dieOnError(rc);
+            while ((rc = sqlite3_step(stmt)) == SQLITE_ROW) {
+                mit.update(sqlite3_column_int(stmt, 0), sqlite3_column_int(stmt, 1));
+            }
+
+            dieOnError(rc, SQLITE_DONE);
+            sqlite3_finalize(stmt);
+            return mit;
+        }
+
+        /** Execute only one SQL statement.
+         * @param zSql SQL statement, UTF-8 encoded.
+         * @return ROWS_ID_DATA.
+         */
+        ROWS_ID_DATA execute(std::string zSql) const {
+            ROWS_ID_DATA rows = ROWS_ID_DATA();
+            sqlite3_stmt* stmt;
+            int32_t rc;
+
+            rc = sqlite3_prepare_v2(db, zSql.c_str(), -1, &stmt, NULL);
+            dieOnError(rc);
+            while ((rc = sqlite3_step(stmt)) == SQLITE_ROW) {
+                rows.push_back(ROW_ID_DATA{
+                        sqlite3_column_int(stmt, 0),
+                        reinterpret_cast<const char*>(sqlite3_column_text(stmt, 2))
+                        });
+            }
+
+            dieOnError(rc, SQLITE_DONE);
+            sqlite3_finalize(stmt);
+            return rows;
+        }
+
     public:
 
         Db() {
@@ -97,6 +144,34 @@ class Db {
         std::vector<Schema> select(std::vector<uint16_t> ids) {
             std::ostringstream oss;
             oss << "select * from metadata where id in (";
+            for (size_t i=0; i<ids.size(); ++i) {
+                if (i != 0) {
+                    oss << ",";
+                }
+                oss << ids[i];
+            }
+            oss << ");";
+            return execute(oss.str());
+        }
+
+        /** Select timestamps by their ids. */
+        MIT select(std::vector<uint16_t> ids) {
+            std::ostringstream oss;
+            oss << "select id, timestamp from metadata where id in (";
+            for (size_t i=0; i<ids.size(); ++i) {
+                if (i != 0) {
+                    oss << ",";
+                }
+                oss << ids[i];
+            }
+            oss << ");";
+            return execute(oss.str());
+        }
+
+        /** Select data by their ids. */
+        ROWS_ID_DATA select(std::vector<uint16_t> ids) {
+            std::ostringstream oss;
+            oss << "select id, data from metadata where id in (";
             for (size_t i=0; i<ids.size(); ++i) {
                 if (i != 0) {
                     oss << ",";
