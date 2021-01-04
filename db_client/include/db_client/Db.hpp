@@ -6,9 +6,24 @@
 #include "MIT.hpp"
 
 class Db {
-    typedef ROW_ID_DATA std::pair<uint16_t, std::string>
-    typedef ROWS_ID_DATA std::vector<ROW_ID_DATA>
-    
+
+    // Singles.
+    typedef RC int32_t;
+    typedef ID uint16_t;
+    typedef TIMESTAMP uint64_t;
+    typedef DATA std::string;
+    typedef ROW_ID_DATA std::pair<ID, DATA>;
+    struct Schema {
+        ID id;
+        TIMESTAMP timestamp;
+        DATA data;
+    };
+
+    // Plurals.
+    typedef IDS std::vector<uint16_t>;
+    typedef ROWS_ID_DATA std::vector<ROW_ID_DATA>;
+    typedef SCHEMAS std::vector<Schema>;
+
     // Define tags per https://en.cppreference.com/w/cpp/thread/lock_tag
     struct SUBROW_SCHEMA_T { explicit SUBROW_SCHEMA_T() = default; };
     struct SUBROW_TIMESTAMP_T { explicit SUBROW_TIMESTAMP_T() = default; };
@@ -16,12 +31,6 @@ class Db {
     inline constexpr SUBROW_SCHEMA_T SUBROW_SCHEMA {};
     inline constexpr SUBROW_TIMESTAMP_T SUBROW_TIMESTAMP {};
     inline constexpr SUBROW_DATA_T SUBROW_DATA {};
-    
-    struct Schema {
-        uint16_t id;
-        uint64_t timestamp;
-        std::string data;
-    };
 
     private:
         sqlite3* db;
@@ -31,7 +40,7 @@ class Db {
          * @param rc Result code.
          * @param rcNonError Result code to compare with `rc`. Default value is `SQLITE_OK`. Other values are `SQLITE_ROW`, and `SQLITE_DONE`.
          */
-        void dieOnError(int32_t rc, int32_t rcNonError = SQLITE_OK) const {
+        void dieOnError(RC rc, RC rcNonError = SQLITE_OK) const {
             if (rc != rcNonError) {
                 std::cerr << "Dying, error: " << sqlite3_errmsg(db) << std::endl;
                 exit(-1);
@@ -56,10 +65,10 @@ class Db {
         /** Execute only one SQL statement.
          * @param zSql SQL statement, UTF-8 encoded.
          */
-        std::vector<Schema> execute(std::string zSql, SUBROW_SCHEMA_T t) const {
-            std::vector<Schema> rows;
+        SCHEMAS execute(std::string zSql, SUBROW_SCHEMA_T t) const {
+            SCHEMAS rows;
             sqlite3_stmt* stmt;
-            int32_t rc;
+            RC rc;
 
             rc = sqlite3_prepare_v2(db, zSql.c_str(), -1, &stmt, NULL);
             dieOnError(rc);
@@ -83,7 +92,7 @@ class Db {
         MIT execute(std::string zSql, SUBROW_MIT_T t) const {
             MIT mit = MIT();
             sqlite3_stmt* stmt;
-            int32_t rc;
+            RC rc;
 
             rc = sqlite3_prepare_v2(db, zSql.c_str(), -1, &stmt, NULL);
             dieOnError(rc);
@@ -103,7 +112,7 @@ class Db {
         ROWS_ID_DATA execute(std::string zSql, SUBROW_DATA_T t) const {
             ROWS_ID_DATA rows = ROWS_ID_DATA();
             sqlite3_stmt* stmt;
-            int32_t rc;
+            RC rc;
 
             rc = sqlite3_prepare_v2(db, zSql.c_str(), -1, &stmt, NULL);
             dieOnError(rc);
@@ -131,7 +140,7 @@ class Db {
         }
 
         /** Insert a vector of rows. */
-        void insert(std::vector<Schema> rows) {
+        void insert(SCHEMAS rows) {
             for (Schema row : rows) {
                 std::ostringstream oss;
                 oss << "insert into metadata values(" << row.id << "," << row.timestamp << ",'" << row.data << "');";
@@ -140,7 +149,7 @@ class Db {
         }
 
         /** Update a vector of rows. */
-        void update(std::vector<Schema> rows) {
+        void update(SCHEMAS rows) {
             for (Schema row : rows) {
                 std::ostringstream oss;
                 oss << "update metadata set timestamp=" << row.timestamp << ", data='" << row.data << "' where id=" << row.id << ";";
@@ -149,7 +158,7 @@ class Db {
         }
 
         /** Select rows by their ids. */
-        std::vector<Schema> select(std::vector<uint16_t> ids, SUBROW_SCHEMA_T t) {
+        SCHEMAS select(IDS ids, SUBROW_SCHEMA_T t) {
             std::ostringstream oss;
             oss << "select * from metadata where id in (";
             for (size_t i=0; i<ids.size(); ++i) {
@@ -163,7 +172,7 @@ class Db {
         }
 
         /** Select timestamps by their ids. */
-        MIT select(std::vector<uint16_t> ids, SUBROW_MIT_T t) {
+        MIT select(IDS ids, SUBROW_MIT_T t) {
             std::ostringstream oss;
             oss << "select id, timestamp from metadata where id in (";
             for (size_t i=0; i<ids.size(); ++i) {
@@ -177,7 +186,7 @@ class Db {
         }
 
         /** Select data by their ids. */
-        ROWS_ID_DATA select(std::vector<uint16_t> ids, SUBROW_DATA_T t) {
+        ROWS_ID_DATA select(IDS ids, SUBROW_DATA_T t) {
             std::ostringstream oss;
             oss << "select id, data from metadata where id in (";
             for (size_t i=0; i<ids.size(); ++i) {
@@ -200,7 +209,7 @@ class Db {
             return execute("select id, data from metadata;", t);
         }
 
-        void print(std::vector<Schema> rows, std::ostream& os = std::cout) const {
+        void print(SCHEMAS rows, std::ostream& os = std::cout) const {
             for (Schema row : rows) {
                 os << row.id << ',' << row.timestamp << ',' << row.data << std::endl;
             }
