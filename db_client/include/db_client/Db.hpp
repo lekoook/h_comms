@@ -182,6 +182,16 @@ class Db {
             return execute(oss.str());
         }
 
+        /** Select all timestamps. */
+        MIT select() {
+            return execute("select id, timestamp from metadata");
+        }
+
+        /** Select all data. */
+        ROWS_ID_DATA select() {
+            return execute("select id, data from metadata");
+        }
+
         void print(std::vector<Schema> rows, std::ostream& os = std::cout) const {
             for (Schema row : rows) {
                 os << row.id << ',' << row.timestamp << ',' << row.data << std::endl;
