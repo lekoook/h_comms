@@ -5,24 +5,24 @@
 #include <sqlite3.h>
 #include "MIT.hpp"
 
-typedef ROW_ID_DATA std::pair<uint16_t, std::string>
-typedef ROWS_ID_DATA std::vector<ROW_ID_DATA>
-
-// Define tags per https://en.cppreference.com/w/cpp/thread/lock_tag
-struct SUBROW_SCHEMA_T { explicit SUBROW_SCHEMA_T() = default; };
-struct SUBROW_TIMESTAMP_T { explicit SUBROW_TIMESTAMP_T() = default; };
-struct SUBROW_DATA_T { explicit SUBROW_DATA_T() = default; };
-inline constexpr SUBROW_SCHEMA_T SUBROW_SCHEMA {};
-inline constexpr SUBROW_TIMESTAMP_T SUBROW_TIMESTAMP {};
-inline constexpr SUBROW_DATA_T SUBROW_DATA {};
-
-struct Schema {
-    uint16_t id;
-    uint64_t timestamp;
-    std::string data;
-};
-
 class Db {
+    typedef ROW_ID_DATA std::pair<uint16_t, std::string>
+    typedef ROWS_ID_DATA std::vector<ROW_ID_DATA>
+    
+    // Define tags per https://en.cppreference.com/w/cpp/thread/lock_tag
+    struct SUBROW_SCHEMA_T { explicit SUBROW_SCHEMA_T() = default; };
+    struct SUBROW_TIMESTAMP_T { explicit SUBROW_TIMESTAMP_T() = default; };
+    struct SUBROW_DATA_T { explicit SUBROW_DATA_T() = default; };
+    inline constexpr SUBROW_SCHEMA_T SUBROW_SCHEMA {};
+    inline constexpr SUBROW_TIMESTAMP_T SUBROW_TIMESTAMP {};
+    inline constexpr SUBROW_DATA_T SUBROW_DATA {};
+    
+    struct Schema {
+        uint16_t id;
+        uint64_t timestamp;
+        std::string data;
+    };
+
     private:
         sqlite3* db;
 
