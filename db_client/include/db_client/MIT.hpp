@@ -129,6 +129,18 @@ public:
     }
 
     /**
+     * @brief Updates a robot ID and data type number pair along with the timestamp information into the table. Create a new entry if it does not to exist.
+     * 
+     * @param entryId Entry ID of entry.
+     * @param timestamp Timestamp information to insert.
+     */
+    void update(uint16_t entryId, uint64_t timestamp)
+    {
+        std::lock_guard<std::mutex> lock(mTable);
+        table[entryId] = timestamp;
+    }
+
+    /**
      * @brief Get a set of table entry IDs.
      * 
      * @return std::set<uint16_t> Set of entry IDs current in the table.
