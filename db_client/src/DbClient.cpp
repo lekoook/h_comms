@@ -1,5 +1,5 @@
-#include "../include/db_client/MIT.h"
-#include "../include/db_client/Sqlite.h"
+#include "../include/db_client/MIT.hpp"
+#include "../include/db_client/Db.hpp"
 
 class DbClient {
     private:

@@ -10,7 +10,7 @@ struct Schema {
     std::string data;
 };
 
-class Database {
+class Db {
     private:
         sqlite3* db;
 
@@ -43,12 +43,12 @@ class Database {
 
     public:
 
-        Database() {
+        Db() {
             open();
             createTable();
         }
 
-        ~Database() {
+        ~Db() {
             close();
         }
 
@@ -114,10 +114,10 @@ class Database {
         }
 
         /** Return all rows as an `ostream`. */
-        friend std::ostream& operator<<(std::ostream& os, const Database& obj);
+        friend std::ostream& operator<<(std::ostream& os, const Db& obj);
 };
 
-std::ostream& operator<<(std::ostream& os, const Database& obj) { 
+std::ostream& operator<<(std::ostream& os, const Db& obj) { 
     obj.print(obj.execute("select * from metadata"), os);
     return os;
 }
