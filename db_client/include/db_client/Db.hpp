@@ -152,23 +152,13 @@ class Db {
             close();
         }
 
-        /** Insert a vector of rows. */
-        tl::optional<bool> insert(SCHEMAS rows) {
+        /** Upsert a vector of rows.
+         * Requires SQLite version >=3.24.0.
+         */
+        tl::optional<bool> upsert(SCHEMAS rows) {
             for (Schema row : rows) {
                 std::ostringstream oss;
-                oss << "insert into metadata values(" << row.id << "," << row.timestamp << ",'" << row.data << "');";
-                if (!executeSchemas(oss.str())) {
-                    return tl::nullopt;
-                }
-            }
-            return false;
-        }
-
-        /** Update a vector of rows. */
-        tl::optional<bool> update(SCHEMAS rows) {
-            for (Schema row : rows) {
-                std::ostringstream oss;
-                oss << "update metadata set timestamp=" << row.timestamp << ", data='" << row.data << "' where id=" << row.id << ";";
+                oss << "insert into metadata values(" << row.id << "," << row.timestamp << ",'" << row.data << "') on conflict(id) do update set timestamp=excluded.timestamp, data=excluded.data;";
                 if (!executeSchemas(oss.str())) {
                     return tl::nullopt;
                 }

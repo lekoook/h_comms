@@ -16,5 +16,5 @@ int main(){
     std::vector<uint16_t> v1;
     v1.push_back(20314);
 
-    d.insert(v);
+    d.upsert(v);
 }    
