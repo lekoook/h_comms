@@ -4,13 +4,13 @@
 #include <cstdint>
 
 int main(){
-    Db d;
-    Db::Schema s;
+    db_client::Db d;
+    db_client::Db::Schema s;
     s.id = 20314;
     s.timestamp = 22110304;
     s.data = "This is data";
 
-    Db::SCHEMAS v;
+    db_client::Db::SCHEMAS v;
     v.push_back(s);
 
     std::vector<uint16_t> v1;
