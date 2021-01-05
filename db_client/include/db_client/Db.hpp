@@ -6,13 +6,13 @@
 #include "MIT.hpp"
 
 class Db {
-
+    public:
     // Singles.
-    typedef RC int32_t;
-    typedef ID uint16_t;
-    typedef TIMESTAMP uint64_t;
-    typedef DATA std::string;
-    typedef ROW_ID_DATA std::pair<ID, DATA>;
+    typedef int32_t RC;
+    typedef uint16_t ID;
+    typedef uint64_t TIMESTAMP;
+    typedef std::string DATA;
+    typedef std::pair<ID, DATA> ROW_ID_DATA;
     struct Schema {
         ID id;
         TIMESTAMP timestamp;
@@ -20,9 +20,9 @@ class Db {
     };
 
     // Plurals.
-    typedef IDS std::vector<uint16_t>;
-    typedef ROWS_ID_DATA std::vector<ROW_ID_DATA>;
-    typedef SCHEMAS std::vector<Schema>;
+    typedef std::vector<uint16_t> IDS;
+    typedef std::vector<ROW_ID_DATA> ROWS_ID_DATA;
+    typedef std::vector<Schema> SCHEMAS;
 
     private:
         sqlite3* db;
@@ -51,7 +51,7 @@ class Db {
 
         /** Create table if it does not exist. */
         void createTable() {
-            execute("create table if not exists metadata (id int2 primary key not null, timestamp int8 not null, data text not null);", SUBROW_SCHEMA);
+            executeSchemas("create table if not exists metadata (id int2 primary key not null, timestamp int8 not null, data text not null);");
         }
 
         /** Execute only one SQL statement.
@@ -81,8 +81,8 @@ class Db {
          * @param zSql SQL statement, UTF-8 encoded.
          * @return MIT.
          */
-        MIT executeMit(std::string zSql) const {
-            MIT mit = MIT();
+        MIT executeMit(std::string zSql){
+            MIT mit;
             sqlite3_stmt* stmt;
             RC rc;
 
@@ -200,18 +200,4 @@ class Db {
         ROWS_ID_DATA selectData() {
             return executeData("select id, data from metadata;");
         }
-
-        void print(SCHEMAS rows, std::ostream& os = std::cout) const {
-            for (Schema row : rows) {
-                os << row.id << ',' << row.timestamp << ',' << row.data << std::endl;
-            }
-        }
-
-        /** Return all rows as an `ostream`. */
-        friend std::ostream& operator<<(std::ostream& os, const Db& obj);
 };
-
-std::ostream& operator<<(std::ostream& os, const Db& obj) { 
-    obj.print(obj.execute("select * from metadata", SUBROW_SCHEMA), os);
-    return os;
-}
