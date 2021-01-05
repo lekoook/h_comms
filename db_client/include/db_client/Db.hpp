@@ -46,7 +46,7 @@ class Db {
 
         /** Open the database. */
         tl::optional<bool> open() {
-            std::string filename = "file://";
+            std::string filename = "";
 
             // https://stackoverflow.com/a/26696759
             const char *homedir;
