@@ -1,2 +1,2 @@
-std_msgs/String name
-std_msgs/String data
+uint16 entryid
+uint8[] data

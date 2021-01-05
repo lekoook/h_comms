@@ -16,12 +16,12 @@ add_message_files(
   FILES
   item.msg
   itemList.msg
+  mit.msg
 )
 
 ## Generate services in the 'srv' folder
 add_service_files(
   FILES
-  Compare.srv
   GenerateMit.srv
   RetrieveData.srv
   Write.srv
