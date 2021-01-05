@@ -330,6 +330,7 @@ public:
         reqToRemove.push(sequence);
     }
 
+    // TODO: Should a request that was never queued in the first place, to be allowed to requeue?
     /**
      * @brief Requeues a request that was queued previously.
      * 
