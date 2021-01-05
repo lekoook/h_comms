@@ -4,6 +4,9 @@
 #include <vector>
 #include <sqlite3.h>
 #include "MIT.hpp"
+#include <unistd.h>
+#include <sys/types.h>
+#include <pwd.h>
 
 class Db {
     public:
@@ -41,7 +44,18 @@ class Db {
 
         /** Open the database. */
         void open() {
-            dieOnError(sqlite3_open("db", &db));
+            std::string filename = "file://";
+
+            // https://stackoverflow.com/a/26696759
+            const char *homedir;
+            if ((homedir = getenv("HOME")) == NULL) {
+                homedir = getpwuid(getuid())->pw_dir;
+            }
+
+            filename.append(homedir);
+            filename.append("/db");
+
+            dieOnError(sqlite3_open(filename.c_str(), &db));
         }
 
         /** Close the database. */
