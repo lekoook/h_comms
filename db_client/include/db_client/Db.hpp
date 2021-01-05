@@ -8,6 +8,7 @@
 #include <sys/types.h>
 #include <pwd.h>
 
+namespace db_client {
 class Db {
     public:
     // Singles.
@@ -215,3 +216,4 @@ class Db {
             return executeData("select id, data from metadata;");
         }
 };
+}
