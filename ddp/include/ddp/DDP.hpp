@@ -8,10 +8,10 @@
 #include <string>
 #include "ptp_comms/PtpClient.hpp"
 #include "db_client/Db.hpp"
+#include "db_client/MIT.hpp"
 #include "messages/AdvMsg.hpp"
 #include "ATransmitter.hpp"
 #include "ADataAccessor.hpp"
-#include "MIT.hpp"
 #include "ReqsMediator.hpp"
 #include "RespsMediator.hpp"
 
