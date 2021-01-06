@@ -413,15 +413,21 @@ public:
      */
     bool pushData(uint16_t entryId, uint64_t timestamp, const std::vector<uint8_t>& data)
     {
-        db_client::Db::SCHEMAS sch = 
-            { db_client::Db::Schema(entryId, timestamp, std::string(data.begin(), data.end())) };
+        auto res = database->selectMit({ entryId });
+        MIT mit = res ? res.value() : MIT();
         
-        if (!database->upsert(sch))
+        if (!mit.contains(entryId) || (mit.contains(entryId) && timestamp > mit.getTimestamp(entryId)))
         {
+            db_client::Db::SCHEMAS sch = 
+                { db_client::Db::Schema(entryId, timestamp, std::string(data.begin(), data.end())) };
+            
+            if (database->upsert(sch))
+            {
+                return true;
+            }
             ROS_ERROR("Unable to push data into database for entry ID: %u", entryId);
-            return false;
         }
-        return true;
+        return false;
     }
 
     /**
