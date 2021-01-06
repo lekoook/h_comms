@@ -55,7 +55,7 @@ class Db {
             }
 
             filename.append(homedir);
-            filename.append("/db_" + robotName);
+            filename.append("/" + robotName + ".sqlite3");
 
             returnNulloptOnError(sqlite3_open(filename.c_str(), &db), SQLITE_OK); // return optional object that does not contain a value.
             return false; // return optional object that contains false.
