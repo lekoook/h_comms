@@ -92,6 +92,15 @@ public:
     }
 
     /**
+     * @brief Copy constructor.
+     * 
+     */
+    MIT(const MIT& other)
+    {
+        table = other.table;
+    }
+
+    /**
      * @brief Converts robot ID and data type number to entry ID.
      * 
      * @param robotId Robot ID to convert with.
