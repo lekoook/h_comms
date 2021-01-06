@@ -34,6 +34,9 @@ class Db {
         ID id;
         TIMESTAMP timestamp;
         DATA data;
+
+        Schema() {}
+        Schema(ID id, TIMESTAMP timestamp, DATA data) : id(id), timestamp(timestamp), data(data) {}
     };
 
     // Plurals.
