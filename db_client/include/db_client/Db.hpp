@@ -7,7 +7,7 @@
 #include <sys/types.h>
 #include <pwd.h>
 #include "MIT.hpp"
-#include "../tl/optional.hpp"
+#include "tl/optional.hpp"
 
 /** Return tl::nullopt if result code is an error code.
  * Do not call `sqlite3_free(messageError);`.
@@ -45,7 +45,7 @@ class Db {
         sqlite3* db;
 
         /** Open the database. */
-        tl::optional<bool> open() {
+        tl::optional<bool> open(std::string robotName) {
             std::string filename = "";
 
             // https://stackoverflow.com/a/26696759
@@ -55,7 +55,7 @@ class Db {
             }
 
             filename.append(homedir);
-            filename.append("/db");
+            filename.append("/db_" + robotName);
 
             returnNulloptOnError(sqlite3_open(filename.c_str(), &db), SQLITE_OK); // return optional object that does not contain a value.
             return false; // return optional object that contains false.
@@ -143,8 +143,8 @@ class Db {
 
     public:
 
-        Db() {
-            open();
+        Db(std::string robotName) {
+            open(robotName);
             createTable();
         }
 
