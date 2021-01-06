@@ -325,38 +325,6 @@ public:
         reqsMediator = std::unique_ptr<ReqsMediator>(new ReqsMediator(this, this));
         respsMediator = std::unique_ptr<RespsMediator>(new RespsMediator(this, this));
         database = std::unique_ptr<db_client::Db>(new db_client::Db(ros::this_node::getNamespace().substr(1)));
-
-        // std::string ns = ros::this_node::getNamespace();
-        // if (ns == "/X1")
-        // {
-        //     db_client::Db::Schema s1(1001, 1001, "data1");
-        //     db_client::Db::Schema s2(1002, 1002, "data2");
-        //     db_client::Db::Schema s3(1003, 1003, "data3");
-        //     db_client::Db::Schema s4(1004, 1004, "data4");
-        //     db_client::Db::Schema s5(1005, 1005, "data5");
-        //     db_client::Db::Schema s6(1006, 1006, "data6");
-        //     database->upsert({s1, s2, s3, s4, s5, s6});
-        // }
-        // else if (ns == "/X2")
-        // {
-        //     db_client::Db::Schema s1(2001, 2001, "data1");
-        //     db_client::Db::Schema s2(2002, 2002, "data2");
-        //     db_client::Db::Schema s3(2003, 2003, "data3");
-        //     db_client::Db::Schema s4(2004, 2004, "data4");
-        //     db_client::Db::Schema s5(2005, 2005, "data5");
-        //     db_client::Db::Schema s6(2006, 2006, "data6");
-        //     database->upsert({s1, s2, s3, s4, s5, s6});
-        // }
-        // else
-        // {
-        //     db_client::Db::Schema s1(3001, 3001, "data1");
-        //     db_client::Db::Schema s2(3002, 3002, "data2");
-        //     db_client::Db::Schema s3(3003, 3003, "data3");
-        //     db_client::Db::Schema s4(3004, 3004, "data4");
-        //     db_client::Db::Schema s5(3005, 3005, "data5");
-        //     db_client::Db::Schema s6(3006, 3006, "data6");
-        //     database->upsert({s1, s2, s3, s4, s5, s6});
-        // }
         
         // Begin main thread operation.
         mainRunning.store(true);
