@@ -91,7 +91,7 @@ class Db {
             while ((rc = sqlite3_step(stmt)) == SQLITE_ROW) {
                 rows.push_back(Schema{
                         sqlite3_column_int(stmt, 0),
-                        sqlite3_column_int(stmt, 1),
+                        sqlite3_column_int64(stmt, 1),
                         reinterpret_cast<const char*>(sqlite3_column_text(stmt, 2))
                         });
             }
@@ -113,7 +113,7 @@ class Db {
             rc = sqlite3_prepare_v2(db, zSql.c_str(), -1, &stmt, NULL);
             returnNulloptOnError(rc, SQLITE_OK);
             while ((rc = sqlite3_step(stmt)) == SQLITE_ROW) {
-                mit.update(sqlite3_column_int(stmt, 0), sqlite3_column_int(stmt, 1));
+                mit.update(sqlite3_column_int(stmt, 0), sqlite3_column_int64(stmt, 1));
             }
 
             returnNulloptOnError(rc, SQLITE_DONE);
