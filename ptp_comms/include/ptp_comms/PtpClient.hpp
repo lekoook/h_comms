@@ -6,6 +6,7 @@
 #include "ptp_comms/RegisterPort.h"
 #include "ptp_comms/RxData.h"
 #include "ptp_comms/TxData.h"
+#include "ptp_comms/Neighbors.h"
 #include "CommonTypes.hpp"
 
 namespace ptp_comms
@@ -36,6 +37,12 @@ private:
     const uint32_t MAX_QUEUE_SIZE = 100;
 
     /**
+     * @brief Time between each attempt to register at constructor.
+     * 
+     */
+    const double RETRY_INTERVAL = 3.0f;
+
+    /**
      * @brief Prefix string for all reception topics.
      * 
      */
@@ -46,6 +53,12 @@ private:
      * 
      */
     const std::string TX_SVC_PREFIX = "tx_data";
+
+    /**
+     * @brief Prefix string for neighbors query service.
+     * 
+     */
+    const std::string NEIGHB_SVC_PREFIX = "neighbors";
 
     /**
      * @brief Address that this client is using.
@@ -72,10 +85,16 @@ private:
     ros::Subscriber subber;
 
     /**
-     * @brief ROS subscriber to the topic for transmitting data.
+     * @brief ROS service for transmitting data.
      * 
      */
     ros::ServiceClient txSvc;
+
+    /**
+     * @brief ROS service for querying neighbors.
+     * 
+     */
+    ros::ServiceClient neighbSvc;
 
     /**
      * @brief Registers the port number with port registry.
@@ -94,6 +113,7 @@ private:
         {
             subber = nh.subscribe(RX_TOPIC_PREFIX + std::to_string(localPort), MAX_QUEUE_SIZE, &PtpClient::_rxCb, this);
             txSvc = nh.serviceClient<ptp_comms::TxData>(TX_SVC_PREFIX);
+            neighbSvc = nh.serviceClient<ptp_comms::Neighbors>(NEIGHB_SVC_PREFIX);
             localAddr = msg.response.address;
             ROS_INFO("PtpClient registration for port %u success.", localPort);
             return true;
@@ -147,10 +167,18 @@ public:
      * @brief Construct a new Ptp Client object.
      * 
      * @param port Port number to use.
+     * @param autoRetry If set to true, this call will be blocking until registration is successful.
      */
-    PtpClient(uint16_t port) : localPort(port)
+    PtpClient(uint16_t port, bool autoRetry=false) : localPort(port)
     {
-        _reg();
+        while (!_reg())
+        {
+            if (!autoRetry)
+            {
+                break;
+            }
+            ros::Duration(RETRY_INTERVAL).sleep();
+        }
     }
 
     /**
@@ -225,6 +253,26 @@ public:
     bool unregister()
     {
         return _unreg();
+    }
+
+    /**
+     * @brief Queries all nearby and recent neighbors of this client.
+     * 
+     * @return Neighbor_M A map of all nearby neighbors and their information (timestamp of beacon broadcast and RSSI).
+     */
+    Neighbor_M neighbors()
+    {
+        Neighbors msg;
+        if (neighbSvc.isValid() && neighbSvc.call(msg))
+        {
+            Neighbor_M ret;
+            for (int i = 0; i < msg.response.names.size(); i++)
+            {
+                ret[msg.response.names[i]] = std::make_pair(msg.response.timestamps[i], msg.response.rssi[i]);
+            }
+            return ret;
+        }
+        return Neighbor_M();
     }
 };
 
