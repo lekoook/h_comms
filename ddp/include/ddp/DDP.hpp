@@ -7,6 +7,7 @@
 #include <mutex>
 #include <string>
 #include "ptp_comms/PtpClient.hpp"
+#include "db_client/Db.hpp"
 #include "messages/AdvMsg.hpp"
 #include "ATransmitter.hpp"
 #include "ADataAccessor.hpp"
@@ -124,6 +125,12 @@ private:
     std::unique_ptr<RespsMediator> respsMediator;
 
     /**
+     * @brief Database containing all shareable data in this robot.
+     * 
+     */
+    std::unique_ptr<db_client::Db> database;
+
+    /**
      * @brief Callback to receive data.
      * 
      * @param src Source address of received data.
@@ -171,38 +178,15 @@ private:
         // Advertisement operation
         while(advRunning.load())
         {
-            // TODO: Request MIT from ROS Service
-            MIT mit;
-            std::string ns = ros::this_node::getNamespace();
-            if (ns == "/X1")
+            auto res = database->selectMit();
+            if (res)
             {
-                mit.update(1, 1, 1001);
-                mit.update(1, 2, 1002);
-                mit.update(1, 3, 1003);
-                mit.update(1, 4, 1004);
-                mit.update(1, 5, 1005);
+                MIT existing = res.value();
+                // Broadcast this MIT.
+                std::vector<uint8_t> mitSer = existing.serialise();
+                AdvMsg msg(mitSer);
+                transmit(ptp_comms::BROADCAST_ADDR, msg);
             }
-            else if (ns == "/X2")
-            {
-                mit.update(2, 1, 2001);
-                mit.update(2, 2, 2002);
-                mit.update(2, 3, 2003);
-                mit.update(2, 4, 2004);
-                mit.update(2, 5, 2005);
-            }
-            else
-            {
-                mit.update(3, 1, 3001);
-                mit.update(3, 2, 3002);
-                mit.update(3, 3, 3003);
-                mit.update(3, 4, 3004);
-                mit.update(3, 5, 3005);
-            }
-
-            // Broadcast this MIT.
-            std::vector<uint8_t> mitSer = mit.serialise();
-            AdvMsg msg(mitSer);
-            transmit(ptp_comms::BROADCAST_ADDR, msg);
 
             ros::Duration(ADV_INTERVAL).sleep();
         }
@@ -312,18 +296,18 @@ private:
      */
     void _handleAdv(AdvMsg& msg, std::string src)
     {
-        // std::cout << "GOT ADV" << std::endl;
-        MIT mit;
-        mit.deserialise(msg.data);
-
-        // TODO: Compare incoming MIT with our own local one.
         std::cout << "GOT ADV from " << src << std::endl;
-        // Some example request
-        MIT mock;
-        auto v = mock.compare(mit);
-        for (auto val : v)
+        auto res = database->selectMit();
+        if (res)
         {
-            reqsMediator->queueReq(mock.convertToEntryId(val.first, val.second), src);
+            MIT existing = res.value();
+            MIT incoming;
+            incoming.deserialise(msg.data);
+            auto v = existing.compare(incoming);
+            for (auto val : v)
+            {
+                reqsMediator->queueReq(existing.convertToEntryId(val.first, val.second), src);
+            }
         }
     }
 
@@ -340,6 +324,39 @@ public:
             std::bind(&DDP::_rxCb, this, std::placeholders::_1, std::placeholders::_2, std::placeholders::_3));
         reqsMediator = std::unique_ptr<ReqsMediator>(new ReqsMediator(this, this));
         respsMediator = std::unique_ptr<RespsMediator>(new RespsMediator(this, this));
+        database = std::unique_ptr<db_client::Db>(new db_client::Db(ros::this_node::getNamespace().substr(1)));
+
+        // std::string ns = ros::this_node::getNamespace();
+        // if (ns == "/X1")
+        // {
+        //     db_client::Db::Schema s1(1001, 1001, "data1");
+        //     db_client::Db::Schema s2(1002, 1002, "data2");
+        //     db_client::Db::Schema s3(1003, 1003, "data3");
+        //     db_client::Db::Schema s4(1004, 1004, "data4");
+        //     db_client::Db::Schema s5(1005, 1005, "data5");
+        //     db_client::Db::Schema s6(1006, 1006, "data6");
+        //     database->upsert({s1, s2, s3, s4, s5, s6});
+        // }
+        // else if (ns == "/X2")
+        // {
+        //     db_client::Db::Schema s1(2001, 2001, "data1");
+        //     db_client::Db::Schema s2(2002, 2002, "data2");
+        //     db_client::Db::Schema s3(2003, 2003, "data3");
+        //     db_client::Db::Schema s4(2004, 2004, "data4");
+        //     db_client::Db::Schema s5(2005, 2005, "data5");
+        //     db_client::Db::Schema s6(2006, 2006, "data6");
+        //     database->upsert({s1, s2, s3, s4, s5, s6});
+        // }
+        // else
+        // {
+        //     db_client::Db::Schema s1(3001, 3001, "data1");
+        //     db_client::Db::Schema s2(3002, 3002, "data2");
+        //     db_client::Db::Schema s3(3003, 3003, "data3");
+        //     db_client::Db::Schema s4(3004, 3004, "data4");
+        //     db_client::Db::Schema s5(3005, 3005, "data5");
+        //     db_client::Db::Schema s6(3006, 3006, "data6");
+        //     database->upsert({s1, s2, s3, s4, s5, s6});
+        // }
         
         // Begin main thread operation.
         mainRunning.store(true);
@@ -396,12 +413,14 @@ public:
      */
     bool pushData(uint16_t entryId, uint64_t timestamp, const std::vector<uint8_t>& data)
     {
-        std::cout << "Pushing data for Entry ID " << entryId << " with timestamp " << timestamp << ": ";
-        for (auto v : data)
+        db_client::Db::SCHEMAS sch = 
+            { db_client::Db::Schema(entryId, timestamp, std::string(data.begin(), data.end())) };
+        
+        if (!database->upsert(sch))
         {
-            printf("%u ", v);
+            ROS_ERROR("Unable to push data into database for entry ID: %u", entryId);
+            return false;
         }
-        std::cout << std::endl;
         return true;
     }
 
@@ -416,19 +435,20 @@ public:
      */
     bool pullData(uint16_t entryId, uint64_t& timestamp, std::vector<uint8_t>& data)
     {
-        uint64_t mockTs = 1234;
-        std::vector<uint8_t> mockData = {5, 6, 7, 8};
-        timestamp = mockTs;
-        data = mockData;
-
-        std::cout << "Pulling data for Entry ID " << entryId << " with timestamp " << timestamp << ": ";
-        for (auto v : data)
+        db_client::Db::IDS id = { entryId };
+        auto res = database->selectSchemas(id);
+        
+        if (res && res.value().size() == 1) // Only one single returned value.
         {
-            printf("%u ", v);
+            timestamp = res.value()[0].timestamp;
+            data = std::vector<uint8_t>(res.value()[0].data.begin(), res.value()[0].data.end());
+            return true;
         }
-        std::cout << std::endl;
-
-        return true;
+        else
+        {
+            ROS_ERROR("Unable to pull data from database for entry ID: %u", entryId);
+            return false;
+        }
     }
 };
 

@@ -4,12 +4,13 @@ project(ddp)
 find_package(catkin REQUIRED COMPONENTS
   roscpp
   ptp_comms
+  db_client
 )
 
 catkin_package(
   INCLUDE_DIRS include
   LIBRARIES ddp
-  CATKIN_DEPENDS ptp_comms roscpp
+  CATKIN_DEPENDS ptp_comms db_client roscpp
 )
 
 include_directories(
