@@ -158,15 +158,15 @@ class Db {
         /** Upsert a vector of rows.
          * Requires SQLite version >=3.24.0.
          */
-        tl::optional<bool> upsert(SCHEMAS rows) {
+        bool upsert(SCHEMAS rows) {
             for (Schema row : rows) {
                 std::ostringstream oss;
                 oss << "insert into metadata values(" << row.id << "," << row.timestamp << ",'" << row.data << "') on conflict(id) do update set timestamp=excluded.timestamp, data=excluded.data;";
                 if (!executeSchemas(oss.str())) {
-                    return tl::nullopt;
+                    return false;
                 }
             }
-            return false;
+            return true;
         }
 
         /** Select rows by their ids. */
