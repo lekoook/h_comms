@@ -276,6 +276,33 @@ public:
             i += 10;
         }
     }
+
+    /**
+     * @brief Checks if MIT contains an entry with the given entry ID.
+     * 
+     * @param entryId Entry ID to check.
+     * @return true If MIT contains.
+     * @return false If MIT does not contain.
+     */
+    bool contains(uint16_t entryId)
+    {
+        auto keys = getIdKeys();
+        return keys.count(entryId) > 0;
+    }
+
+    /**
+     * @brief Checks if MIT contains an entry with the given robot ID and data type.
+     * 
+     * @param robotId Robot ID to check.
+     * @param dataType Data type number.
+     * @return true If MIT contains.
+     * @return false If MIT does not contain.
+     */
+    bool contains(uint16_t robotId, uint16_t dataType)
+    {
+        uint16_t eid = convertToEntryId(robotId, dataType);
+        return contains(eid);
+    }
 };
 
 #endif // MIT_HEADER_
