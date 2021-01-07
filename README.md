@@ -49,7 +49,7 @@ The `/register` service response message contains:
 
 The purpose of port numbers and registeration allows multiple applications to access `ptp_comms` service while keeping track of the intended application for all incoming messages. This also prevents the calling application from unintentionally use a port number reserved by another application. 
 
-Since port numbers are reserved for one particular calling application, callers should unregister the port number once they intend to not use them anymore. This will free up the port number and be available for other applications.
+Since port numbers are reserved for one particular calling application, callers should unregister the port number with `/unregister` ROS service once they intend to not use them anymore. This will free up the port number and be available for other applications. The request and response messages has the same fields as `/register`.
 
 If calling applications attempts to register an already registered port, it will fail. However, if the port number is a dangling one (no one is subscribing to `/rx_data/[port]` but has yet to unregister the port), the registeration will still be successful and be reserved for this calling application instead.
 
