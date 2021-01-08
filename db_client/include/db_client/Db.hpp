@@ -1,3 +1,6 @@
+#ifndef H_DB
+#define H_DB
+
 #include <cstdint>
 #include <iostream>
 #include <sstream>
@@ -22,14 +25,47 @@
 } while (0)
 
 namespace db_client {
+
+/**
+ * @brief  Database for all shared data.
+ * 
+ */
 class Db {
     public:
-    // Singles.
+    /**
+     * @brief Result code.
+     * 
+     */
     typedef int32_t RC;
+
+    /**
+     * @brief ID of an entry.
+     * 
+     */
     typedef uint16_t ID;
+
+    /**
+     * @brief Timestamp of an entry.
+     * 
+     */
     typedef uint64_t TIMESTAMP;
+
+    /**
+     * @brief Data of an entry.
+     * 
+     */
     typedef std::string DATA;
+
+    /**
+     * @brief Entry ID and data pair.
+     * 
+     */
     typedef std::pair<ID, DATA> ROW_ID_DATA;
+
+    /**
+     * @brief Structure to represent the parameters of one single entry.
+     * 
+     */
     struct Schema {
         ID id;
         TIMESTAMP timestamp;
@@ -39,9 +75,22 @@ class Db {
         Schema(ID id, TIMESTAMP timestamp, DATA data) : id(id), timestamp(timestamp), data(data) {}
     };
 
-    // Plurals.
+    /**
+     * @brief Multiple entry IDs.
+     * 
+     */
     typedef std::vector<uint16_t> IDS;
+
+    /**
+     * @brief Multiple entry ID and data pairs.
+     * 
+     */
     typedef std::vector<ROW_ID_DATA> ROWS_ID_DATA;
+
+    /**
+     * @brief Multiple Schemas.
+     * 
+     */
     typedef std::vector<Schema> SCHEMAS;
 
     private:
@@ -145,31 +194,91 @@ class Db {
         }
 
     public:
-
-        Db(std::string robotName) {
-            open(robotName);
+        /**
+         * @brief Construct a new Db object.
+         * 
+         * @param name Name for this database.
+         */
+        Db(std::string name) {
+            open(name);
             createTable();
         }
 
+        /**
+         * @brief Destroy the Db object.
+         * 
+         */
         ~Db() {
             close();
         }
 
-        /** Upsert a vector of rows.
-         * Requires SQLite version >=3.24.0.
+        /**
+         * @brief Inserts multiple new entries. If entry ID already exists, updates the timestamp and data.
+         * 
+         * @param entries Schemas to insert or update.
+         * @return true If insert or update successful.
+         * @return false If insert or update unsuccessful.
          */
-        bool upsert(SCHEMAS rows) {
-            for (Schema row : rows) {
-                std::ostringstream oss;
-                oss << "insert into metadata values(" << row.id << "," << row.timestamp << ",'" << row.data << "') on conflict(id) do update set timestamp=excluded.timestamp, data=excluded.data;";
-                if (!executeSchemas(oss.str())) {
+        bool upsert(SCHEMAS entries) {
+            for (Schema row : entries) {
+                if (!upsert(row.id, row.timestamp, row.data)) {
                     return false;
                 }
             }
             return true;
         }
 
-        /** Select rows by their ids. */
+        /**
+         * @brief Inserts a new entry. If entry ID already exists, updates the timestamp and data.
+         * 
+         * @param entryId Entry ID.
+         * @param timestamp Timestamp of entry.
+         * @param data Data of entry.
+         * @return true If insert or update successful.
+         * @return false If insert or update unsuccessful.
+         */
+        bool upsert(ID entryId, TIMESTAMP timestamp, DATA data) {
+            std::ostringstream oss;
+            oss << "insert into metadata values(" << entryId << "," << timestamp << ",'" << data << "') on conflict(id) do update set timestamp=excluded.timestamp, data=excluded.data;";
+            if (!executeSchemas(oss.str())) {
+                return false;
+            }
+            return true;
+        }
+
+        /**
+         * @brief Inserts a new entry. If entry ID already exists, updates the timestamp and data.
+         * 
+         * @param entry Entry parameters in Schema struct.
+         * @return true If insert or update successful.
+         * @return false If insert or update unsuccessful.
+         */
+        bool upsert(Schema entry) {
+            return upsert(entry.id, entry.timestamp, entry.data);
+        }
+
+        /**
+         * @brief Selects one entry as Schema.
+         * 
+         * @param entryId Entry ID to select.
+         * @return tl::optional<Schema> Schema selected.
+         */
+        tl::optional<Schema> selectSchema(ID entryId) {
+            std::ostringstream oss;
+            oss << "select * from metadata where id in (" << entryId << ");";
+            auto res = executeSchemas(oss.str());
+            if (res && res.value().size() > 0) {
+                return res.value()[0];
+            }
+            return tl::nullopt;
+        }
+
+        /**
+         * @brief Selects multiple entries as Schemas.
+         * 
+         * @param ids Entry IDs to select.
+         * @return tl::optional<SCHEMAS> Multiple Schemas selected.
+         */
         tl::optional<SCHEMAS> selectSchemas(IDS ids) {
             std::ostringstream oss;
             oss << "select * from metadata where id in (";
@@ -183,7 +292,12 @@ class Db {
             return executeSchemas(oss.str());
         }
 
-        /** Select timestamps by their ids. */
+        /**
+         * @brief Gets the MIT specified by the entry IDs.
+         * 
+         * @param ids Entry IDs to include in the MIT.
+         * @return tl::optional<MIT> MIT of specified entries.
+         */
         tl::optional<MIT> selectMit(IDS ids) {
             std::ostringstream oss;
             oss << "select id, timestamp from metadata where id in (";
@@ -197,7 +311,28 @@ class Db {
             return executeMit(oss.str());
         }
 
-        /** Select data by their ids. */
+        /**
+         * @brief Selects a data specified by the entry ID.
+         * 
+         * @param entryId Entry ID of data to select.
+         * @return tl::optional<ROW_ID_DATA> Entry ID and data selected.
+         */
+        tl::optional<ROW_ID_DATA> selectData(ID entryId) {
+            std::ostringstream oss;
+            oss << "select id, data from metadata where id in (" << entryId << ");";
+            auto res = executeData(oss.str());
+            if (res && res.value().size() > 0) {
+                return res.value()[0];
+            }
+            return tl::nullopt;
+        }
+
+        /**
+         * @brief Selects multiple data specified by their entry IDs.
+         * 
+         * @param ids Entry IDs of data to select.
+         * @return tl::optional<ROWS_ID_DATA> Entry IDs and data selected.
+         */
         tl::optional<ROWS_ID_DATA> selectData(IDS ids) {
             std::ostringstream oss;
             oss << "select id, data from metadata where id in (";
@@ -211,14 +346,24 @@ class Db {
             return executeData(oss.str());
         }
 
-        /** Select all timestamps. */
+        /**
+         * @brief Gets the MIT based on the current database state.
+         * 
+         * @return tl::optional<MIT> MIT of current database state.
+         */
         tl::optional<MIT> selectMit() {
             return executeMit("select id, timestamp from metadata;");
         }
 
-        /** Select all data. */
+        /**
+         * @brief Selects all data in the database.
+         * 
+         * @return tl::optional<ROWS_ID_DATA> All data selected.
+         */
         tl::optional<ROWS_ID_DATA> selectData() {
             return executeData("select id, data from metadata;");
         }
 };
 }
+
+#endif // H_DB
