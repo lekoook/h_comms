@@ -274,6 +274,20 @@ public:
         }
         return Neighbor_M();
     }
+
+    /**
+     * @brief Queries if an address is a neighbor of this client.
+     * @details A neighbor is defined to be a node that this client has received a ping from recently.
+     * 
+     * @param address Address to check.
+     * @return true If the address is a neighbor.
+     * @return false If the address is not a neighbor.
+     */
+    bool isNeighbor(std::string address)
+    {
+        auto n = neighbors();
+        return n.find(address) != n.end();
+    }
 };
 
 }
