@@ -7,7 +7,7 @@
 #include <mutex>
 #include <string>
 #include "ptp_comms/PtpClient.hpp"
-#include "db_client/Db.hpp"
+#include "db_client/DbClient.hpp"
 #include "db_client/MIT.hpp"
 #include "messages/AdvMsg.hpp"
 #include "ATransmitter.hpp"
@@ -128,7 +128,7 @@ private:
      * @brief Database containing all shareable data in this robot.
      * 
      */
-    std::unique_ptr<db_client::Db> database;
+    std::unique_ptr<db_client::DbClient> database;
 
     /**
      * @brief Callback to receive data.
@@ -324,7 +324,8 @@ public:
             std::bind(&DDP::_rxCb, this, std::placeholders::_1, std::placeholders::_2, std::placeholders::_3));
         reqsMediator = std::unique_ptr<ReqsMediator>(new ReqsMediator(this, this));
         respsMediator = std::unique_ptr<RespsMediator>(new RespsMediator(this, this));
-        database = std::unique_ptr<db_client::Db>(new db_client::Db(ros::this_node::getNamespace().substr(1)));
+        database = 
+            std::unique_ptr<db_client::DbClient>(new db_client::DbClient(ros::this_node::getNamespace().substr(1)));
         
         // Begin main thread operation.
         mainRunning.store(true);
@@ -386,8 +387,8 @@ public:
         
         if (!mit.contains(entryId) || (mit.contains(entryId) && timestamp > mit.getTimestamp(entryId)))
         {
-            db_client::Db::SCHEMAS sch = 
-                { db_client::Db::Schema(entryId, timestamp, std::string(data.begin(), data.end())) };
+            db_client::DbClient::SCHEMAS sch = 
+                { db_client::DbClient::Schema(entryId, timestamp, std::string(data.begin(), data.end())) };
             
             if (database->upsert(sch))
             {
@@ -409,7 +410,7 @@ public:
      */
     bool pullData(uint16_t entryId, uint64_t& timestamp, std::vector<uint8_t>& data)
     {
-        db_client::Db::IDS id = { entryId };
+        db_client::DbClient::IDS id = { entryId };
         auto res = database->selectSchemas(id);
         
         if (res && res.value().size() == 1) // Only one single returned value.

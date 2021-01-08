@@ -30,7 +30,7 @@ namespace db_client {
  * @brief  Database for all shared data.
  * 
  */
-class Db {
+class DbClient {
     public:
     /**
      * @brief Result code.
@@ -199,7 +199,7 @@ class Db {
          * 
          * @param name Name for this database.
          */
-        Db(std::string name) {
+        DbClient(std::string name) {
             open(name);
             createTable();
         }
@@ -208,7 +208,7 @@ class Db {
          * @brief Destroy the Db object.
          * 
          */
-        ~Db() {
+        ~DbClient() {
             close();
         }
 

@@ -38,5 +38,5 @@ include_directories(
   ${catkin_INCLUDE_DIRS}
 )
 
-add_library(${PROJECT_NAME} src/DbClient.cpp src/sqlite3.c src/shell.c)
+add_library(${PROJECT_NAME} src/sqlite3.c src/shell.c)
 target_link_libraries (${PROJECT_NAME} ${CMAKE_DL_LIBS})
