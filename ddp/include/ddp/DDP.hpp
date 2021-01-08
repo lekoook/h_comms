@@ -181,7 +181,7 @@ private:
             auto res = database->selectMit();
             if (res)
             {
-                MIT existing = res.value();
+                db_client::MIT existing = res.value();
                 // Broadcast this MIT.
                 std::vector<uint8_t> mitSer = existing.serialise();
                 AdvMsg msg(mitSer);
@@ -300,8 +300,8 @@ private:
         auto res = database->selectMit();
         if (res)
         {
-            MIT existing = res.value();
-            MIT incoming;
+            db_client::MIT existing = res.value();
+            db_client::MIT incoming;
             incoming.deserialise(msg.data);
             auto v = existing.compare(incoming);
             for (auto val : v)
@@ -383,7 +383,7 @@ public:
     bool pushData(uint16_t entryId, uint64_t timestamp, const std::vector<uint8_t>& data)
     {
         auto res = database->selectMit({ entryId });
-        MIT mit = res ? res.value() : MIT();
+        db_client::MIT mit = res ? res.value() : db_client::MIT();
         
         if (!mit.contains(entryId) || (mit.contains(entryId) && timestamp > mit.getTimestamp(entryId)))
         {

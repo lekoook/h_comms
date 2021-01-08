@@ -192,7 +192,7 @@ int main(int argc, char** argv)
     }
 
     auto res = db->selectMit();
-    MIT mit = res ? res.value() : MIT();
+    db_client::MIT mit = res ? res.value() : db_client::MIT();
     
     auto ids = mit.getIdKeys();
     for (auto id : ids)
