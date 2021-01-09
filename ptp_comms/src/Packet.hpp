@@ -95,7 +95,7 @@ public:
 
         serialisers::copyU8(&temp[0], isAck ? 1 : 0);
         serialisers::copyU32(&temp[1], seqNum);
-        serialisers::copyU16(&temp[5], totalLength);
+        serialisers::copyU32(&temp[5], totalLength);
         serialisers::copyU8(&temp[9], segNum);
         memcpy(&temp[10], data.data(), data.size());
 
@@ -112,7 +112,7 @@ public:
         uint8_t* temp = (uint8_t*) byteStr.data();
         isAck = (serialisers::getU8(&temp[0]) == 1);
         seqNum = serialisers::getU32(&temp[1]);
-        totalLength = serialisers::getU16(&temp[5]);
+        totalLength = serialisers::getU32(&temp[5]);
         segNum = serialisers::getU8(&temp[9]);
         uint32_t dataLen = byteStr.size() - FIXED_LEN;
         uint8_t* dStart = &temp[10];
