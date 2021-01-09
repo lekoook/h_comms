@@ -139,7 +139,7 @@ private:
      * indicates how old this entry is. Entries that are too old are purged.
      * 
      */
-    std::map<std::tuple<std::string, uint32_t, uint8_t>, uint32_t> seenRx;
+    std::map<std::tuple<std::string, uint32_t, uint32_t>, uint32_t> seenRx;
 
     /**
      * @brief Mutex to protect the received packets tracking list.

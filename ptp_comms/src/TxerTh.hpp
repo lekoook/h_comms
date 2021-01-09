@@ -171,7 +171,7 @@ private:
      * @brief This will indicate for which segment number we are waiting for the ACK.
      * 
      */
-    uint8_t waitSeg;
+    uint32_t waitSeg;
 
     /**
      * @brief This indicates the current sequence number running count. Incremented after queueing each piece of data.
@@ -235,15 +235,14 @@ private:
      */
     bool sendData(const TxQueueData& data)
     {
-        int dSize = data.data.size();
-        int segs = (dSize / Packet::MAX_SEGMENT_SIZE) + ((dSize % Packet::MAX_SEGMENT_SIZE) != 0);
+        int64_t dSize = data.data.size();
         uint8_t* ptr = (uint8_t*)data.data.data();
-        uint16_t s = 0;
+        uint64_t s = 0;
 
         for (size_t i = 0; i < dSize; i+= Packet::MAX_SEGMENT_SIZE)
         {
             int tries = 0;
-            auto last = std::min((unsigned long)dSize, i + Packet::MAX_SEGMENT_SIZE);
+            auto last = std::min<int64_t>(dSize, (int64_t)(i + Packet::MAX_SEGMENT_SIZE));
             do
             {
                 cc->sendTo(
@@ -299,7 +298,7 @@ private:
      * @return true If ACK was received.
      * @return false If ACK was never received.
      */
-    bool _waitAck(uint32_t seqNum, uint8_t segNum, std::string src, uint16_t port, uint32_t timeout)
+    bool _waitAck(uint32_t seqNum, uint32_t segNum, std::string src, uint16_t port, uint32_t timeout)
     {
         {
             std::lock_guard<std::mutex> wLock(mWaitAck);
@@ -331,10 +330,10 @@ private:
      * @param src Source address of this incoming ACK.
      * @param port Port number of this incoming ACK.
      */
-    void _signalAck(uint32_t seqNum, uint8_t segNum, std::string src, uint16_t port)
+    void _signalAck(uint32_t seqNum, uint32_t segNum, std::string src, uint16_t port)
     {
         uint32_t tseq;
-        uint8_t tseg;
+        uint32_t tseg;
         std::string tsrc;
         uint16_t tport;
         {
@@ -424,7 +423,7 @@ public:
      * @param src Source address of this ACK.
      * @param port Port number of this ACK.
      */
-    void notifyAck(uint32_t seqNum, uint8_t segNum, std::string src, uint16_t port)
+    void notifyAck(uint32_t seqNum, uint32_t segNum, std::string src, uint16_t port)
     {
         _signalAck(seqNum, segNum, src, port);
     }
