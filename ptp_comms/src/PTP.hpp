@@ -93,7 +93,12 @@ private:
             }
             else
             {
-                while(!rxTh->recvOne(RxQueueData(_data, _srcAddress, _dstAddress, _dstPort)));
+                while(!rxTh->recvOne(RxQueueData(_data, _srcAddress, _dstAddress, _dstPort)))
+                {
+                    ROS_WARN("RX queue is full!");
+                    ros::Duration(0.5).sleep();
+                }
+                ROS_INFO("RX data received from %s port %u queued", _srcAddress.c_str(), _dstPort);
             }
         }
     }
@@ -118,6 +123,14 @@ private:
         if (req.dest != nodeAddr)
         {
             res.successful = txTh->sendOne(req.data, req.dest, req.port);
+            if (res.successful)
+            {
+                ROS_INFO("TX data send to %s port %u queued", req.dest.c_str(), req.port);
+            }
+            else
+            {
+                ROS_WARN("TX queue is full!");
+            }
         }
         else
         {
