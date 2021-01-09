@@ -283,7 +283,6 @@ private:
         }
         else
         {
-            // std::cout << "GOT ACK FOR DATA" << std::endl;
             respsMediator->notifyAck(src, msg);
         }
     }
@@ -319,7 +318,7 @@ public:
      */
     DDP(ros::NodeHandle& nh)
     {
-        ptpClient = std::unique_ptr<ptp_comms::PtpClient>(new ptp_comms::PtpClient(ptp_comms::DEFAULT_PORT));
+        ptpClient = std::unique_ptr<ptp_comms::PtpClient>(new ptp_comms::PtpClient(ptp_comms::DEFAULT_PORT, true));
         ptpClient->bind(
             std::bind(&DDP::_rxCb, this, std::placeholders::_1, std::placeholders::_2, std::placeholders::_3));
         reqsMediator = std::unique_ptr<ReqsMediator>(new ReqsMediator(this, this));

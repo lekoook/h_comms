@@ -1,0 +1,36 @@
+<launch>
+    <arg name="name1" />
+    <arg name="name2" />
+    <arg name="name3" />
+
+    <!-- ptp_comms -->
+    <include file="$(find ptp_comms)/launch/node.launch">
+        <arg name="name" value="$(arg name1)"/>
+    </include>
+
+    <include file="$(find ptp_comms)/launch/node.launch">
+        <arg name="name" value="$(arg name2)"/>
+    </include>
+
+    <include file="$(find ptp_comms)/launch/node.launch">
+        <arg name="name" value="$(arg name3)"/>
+    </include>
+
+    <!-- ddp -->
+    <include file="$(find ddp)/launch/ddp_node.launch">
+        <arg name="name" value="$(arg name1)"/>
+    </include>
+
+    <include file="$(find ddp)/launch/ddp_node.launch">
+        <arg name="name" value="$(arg name2)"/>
+    </include>
+
+    <include file="$(find ddp)/launch/ddp_node.launch">
+        <arg name="name" value="$(arg name3)"/>
+    </include>
+
+    <!-- db_test -->
+    <node pkg="db_test" type="db_test_node" name="db_test_node" output="screen" ns="$(arg name1)"/>
+    <node pkg="db_test" type="db_test_node" name="db_test_node" output="screen" ns="$(arg name2)"/>
+    <node pkg="db_test" type="db_test_node" name="db_test_node" output="screen" ns="$(arg name3)"/>
+</launch>
