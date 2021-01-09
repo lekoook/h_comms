@@ -41,32 +41,32 @@ namespace serialisers
     uint16_t getU16(uint8_t* src)
     {
         uint16_t val = 0;
-        val |= (uint16_t)(src[0] & 0xff) << 8;
-        val |= (uint16_t)(src[1] & 0xff);
+        val |= (uint16_t)src[0] << 8;
+        val |= (uint16_t)src[1];
         return val;
     }
 
     uint32_t getU32(uint8_t* src)
     {
         uint32_t val = 0;
-        val |= (uint32_t)(src[0] & 0xff) << 24;
-        val |= (uint32_t)(src[1] & 0xff) << 16;
-        val |= (uint32_t)(src[2] & 0xff) << 8;
-        val |= (uint32_t)(src[3] & 0xff);
+        val |= (uint32_t)src[0] << 24;
+        val |= (uint32_t)src[1] << 16;
+        val |= (uint32_t)src[2] << 8;
+        val |= (uint32_t)src[3];
         return val;
     }
 
     uint64_t getU64(uint8_t* src)
     {
         uint64_t val = 0;
-        val |= (uint64_t)(src[0] & 0xff) << 56;
-        val |= (uint64_t)(src[1] & 0xff) << 48;
-        val |= (uint64_t)(src[2] & 0xff) << 40;
-        val |= (uint64_t)(src[3] & 0xff) << 32;
-        val |= (uint64_t)(src[4] & 0xff) << 24;
-        val |= (uint64_t)(src[5] & 0xff) << 16;
-        val |= (uint64_t)(src[6] & 0xff) << 8;
-        val |= (uint64_t)(src[7] & 0xff);
+        val |= (uint64_t)src[0] << 56;
+        val |= (uint64_t)src[1] << 48;
+        val |= (uint64_t)src[2] << 40;
+        val |= (uint64_t)src[3] << 32;
+        val |= (uint64_t)src[4] << 24;
+        val |= (uint64_t)src[5] << 16;
+        val |= (uint64_t)src[6] << 8;
+        val |= (uint64_t)src[7];
         return val;
     }
 }

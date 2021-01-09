@@ -18,9 +18,10 @@ class Packet
 public:
     /**
      * @brief Total length of fixed-length fields.
+     * @details isAck(1) + seqNum(4) + segNum(4) + totalLength(8)
      * 
      */
-    static uint8_t const FIXED_LEN = 10;
+    static uint8_t const FIXED_LEN = 17;
 
     /**
      * @brief Total allowable size (bytes) of a Packet.
@@ -50,13 +51,13 @@ public:
      * @brief Packet field that indicate the index number of this segment.
      * 
      */
-    uint8_t segNum = 0;
+    uint32_t segNum = 0;
 
     /**
      * @brief Packet field that indicate the total length of the full data.
      * 
      */
-    uint32_t totalLength = 0;
+    uint64_t totalLength = 0;
 
     /**
      * @brief Packet field containing the actual payload data.
@@ -79,7 +80,7 @@ public:
      * @param data Payload data.
      * @param isAck True if this is an acknowledgement packet, false otherwise.
      */
-    Packet(uint32_t seqNum, uint8_t segNum, uint32_t totalLength, std::vector<uint8_t> data, bool isAck=false)
+    Packet(uint32_t seqNum, uint32_t segNum, uint64_t totalLength, std::vector<uint8_t> data, bool isAck=false)
         : seqNum(seqNum), segNum(segNum), totalLength(totalLength), data(data), isAck(isAck)
     {}
 
@@ -95,9 +96,9 @@ public:
 
         serialisers::copyU8(&temp[0], isAck ? 1 : 0);
         serialisers::copyU32(&temp[1], seqNum);
-        serialisers::copyU16(&temp[5], totalLength);
-        serialisers::copyU8(&temp[9], segNum);
-        memcpy(&temp[10], data.data(), data.size());
+        serialisers::copyU64(&temp[5], totalLength);
+        serialisers::copyU32(&temp[13], segNum);
+        memcpy(&temp[17], data.data(), data.size());
 
         return std::string((char*)temp, tLen);
     }
@@ -112,10 +113,10 @@ public:
         uint8_t* temp = (uint8_t*) byteStr.data();
         isAck = (serialisers::getU8(&temp[0]) == 1);
         seqNum = serialisers::getU32(&temp[1]);
-        totalLength = serialisers::getU16(&temp[5]);
-        segNum = serialisers::getU8(&temp[9]);
-        uint32_t dataLen = byteStr.size() - FIXED_LEN;
-        uint8_t* dStart = &temp[10];
+        totalLength = serialisers::getU64(&temp[5]);
+        segNum = serialisers::getU32(&temp[13]);
+        uint64_t dataLen = byteStr.size() - FIXED_LEN;
+        uint8_t* dStart = &temp[17];
         data = std::vector<uint8_t>(dStart, dStart + dataLen);
     }
 };
