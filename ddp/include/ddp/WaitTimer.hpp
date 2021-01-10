@@ -154,6 +154,8 @@ public:
 
         {
             std::lock_guard<std::mutex> lock(mTimer);
+            timer.stop();
+            timer.setPeriod(ros::Duration(waitTime));
             timer.start();
         }
         interrupted = false;
@@ -182,6 +184,7 @@ public:
         {
             std::lock_guard<std::mutex> lock(mTimer);
             timer.stop();
+            timer.setPeriod(ros::Duration(waitTime));
         }
         std::lock_guard<std::mutex> lock(mWait);
         interrupted = true;
