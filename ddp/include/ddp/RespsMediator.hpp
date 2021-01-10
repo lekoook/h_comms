@@ -140,14 +140,13 @@ private:
             // Remove all Responders marked for removal.
             {
                 std::lock_guard<std::mutex> rLock(mRespToRemove);
+                std::lock_guard<std::mutex> qLock(mRespRecord);
                 while (respToRemove.size() > 0)
                 {
                     auto key = respToRemove.front();
-                    respToRemove.pop();
-                    std::lock_guard<std::mutex> qLock(mRespRecord);
                     respRecord.erase(key);
+                    respToRemove.pop();
                 }
-            }
 
             // We spawn as many Responders as we can to service data requests.
             {
@@ -156,12 +155,19 @@ private:
                 while ((respRecord.size() < MAX_RESPONDERS) && (!respQ.empty()))
                 {
                     RespQueueData qData = respQ.front();
-                    respQ.pop();
+
+                    auto key = std::make_pair(qData.target, qData.sequence);
+                    if (respRecord.find(key) == respRecord.end())
+                    {
                     respRecord.emplace(
                         std::piecewise_construct, 
-                        std::forward_as_tuple(std::make_pair(qData.target, qData.sequence)), 
+                            std::forward_as_tuple(key), 
                         std::forward_as_tuple(qData.target, qData.sequence, qData.entryId, qData.target, 
                                                 transmitter, dataAccessor, this));
+                        ROS_INFO("Response to sequence %u for entry %u from %s", 
+                            qData.sequence, qData.entryId, qData.target.c_str());
+                    }
+                    respQ.pop();
                 }
             }
 
