@@ -29,6 +29,8 @@
         <arg name="name" value="$(arg name3)"/>
     </include>
 
+    <node name= "clear_db" pkg="db_test" type="clear_sqlite_db.bash" />
+
     <!-- db_test -->
     <node pkg="db_test" type="db_test_node" name="db_test_node" output="screen" ns="$(arg name1)"/>
     <node pkg="db_test" type="db_test_node" name="db_test_node" output="screen" ns="$(arg name2)"/>
