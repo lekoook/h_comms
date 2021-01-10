@@ -295,7 +295,6 @@ private:
      */
     void _handleAdv(AdvMsg& msg, std::string src)
     {
-        std::cout << "GOT ADV from " << src << std::endl;
         auto res = database->selectMit();
         if (res)
         {

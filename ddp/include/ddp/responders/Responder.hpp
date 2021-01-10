@@ -90,6 +90,8 @@ private:
             rsm.checkTransit();
             if (rsm.hasEnded())
             {
+                ROS_INFO("Responded to sequence %u for entry %u from %s",
+                    respSequence, respEntryId, respTarget.c_str());
                 lifeRunning.store(false);
             }
         }
@@ -118,6 +120,9 @@ public:
     {
         lifeRunning.store(true);
         lifeTh = std::thread(&Responder::_life, this);
+        std::ostringstream oss;
+        oss << lifeTh.get_id();
+        ROS_WARN("Responder %u from %s born with id: %s", respSequence, respTarget.c_str(), oss.str().c_str());
     }
 
     /**
@@ -126,11 +131,16 @@ public:
      */
     ~Responder()
     {
+        std::ostringstream oss;
+        oss << lifeTh.get_id();
+        ROS_WARN("Responder %u from %s dying with id: %s", respSequence, respTarget.c_str(), oss.str().c_str());
         lifeRunning.store(false);
         if (lifeTh.joinable())
         {
+            ROS_WARN("Responder %u from %s joining with id: %s", respSequence, respTarget.c_str(), oss.str().c_str());
             lifeTh.join();
         }
+        ROS_WARN("Responder %u from %s died with id: %s", respSequence, respTarget.c_str(), oss.str().c_str());
     }
 
     /**

@@ -1,6 +1,7 @@
 #ifndef H_REQS_MEDIATOR
 #define H_REQS_MEDIATOR
 
+#include "ros/ros.h"
 #include <string>
 #include <utility>
 #include <thread>
@@ -191,6 +192,8 @@ private:
                         std::forward_as_tuple(qData.sequence), 
                         std::forward_as_tuple(qData.sequence, qData.entryId, qData.target, 
                                                 transmitter, dataAccessor, this));
+                    ROS_INFO("Request sequence %u for entry %u to %s", 
+                        qData.sequence, qData.entryId, qData.target.c_str());
                 }
             }
 

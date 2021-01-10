@@ -78,11 +78,15 @@ private:
             {
                 if (rsm.needRequeue())
                 {
+                    ROS_WARN("Request sequence %u TIMEOUT for entry %u to %s",
+                        reqSequence, reqEntryId, reqTarget.c_str());
                     reqManager->requeueReq(reqSequence, reqEntryId, reqTarget);
                 }
                 else if (rsm.hasReceived())
                 {
                     DataMsg m = rsm.dataReceived;
+                    ROS_INFO("Request sequence %u for entry %u to %s PUSH DATA",
+                        reqSequence, reqEntryId, reqTarget.c_str());
                     dataAccessor->pushData(m.entryId, m.timestamp, m.data);
                 }
                 lifeRunning.store(false);

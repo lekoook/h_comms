@@ -147,6 +147,7 @@ private:
                     respRecord.erase(key);
                     respToRemove.pop();
                 }
+            }
 
             // We spawn as many Responders as we can to service data requests.
             {
@@ -159,11 +160,11 @@ private:
                     auto key = std::make_pair(qData.target, qData.sequence);
                     if (respRecord.find(key) == respRecord.end())
                     {
-                    respRecord.emplace(
-                        std::piecewise_construct, 
+                        respRecord.emplace(
+                            std::piecewise_construct, 
                             std::forward_as_tuple(key), 
-                        std::forward_as_tuple(qData.target, qData.sequence, qData.entryId, qData.target, 
-                                                transmitter, dataAccessor, this));
+                            std::forward_as_tuple(qData.target, qData.sequence, qData.entryId, qData.target, 
+                                                    transmitter, dataAccessor, this));
                         ROS_INFO("Response to sequence %u for entry %u from %s", 
                             qData.sequence, qData.entryId, qData.target.c_str());
                     }

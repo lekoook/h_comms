@@ -24,7 +24,6 @@ StartRespState::~StartRespState() {}
 
 void StartRespState::run(RespMachine& machine)
 {
-    // std::cout << "RESPONDER: START" << std::endl;
     setState(machine, new SendAckReqRespState());
 }
 
@@ -38,7 +37,6 @@ SendAckReqRespState::~SendAckReqRespState() {}
 
 void SendAckReqRespState::run(RespMachine& machine)
 {
-    // std::cout << "RESPONDER: PREPARE" << std::endl;
     AckMsg msg(machine.respSequence, machine.respEntryId);
     machine.transmitter->transmit(machine.respTarget, msg);
     setState(machine, new SendDataRespState());
@@ -54,7 +52,6 @@ SendDataRespState::~SendDataRespState() {}
 
 void SendDataRespState::run(RespMachine& machine)
 {
-    // std::cout << "RESPONDER: SEND DATA" << std::endl;
     machine.transmitter->transmit(machine.respTarget, machine.dataToSend);
     machine.sendTries++;
     setState(machine, new WaitAckDataRespState());
@@ -70,7 +67,6 @@ WaitAckDataRespState::~WaitAckDataRespState() {}
 
 void WaitAckDataRespState::run(RespMachine& machine)
 {
-    // std::cout << "RESPONDER: WAIT ACK DATA" << std::endl;
     machine._setWaitParams(machine.respSequence, machine.respEntryId);
     machine.waitTimer.wait();
 
@@ -80,6 +76,8 @@ void WaitAckDataRespState::run(RespMachine& machine)
     }
     else
     {
+        ROS_WARN("Responder to sequence %u for entry %u from %s TIMEOUT", 
+            machine.respSequence, machine.respEntryId, machine.respTarget.c_str());
         setState(machine, new SendDataRespState());
     }
 }
@@ -102,7 +100,6 @@ DestructRespState::~DestructRespState() {}
 
 void DestructRespState::run(RespMachine& machine)
 {
-    // std::cout << "RESPONDER: DESTRUCT" << std::endl;
     machine.isDestructed = true;
 }
 
