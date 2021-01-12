@@ -98,7 +98,7 @@ private:
                     ROS_WARN("RX queue is full!");
                     ros::Duration(0.5).sleep();
                 }
-                ROS_INFO("RX data received from %s port %u queued", _srcAddress.c_str(), _dstPort);
+                // ROS_INFO("RX data received from %s port %u queued", _srcAddress.c_str(), _dstPort);
             }
         }
     }

@@ -6,9 +6,13 @@
 #include <queue>
 #include <vector>
 #include <mutex>
+#include <memory>
 #include <condition_variable>
 #include "Packet.hpp"
 #include "ATransceiver.hpp"
+#include "TxQueueData.hpp"
+#include "Sender.hpp"
+#include "SignalWaitManager.hpp"
 
 namespace ptp_comms
 {
@@ -21,59 +25,15 @@ class TxerTh
 {
 private:
     /**
-     * @brief Represents an item in the queue for data to be transmitted.
+     * @brief Comparator function for TxQueueData.
      * 
      */
-    class TxQueueData
+    struct TxCompare
     {
-    public:
-        /**
-         * @brief Indicates the number of times this piece of data has tried to be transmitted.
-         * 
-         */
-        int8_t tries = 0;
-
-        /**
-         * @brief Sequence number for this piece of data.
-         * 
-         */
-        uint32_t seqNum = 0;
-
-        /**
-         * @brief Actual payload data to transmit.
-         * 
-         */
-        std::vector<uint8_t> data;
-
-        /**
-         * @brief Destination of this piece of data.
-         * 
-         */
-        std::string dest;
-
-        /**
-         * @brief Port number this piece of data should go to.
-         * 
-         */
-        uint16_t port;
-
-        /**
-         * @brief Construct a new Tx Queue Data object.
-         * 
-         */
-        TxQueueData () {}
-
-        /**
-         * @brief Construct a new Tx Queue Data object.
-         * 
-         * @param data Payload data.
-         * @param dest Destination to send to.
-         * @param port Port to send to.
-         * @param seqNum Sequence number for this data.
-         */
-        TxQueueData (std::vector<uint8_t> data, std::string dest, uint16_t port, uint32_t seqNum) 
-            : data(data), dest(dest), port(port), seqNum(seqNum)
-        {}
+        bool operator()(const TxQueueData& first, const TxQueueData& second)
+        {
+            return first.data.size() > second.data.size();
+        }
     };
 
     // Constants
@@ -81,7 +41,7 @@ private:
      * @brief Maximum size of the transmission queue.
      * 
      */
-    uint8_t const MAX_QUEUE_SIZE = 10;
+    uint8_t const MAX_QUEUE_SIZE = 30;
 
     /**
      * @brief Maximum number of times to try and send a piece of data in the queue.
@@ -90,10 +50,22 @@ private:
     uint8_t const MAX_QUEUE_TRIES = 3;
 
     /**
-     * @brief Maximum number of times to try and send a segment of a piece of data.
+     * @brief Maximum number of senders that are sending long data length.
      * 
      */
-    uint8_t const MAX_SEGMENT_TRIES = 3;
+    uint8_t const MAX_LONG_SENDERS = 3;
+
+    /**
+     * @brief Threshold that determines if a single piece of data is small or large. In bytes.
+     * 
+     */
+    uint32_t const SIZE_THRESHOLD = 100000;
+
+    /**
+     * @brief Frequency of servicing large data.
+     * 
+     */
+    double const LARGE_TX_FREQ = 20.0;
 
     /**
      * @brief Tranmission thread that will run the actual data processing (preparation and transmission).
@@ -102,16 +74,29 @@ private:
     std::thread txThread;
 
     /**
+     * @brief Tranmission thread that will run the actual data processing (preparation and transmission) for LARGE data.
+     * @details Whether a data or not is determined by \p SIZE_THRESHOLD.
+     * 
+     */
+    std::thread largeTxThread;
+
+    /**
      * @brief Flag to indicate if transmission thread should run.
      * 
      */
     std::atomic<bool> thRunning;
 
     /**
-     * @brief First-In-First-Out transmission queue for storing pieces of data waiting to be transmitted.
+     * @brief Prioritized transmission queue for storing pieces of small sized data waiting to be transmitted.
      * 
      */
-    std::queue<TxQueueData> txQ;
+    std::priority_queue<TxQueueData, std::vector<TxQueueData>, TxCompare> smallTxQ;
+
+    /**
+     * @brief Prioritized transmission queue for storing pieces of large sized data waiting to be transmitted.
+     * 
+     */
+    std::priority_queue<TxQueueData, std::vector<TxQueueData>, TxCompare> largeTxQ;
 
     /**
      * @brief Mutex to protect the transmission queue.
@@ -126,61 +111,40 @@ private:
     ATransceiver* cc;
 
     /**
-     * @brief Mutex to help with the signalling of reception of acknowledgement packets.
-     * 
-     */
-    std::mutex mAck;
-
-    /**
-     * @brief Condition variable to help with the signalling of reception of acknowledgement packets.
-     * 
-     */
-    std::condition_variable cvAck;
-
-    /**
-     * @brief Flag to help with the signalling of reception of acknowledgement packets.
-     * 
-     */
-    bool gotAck;
-
-    /**
-     * @brief Mutex to protect the acknowledgement signalling parameters.
-     * 
-     */
-    std::mutex mWaitAck;
-
-    /**
-     * @brief This will indicate for which source address we are waiting for the ACK.
-     * 
-     */
-    std::string waitSrc;
-
-    /**
-     * @brief This will indicate for which port number we are waiting for the ACK.
-     * 
-     */
-    uint16_t waitPort;
-
-    /**
-     * @brief This will indicate for which sequence number we are waiting for the ACK.
-     * 
-     */
-    uint32_t waitSeq;
-
-    /**
-     * @brief This will indicate for which segment number we are waiting for the ACK.
-     * 
-     */
-    uint32_t waitSeg;
-
-    /**
      * @brief This indicates the current sequence number running count. Incremented after queueing each piece of data.
      * 
      */
     uint32_t sequence = 0;
 
+    /**
+     * @brief To signal when a new small data piece is queued and ready.
+     * 
+     */
     std::condition_variable cvGotTx;
-    std::mutex mGotTx;
+
+    /**
+     * @brief Mutex to protect small data queue.
+     * 
+     */
+    std::mutex mSmallTxQ;
+
+    /**
+     * @brief Mutex to protect large data queue.
+     * 
+     */
+    std::mutex mLargeTxQ;
+
+    /**
+     * @brief Record of all existing senders with long data length.
+     * 
+     */
+    std::map<uint32_t, std::unique_ptr<Sender>> longSenders;
+
+    /**
+     * @brief Signalling manager to manage all waiters and signallers.
+     * 
+     */
+    SignalWaitManager sigMgr;
 
     /**
      * @brief Executes the processing of data.
@@ -194,75 +158,84 @@ private:
         while(thRunning.load())
         {
             TxQueueData dat;
-            
             // We wait until a signal is given that a TX has arrived.
             {
-                std::unique_lock<std::mutex> tLock(mGotTx);
+                std::unique_lock<std::mutex> tLock(mSmallTxQ);
                 cvGotTx.wait(tLock,
                     [this] () -> bool
                     {
-                        return !txQ.empty();
+                        return !smallTxQ.empty();
                     });
-                
-                // Get data from queue.
-                dat = txQ.front();
-                txQ.pop();
+                dat = smallTxQ.top();
+                smallTxQ.pop();
             }
 
-            ptp_comms::Neighbor_M nb = cc->neighbors();
-            if (((dat.dest != ptp_comms::BROADCAST_ADDR) && (nb.find(dat.dest) == nb.end())) 
-                || !sendData(dat))
+            // We now check small data queue and execute syncly (if any).
             {
-                dat.tries++;
-                if (dat.tries < MAX_QUEUE_TRIES)
+                ptp_comms::Neighbor_M nb = cc->neighbors();
+                if (dat.dest == ptp_comms::BROADCAST_ADDR || nb.find(dat.dest) != nb.end())
                 {
-                    _queueOne(dat); // Re-queue the data back into the queue to be processed again later. Give up after MAX_QUEUE_TRIES attempts.
+                    Sender sender(dat, cc, &sigMgr);
+                    if (!sender.execute())
+                    {
+                        dat.tries++;
+                        if (dat.tries < MAX_QUEUE_TRIES)
+                        {
+                            _queueOne(dat); // Re-queue the data back into the queue to be processed again later. Give up after MAX_QUEUE_TRIES attempts.
+                        }
+                    }
                 }
             }
         }
     }
 
     /**
-     * @brief Prepares and transmits a piece of data from the transmission queue.
-     * @details Each piece of data is broken into segments and transmitted out one by one. After each transmission,
-     * an attempt to wait for acknowledgement (ACK) will be made before the next segment is sent. 
-     * If it fails to receive ACK, it will retry transmission up to a certain number of times. If this also fails, the
-     * data will be given up on.
+     * @brief Executes the processing of large data.
      * 
-     * @param data Data to be transmitted.
-     * @return true If data was transmitted entirely and successfully.
-     * @return false If data failed to transmit after several retries.
      */
-    bool sendData(const TxQueueData& data)
+    void _runLarge()
     {
-        int64_t dSize = data.data.size();
-        uint8_t* ptr = (uint8_t*)data.data.data();
-        uint64_t s = 0;
-
-        for (size_t i = 0; i < dSize; i+= Packet::MAX_SEGMENT_SIZE)
+        while (thRunning.load())
         {
-            int tries = 0;
-            auto last = std::min<int64_t>(dSize, (int64_t)(i + Packet::MAX_SEGMENT_SIZE));
-            do
+            // Clean any long senders that have finished.
+            for (auto it = longSenders.begin(); it != longSenders.end();)
             {
-                cc->sendTo(
-                    Packet(data.seqNum, s, dSize, std::vector<uint8_t>(ptr + i, ptr + last)).serialize(), 
-                    data.dest, 
-                    data.port);
-                tries++;
-            } while (
-                data.dest != ptp_comms::BROADCAST_ADDR
-                && tries < MAX_SEGMENT_TRIES 
-                && !_waitAck(data.seqNum, s, data.dest, data.port, 1000) 
-                );
-
-            if (tries >= MAX_SEGMENT_TRIES)
-            {
-                return false;
+                bool res = it->second->isFinished();
+                if (res)
+                {
+                    it = longSenders.erase(it);
+                }
+                else
+                {
+                    it++;
+                }
             }
-            s++;
+            
+            // We check large data queue first and execute them asyncly (if any).
+            TxQueueData dat;
+            bool have = false;
+            {
+                std::lock_guard<std::mutex> lock(mLargeTxQ);
+                if (!largeTxQ.empty() && longSenders.size() < MAX_LONG_SENDERS)
+                {
+                    dat = largeTxQ.top();
+                    largeTxQ.pop();
+                    have = true;
+                }
+            }
+
+            // TODO: Re-queue those data that were not sent successfully.
+            if (have)
+            {
+                ptp_comms::Neighbor_M nb = cc->neighbors();
+                if (dat.dest == ptp_comms::BROADCAST_ADDR || nb.find(dat.dest) != nb.end())
+                {
+                    longSenders[dat.seqNum] = std::unique_ptr<Sender>(new Sender(dat, cc, &sigMgr));
+                    longSenders[dat.seqNum]->executeAsync();
+                }
+            }
+            ros::Rate(LARGE_TX_FREQ).sleep();
         }
-        return true;
     }
 
     /**
@@ -274,50 +247,23 @@ private:
      */
     bool _queueOne(TxQueueData& sendData)
     {
-        if (txQ.size() < MAX_QUEUE_SIZE)
+        if (sendData.data.size() <= SIZE_THRESHOLD && smallTxQ.size() < MAX_QUEUE_SIZE)
         {
-            txQ.push(sendData);
+            std::lock_guard<std::mutex> lock(mSmallTxQ);
+            smallTxQ.push(sendData);
             cvGotTx.notify_one();
+            return true;
+        }
+        else if (sendData.data.size() > SIZE_THRESHOLD && largeTxQ.size() < MAX_QUEUE_SIZE)
+        {
+            std::lock_guard<std::mutex> lock(mLargeTxQ);
+            largeTxQ.push(sendData);
             return true;
         }
         else
         {
             return false;
         }
-    }
-
-    // TODO: The waiting should be done using sim time or ros wall time instead of system time.
-    /**
-     * @brief Waits for the acknowledgement (ACK) for a specific source address, sequence and segment number.
-     * 
-     * @param seqNum Sequence number the ACK is to be for.
-     * @param segNum Segment number the ACK is to be for.
-     * @param src Source address the ACK should be coming from.
-     * @param port Port number the ACK should be coming from.
-     * @param timeout The amount of time in milliseconds to wait for before giving up.
-     * @return true If ACK was received.
-     * @return false If ACK was never received.
-     */
-    bool _waitAck(uint32_t seqNum, uint32_t segNum, std::string src, uint16_t port, uint32_t timeout)
-    {
-        {
-            std::lock_guard<std::mutex> wLock(mWaitAck);
-            waitSrc = src;
-            waitPort = port;
-            waitSeq = seqNum;
-            waitSeg = segNum;
-        }
-        gotAck = false;
-        std::unique_lock<std::mutex> lock(mAck);
-        bool res = cvAck.wait_for(
-            lock, 
-            std::chrono::milliseconds(timeout),
-            [this] () -> bool
-                {
-                    return gotAck;
-                }
-            );
-        return res;
     }
 
     /**
@@ -332,24 +278,7 @@ private:
      */
     void _signalAck(uint32_t seqNum, uint32_t segNum, std::string src, uint16_t port)
     {
-        uint32_t tseq;
-        uint32_t tseg;
-        std::string tsrc;
-        uint16_t tport;
-        {
-            std::lock_guard<std::mutex> wLock(mWaitAck);
-            tseq = waitSeq;
-            tseg = waitSeg;
-            tsrc = waitSrc;
-            tport = waitPort;
-        }
-
-        if (seqNum == tseq && segNum == tseg && src == tsrc && port == tport)
-        {
-            std::lock_guard<std::mutex> lock(mAck);
-            gotAck = true;
-            cvAck.notify_one(); // Inform that an ACK has been received.
-        }
+        sigMgr.signal(WaitID(seqNum, segNum));
     }
     
 public:
@@ -384,6 +313,7 @@ public:
         }
         thRunning.store(true);
         txThread = std::thread(&TxerTh::_run, this);
+        largeTxThread = std::thread(&TxerTh::_runLarge, this);
     }
 
     /**
@@ -396,6 +326,10 @@ public:
         if (txThread.joinable())
         {
             txThread.join();
+        }
+        if (largeTxThread.joinable())
+        {
+            largeTxThread.join();
         }
     }
 
@@ -410,7 +344,6 @@ public:
      */
     bool sendOne(std::vector<uint8_t> data, std::string dest, uint16_t port)
     {
-        std::lock_guard<std::mutex> lock(mGotTx);
         TxQueueData sendData(data, dest, port, sequence++);
         return _queueOne(sendData);
     }
