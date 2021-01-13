@@ -54,7 +54,7 @@ class DbClient {
      * @brief Data of an entry.
      * 
      */
-    typedef std::string DATA;
+    typedef std::vector<uint8_t> DATA;
 
     /**
      * @brief Entry ID and data pair.
@@ -141,7 +141,7 @@ class DbClient {
                 rows.push_back(Schema{
                         sqlite3_column_int(stmt, 0),
                         sqlite3_column_int64(stmt, 1),
-                        reinterpret_cast<const char*>(sqlite3_column_text(stmt, 2))
+                        reinterpret_cast<DATA>(sqlite3_column_text(stmt, 2))
                         });
             }
 
@@ -184,7 +184,7 @@ class DbClient {
             while ((rc = sqlite3_step(stmt)) == SQLITE_ROW) {
                 rows.push_back(ROW_ID_DATA{
                         sqlite3_column_int(stmt, 0),
-                        reinterpret_cast<const char*>(sqlite3_column_text(stmt, 2))
+                        reinterpret_cast<DATA>(sqlite3_column_text(stmt, 2))
                         });
             }
 
@@ -239,7 +239,7 @@ class DbClient {
          */
         bool upsert(ID entryId, TIMESTAMP timestamp, DATA data) {
             std::ostringstream oss;
-            oss << "insert into metadata values(" << entryId << "," << timestamp << ",'" << data << "') on conflict(id) do update set timestamp=excluded.timestamp, data=excluded.data;";
+            oss << "insert into metadata values(" << entryId << "," << timestamp << ",'" << std::string(data.begin(), data.end()) << "') on conflict(id) do update set timestamp=excluded.timestamp, data=excluded.data;";
             if (!executeSchemas(oss.str())) {
                 return false;
             }
