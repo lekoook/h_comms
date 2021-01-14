@@ -1,0 +1,8 @@
+<launch>
+    <arg name="name1" />
+    <arg name="name2" />
+    <arg name="name3" />
+    <node pkg="test_comms" type="test_comms_node" name="test_comms_node" output="screen" ns="$(arg name1)"/>
+    <node pkg="test_comms" type="test_comms_node" name="test_comms_node" output="screen" ns="$(arg name2)"/>
+    <node pkg="test_comms" type="test_comms_node" name="test_comms_node" output="screen" ns="$(arg name3)"/>
+</launch>
