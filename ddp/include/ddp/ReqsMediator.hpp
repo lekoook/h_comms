@@ -178,6 +178,7 @@ private:
                 }
             }
 
+            // TODO: Don't spawn Requestor if there already exists one with the same target and entry ID.
             // We spawn as many Requestors as we can to service data requests.
             {
                 std::lock_guard<std::mutex> qLock(mReqRecord);
