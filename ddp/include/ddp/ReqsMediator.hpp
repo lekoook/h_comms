@@ -173,9 +173,15 @@ private:
                 {
                     auto req = reqToRemove.front();
                     reqToRemove.pop();
-                    std::lock_guard<std::mutex> qLock(mReqRecord);
-                    reqRecord.erase(req.sequence);
-                    dupReq.erase(std::make_pair(req.target, req.entryId));
+                    {
+                        std::lock_guard<std::mutex> qLock(mReqRecord);
+                        reqRecord.erase(req.sequence);
+                        dupReq.erase(std::make_pair(req.target, req.entryId));
+                    }
+                    {
+                        std::lock_guard<std::mutex> lock(mReqTries);
+                        reqTries.erase(req.sequence);
+                    }
                 }
             }
 
@@ -207,14 +213,19 @@ private:
      * @param sequence Sequence number for this request.
      * @param entryId Entry ID in the MIT to request.
      * @param reqTarget Target robot this request is intended for.
+     * @param requeue Indicates if this is meant to be a requeue of a previously queued entry.
      */
-    void _queueReq(uint32_t sequence, uint16_t entryId, std::string reqTarget)
+    void _queueReq(uint32_t sequence, uint16_t entryId, std::string reqTarget, bool requeue=false)
     {
         std::lock_guard<std::mutex> lock(mReqQ);
         auto key = std::make_pair(reqTarget, entryId);
         // Prevent duplicate Requests from being queued if there already exists one in queue or is currently executing.
-        if (dupReq.find(key) == dupReq.end())
+        if (requeue || (dupReq.find(key) == dupReq.end()))
         {
+            {
+                std::lock_guard<std::mutex> lock(mReqTries);
+                reqTries.insert(sequence);
+            }
             dupReq.insert(key);
             reqQ.push(ReqQueueData(sequence, entryId, reqTarget));
         }
@@ -336,9 +347,9 @@ public:
         reqToRemove.push(ReqQueueData(sequence, entryId, reqTarget));
     }
 
-    // TODO: Should a request that was never queued in the first place, to be allowed to requeue?
     /**
      * @brief Requeues a request that was queued previously.
+     * @details If this has been called, do NOT call removeReq() afterwards.
      * 
      * @param sequence Sequence number that was assigned to this request initially.
      * @param entryId Entry ID in the MIT to request.
@@ -346,16 +357,14 @@ public:
      */
     void requeueReq(uint32_t sequence, uint16_t entryId, std::string reqTarget)
     {
-        std::lock_guard<std::mutex> lock(mReqTries);
-        size_t counts = reqTries.count(sequence);
-        if (counts < MAX_REQUEST_ATTEMPTS - 1)
+        size_t counts = 0;
         {
-            reqTries.insert(sequence);
-            _queueReq(sequence, entryId, reqTarget);
+            std::lock_guard<std::mutex> lock(mReqTries);
+            counts = reqTries.count(sequence);
         }
-        else
+        if (counts > 0 && counts < MAX_REQUEST_ATTEMPTS)
         {
-            reqTries.erase(sequence);
+            _queueReq(sequence, entryId, reqTarget, true);
         }
     }
 };

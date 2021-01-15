@@ -88,14 +88,11 @@ private:
                     ROS_INFO("Request sequence %u for entry %u to %s PUSH DATA",
                         reqSequence, reqEntryId, reqTarget.c_str());
                     dataAccessor->pushData(m.entryId, m.timestamp, m.data);
+                    reqManager->removeReq(reqSequence, reqEntryId, reqTarget);
                 }
                 lifeRunning.store(false);
             }
         }
-
-        std::lock_guard<std::mutex> lock(mRsm);
-        _rsm = nullptr;
-        reqManager->removeReq(reqSequence, reqEntryId, reqTarget);
     }
 
 public:
