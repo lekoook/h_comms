@@ -25,7 +25,9 @@ void insertData(uint16_t robotId, uint16_t dataType, std::string data)
     
     uint16_t eid = (robotId * 1000) + dataType;
     uint64_t ts = getTs();
-    if (db->upsert({db_client::DbClient::Schema(eid, ts, data + " - " + std::to_string(ts))}))
+    std::string s(data + " - " + std::to_string(ts));
+    std::vector<uint8_t> v(s.begin(), s.end());
+    if (db->upsert({db_client::DbClient::Schema(eid, ts, v)}))
     {
         std::ostringstream oss;
         oss << "Inserted " << eid << " with timestamp " << ts;
@@ -45,7 +47,8 @@ void assertOne(uint16_t robotId, uint16_t dataType, std::string data)
     auto sch = db->selectSchema(eid);
     if (sch)
     {
-        if ((sch->data.find(std::to_string(sch->timestamp)) != std::string::npos) && (sch->data.find(data) != std::string::npos))
+        std::string data = std::string(sch->data.begin(), sch->data.end());
+        if ((data.find(std::to_string(sch->timestamp)) != std::string::npos) && (data.find(data) != std::string::npos))
         {
             ROS_INFO("SEEN entry ID %u with timestamp %lu", sch->id, sch->timestamp);
         }

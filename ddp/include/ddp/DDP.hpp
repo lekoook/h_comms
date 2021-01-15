@@ -386,7 +386,7 @@ public:
         if (!mit.contains(entryId) || (mit.contains(entryId) && timestamp > mit.getTimestamp(entryId)))
         {
             db_client::DbClient::SCHEMAS sch = 
-                { db_client::DbClient::Schema(entryId, timestamp, std::string(data.begin(), data.end())) };
+                { db_client::DbClient::Schema(entryId, timestamp, data) };
             
             if (database->upsert(sch))
             {
