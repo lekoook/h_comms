@@ -138,10 +138,11 @@ class DbClient {
             rc = sqlite3_prepare_v2(db, zSql.c_str(), -1, &stmt, NULL);
             returnNulloptOnError(rc, SQLITE_OK);
             while ((rc = sqlite3_step(stmt)) == SQLITE_ROW) {
+                const char* s = reinterpret_cast<const char*>(sqlite3_column_text(stmt, 2));
                 rows.push_back(Schema{
                         sqlite3_column_int(stmt, 0),
                         sqlite3_column_int64(stmt, 1),
-                        reinterpret_cast<DATA>(sqlite3_column_text(stmt, 2))
+                        DATA(s, s + strlen(s))
                         });
             }
 
@@ -182,9 +183,10 @@ class DbClient {
             rc = sqlite3_prepare_v2(db, zSql.c_str(), -1, &stmt, NULL);
             returnNulloptOnError(rc, SQLITE_OK);
             while ((rc = sqlite3_step(stmt)) == SQLITE_ROW) {
+                const char* s = reinterpret_cast<const char*>(sqlite3_column_text(stmt, 2));
                 rows.push_back(ROW_ID_DATA{
                         sqlite3_column_int(stmt, 0),
-                        reinterpret_cast<DATA>(sqlite3_column_text(stmt, 2))
+                        DATA(s, s + strlen(s))
                         });
             }
 
