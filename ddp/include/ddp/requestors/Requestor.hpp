@@ -95,7 +95,7 @@ private:
 
         std::lock_guard<std::mutex> lock(mRsm);
         _rsm = nullptr;
-        reqManager->removeReq(reqSequence);
+        reqManager->removeReq(reqSequence, reqEntryId, reqTarget);
     }
 
 public:

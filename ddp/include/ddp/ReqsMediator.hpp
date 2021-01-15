@@ -138,7 +138,7 @@ private:
      * @brief Queue that tracks the sequence number of all Requestors that have ended it's life and marked for removal.
      * 
      */
-    std::queue<uint32_t> reqToRemove;
+    std::queue<ReqQueueData> reqToRemove;
 
     /**
      * @brief Mutex to protect the queue that marks Requestors for removal.
@@ -171,14 +171,14 @@ private:
                 std::lock_guard<std::mutex> rLock(mReqToRemove);
                 while (reqToRemove.size() > 0)
                 {
-                    uint32_t key = reqToRemove.front();
+                    auto req = reqToRemove.front();
                     reqToRemove.pop();
                     std::lock_guard<std::mutex> qLock(mReqRecord);
-                    reqRecord.erase(key);
+                    reqRecord.erase(req.sequence);
+                    dupReq.erase(std::make_pair(req.target, req.entryId));
                 }
             }
 
-            // TODO: Don't spawn Requestor if there already exists one with the same target and entry ID.
             // We spawn as many Requestors as we can to service data requests.
             {
                 std::lock_guard<std::mutex> qLock(mReqRecord);
@@ -187,7 +187,6 @@ private:
                 {
                     ReqQueueData qData = reqQ.front();
                     reqQ.pop();
-                    dupReq.erase(std::make_pair(qData.target, qData.entryId));
                     reqRecord.emplace(
                         std::piecewise_construct, 
                         std::forward_as_tuple(qData.sequence), 
@@ -213,7 +212,8 @@ private:
     {
         std::lock_guard<std::mutex> lock(mReqQ);
         auto key = std::make_pair(reqTarget, entryId);
-        if (dupReq.find(key) == dupReq.end()) // Only queue the request if it is not already in the queue.
+        // Prevent duplicate Requests from being queued if there already exists one in queue or is currently executing.
+        if (dupReq.find(key) == dupReq.end())
         {
             dupReq.insert(key);
             reqQ.push(ReqQueueData(sequence, entryId, reqTarget));
@@ -327,11 +327,13 @@ public:
      * @brief Mark a Requestor by their sequence number for removal from tracking.
      * 
      * @param sequence Sequence number of Requestor to remove.
+     * @param entryId Entry ID of the Request.
+     * @param reqTarget Target of the Request.
      */
-    void removeReq(uint32_t sequence)
+    void removeReq(uint32_t sequence, uint16_t entryId, std::string reqTarget)
     {
         std::lock_guard<std::mutex> lock(mReqToRemove);
-        reqToRemove.push(sequence);
+        reqToRemove.push(ReqQueueData(sequence, entryId, reqTarget));
     }
 
     // TODO: Should a request that was never queued in the first place, to be allowed to requeue?
