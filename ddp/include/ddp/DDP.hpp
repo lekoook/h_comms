@@ -385,10 +385,7 @@ public:
         
         if (!mit.contains(entryId) || (mit.contains(entryId) && timestamp > mit.getTimestamp(entryId)))
         {
-            db_client::DbClient::SCHEMAS sch = 
-                { db_client::DbClient::Schema(entryId, timestamp, std::string(data.begin(), data.end())) };
-            
-            if (database->upsert(sch))
+            if (database->upsert(entryId, timestamp, data))
             {
                 return true;
             }
@@ -408,13 +405,12 @@ public:
      */
     bool pullData(uint16_t entryId, uint64_t& timestamp, std::vector<uint8_t>& data)
     {
-        db_client::DbClient::IDS id = { entryId };
-        auto res = database->selectSchemas(id);
+        auto res = database->selectSchema(entryId);
         
-        if (res && res.value().size() == 1) // Only one single returned value.
+        if (res) // Only one single returned value.
         {
-            timestamp = res.value()[0].timestamp;
-            data = std::vector<uint8_t>(res.value()[0].data.begin(), res.value()[0].data.end());
+            timestamp = res.value().timestamp;
+            data = res.value().data;
             return true;
         }
         else
