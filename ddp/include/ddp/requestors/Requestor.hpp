@@ -80,7 +80,11 @@ private:
                 {
                     ROS_WARN("Request sequence %u TIMEOUT for entry %u to %s",
                         reqSequence, reqEntryId, reqTarget.c_str());
-                    reqManager->requeueReq(reqSequence, reqEntryId, reqTarget);
+                    // TODO: Disabled requeuing due to bug.
+                    // BUG: Once requeued, the lifeRunning will not set to True and hence not run Request again. 
+                    // We might need a better way to manage the queueing and requeueing of Requests.
+                    // reqManager->requeueReq(reqSequence, reqEntryId, reqTarget);
+                    reqManager->removeReq(reqSequence, reqEntryId, reqTarget);
                 }
                 else if (rsm.hasReceived())
                 {
