@@ -8,6 +8,7 @@
 #include "Packet.hpp"
 #include "ATransceiver.hpp"
 #include "SignalWaitManager.hpp"
+#include "WaitTimer.hpp"
 
 namespace ptp_comms
 {
@@ -37,7 +38,7 @@ private:
      * @brief Lower bound of timeout duration.
      * 
      */
-    uint32_t const MIN_TIMEOUT = 300;
+    uint32_t const MIN_TIMEOUT = 50;
 
     /**
      * @brief Maximum number of times to try and send a segment of a piece of data.
@@ -141,7 +142,12 @@ private:
      */
     SignalWaitManager* signalManager;
 
-    // TODO: The waiting should be done using sim time or ros wall time instead of system time.
+    /**
+     * @brief Timer used to wait for ACK.
+     * 
+     */
+    WaitTimer ackWaitTimer;
+
     /**
      * @brief Waits for the acknowledgement (ACK) for a specific source address, sequence and segment number.
      * 
@@ -151,17 +157,9 @@ private:
      */
     bool _waitAck(uint32_t timeout)
     {
-        gotAck = false;
-        std::unique_lock<std::mutex> lock(mAck);
-        bool res = cvAck.wait_for(
-            lock, 
-            std::chrono::milliseconds(timeout),
-            [this] () -> bool
-                {
-                    return gotAck;
-                }
-            );
-        return res;
+        ackWaitTimer.setTime(timeout / 1000.0f); // Convert from milliseconds to seconds.
+        ackWaitTimer.wait();
+        return ackWaitTimer.isInterrupted();
     }
 
     /**
@@ -314,9 +312,7 @@ public:
 
     virtual void notify()
     {
-        std::lock_guard<std::mutex> lock(mAck);
-        gotAck = true;
-        cvAck.notify_one(); // Inform that an ACK has been received.
+        ackWaitTimer.interrupt();
     }
 };
 
