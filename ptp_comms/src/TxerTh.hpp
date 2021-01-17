@@ -247,23 +247,24 @@ private:
      */
     bool _queueOne(TxQueueData& sendData)
     {
-        if (sendData.data.size() <= SIZE_THRESHOLD && smallTxQ.size() < MAX_QUEUE_SIZE)
         {
             std::lock_guard<std::mutex> lock(mSmallTxQ);
-            smallTxQ.push(sendData);
-            cvGotTx.notify_one();
-            return true;
+            if (sendData.data.size() <= SIZE_THRESHOLD && smallTxQ.size() < MAX_QUEUE_SIZE)
+            {
+                smallTxQ.push(sendData);
+                cvGotTx.notify_one();
+                return true;
+            }
         }
-        else if (sendData.data.size() > SIZE_THRESHOLD && largeTxQ.size() < MAX_QUEUE_SIZE)
         {
             std::lock_guard<std::mutex> lock(mLargeTxQ);
-            largeTxQ.push(sendData);
-            return true;
+            if (sendData.data.size() > SIZE_THRESHOLD && largeTxQ.size() < MAX_QUEUE_SIZE)
+            {
+                largeTxQ.push(sendData);
+                return true;
+            }
         }
-        else
-        {
-            return false;
-        }
+        return false;
     }
 
     /**
