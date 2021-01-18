@@ -77,6 +77,12 @@ private:
      * 
      */
     uint32_t sequence = 0;
+    
+    /**
+     * @brief Mutex to protect the sequence number.
+     * 
+     */
+    std::mutex mSequence;
 
     /**
      * @brief Request thread to handle new requests submissions.
@@ -305,7 +311,12 @@ public:
      */
     void queueReq(uint16_t entryId, std::string reqTarget)
     {
-        _queueReq(sequence++, entryId, reqTarget);
+        uint32_t seq = 0;
+        {
+            std::lock_guard<std::mutex> lock(mSequence);
+            seq = sequence++;
+        }
+        _queueReq(seq, entryId, reqTarget);
     }
 };
 
