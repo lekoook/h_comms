@@ -67,6 +67,12 @@ private:
     const int MAX_REQUESTORS = 2;
 
     /**
+     * @brief The rate at which the new requests submission queue is serviced and handled.
+     * 
+     */
+    const double QUEUE_RATE = 10.0f;
+
+    /**
      * @brief Current sequence number used to generate each Request queue item.
      * 
      */
@@ -175,7 +181,7 @@ private:
                 }
             }
 
-            ros::Duration(0.1).sleep();
+            ros::Rate(QUEUE_RATE).sleep();
         }
     }
 
