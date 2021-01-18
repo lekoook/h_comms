@@ -11,13 +11,12 @@
 #include <unordered_set>
 #include "requestors/Requestor.hpp"
 #include "ADataAccessor.hpp"
-#include "AReqManager.hpp"
 
 /**
  * @brief A Mediator class that will spawn and manage all Requestors used to service data requests.
  * 
  */
-class ReqsMediator : public AReqManager
+class ReqsMediator
 {
 private:
     /**
@@ -66,12 +65,6 @@ private:
      * 
      */
     const int MAX_REQUESTORS = 2;
-
-    /**
-     * @brief The maximum number of times a particular request can be requeued.
-     * 
-     */
-    const int MAX_REQUEST_ATTEMPTS = 3;
 
     /**
      * @brief Current sequence number used to generate each Request queue item.
@@ -135,30 +128,6 @@ private:
     std::mutex mReqRecord;
 
     /**
-     * @brief Queue that tracks the sequence number of all Requestors that have ended it's life and marked for removal.
-     * 
-     */
-    std::queue<ReqQueueData> reqToRemove;
-
-    /**
-     * @brief Mutex to protect the queue that marks Requestors for removal.
-     * 
-     */
-    std::mutex mReqToRemove;
-
-    /**
-     * @brief Tracks the number of attempts a request sequence number has appeared.
-     * 
-     */
-    std::unordered_multiset<uint32_t> reqTries;
-
-    /**
-     * @brief Mutex to protect the record for request sequence number appearances.
-     * 
-     */
-    std::mutex mReqTries;
-
-    /**
      * @brief Executes the processing of items in the requests queue.
      * 
      */
@@ -166,21 +135,24 @@ private:
     {
         while(reqRunning.load())
         {
-            // Remove all Requestors marked for removal.
+            // Remove all Requestors that has ended it's life and restart those that needs to.
             {
-                std::lock_guard<std::mutex> rLock(mReqToRemove);
-                while (reqToRemove.size() > 0)
+                std::lock_guard<std::mutex> qLock(mReqRecord);
+                for (auto it = reqRecord.begin(); it != reqRecord.end();)
                 {
-                    auto req = reqToRemove.front();
-                    reqToRemove.pop();
+                    if (it->second.needRelive() && it->second.hasEnded()) // Only restart if it has fully ended.
                     {
-                        std::lock_guard<std::mutex> qLock(mReqRecord);
-                        reqRecord.erase(req.sequence);
-                        dupReq.erase(std::make_pair(req.target, req.entryId));
+                        it->second.start();
                     }
+                    else if (it->second.hasEnded())
                     {
-                        std::lock_guard<std::mutex> lock(mReqTries);
-                        reqTries.erase(req.sequence);
+                        std::lock_guard<std::mutex> lock(mReqQ);
+                        dupReq.erase(std::make_pair(it->second.getTarget(), it->second.getEntryId()));
+                        it = reqRecord.erase(it);
+                    }
+                    else
+                    {
+                        it++;
                     }
                 }
             }
@@ -197,7 +169,7 @@ private:
                         std::piecewise_construct, 
                         std::forward_as_tuple(qData.sequence), 
                         std::forward_as_tuple(qData.sequence, qData.entryId, qData.target, 
-                                                transmitter, dataAccessor, this));
+                                                transmitter, dataAccessor));
                     ROS_INFO("Request sequence %u for entry %u to %s", 
                         qData.sequence, qData.entryId, qData.target.c_str());
                 }
@@ -222,10 +194,6 @@ private:
         // Prevent duplicate Requests from being queued if there already exists one in queue or is currently executing.
         if (requeue || (dupReq.find(key) == dupReq.end()))
         {
-            {
-                std::lock_guard<std::mutex> lock(mReqTries);
-                reqTries.insert(sequence);
-            }
             dupReq.insert(key);
             reqQ.push(ReqQueueData(sequence, entryId, reqTarget));
         }
@@ -332,40 +300,6 @@ public:
     void queueReq(uint16_t entryId, std::string reqTarget)
     {
         _queueReq(sequence++, entryId, reqTarget);
-    }
-
-    /**
-     * @brief Mark a Requestor by their sequence number for removal from tracking.
-     * 
-     * @param sequence Sequence number of Requestor to remove.
-     * @param entryId Entry ID of the Request.
-     * @param reqTarget Target of the Request.
-     */
-    void removeReq(uint32_t sequence, uint16_t entryId, std::string reqTarget)
-    {
-        std::lock_guard<std::mutex> lock(mReqToRemove);
-        reqToRemove.push(ReqQueueData(sequence, entryId, reqTarget));
-    }
-
-    /**
-     * @brief Requeues a request that was queued previously.
-     * @details If this has been called, do NOT call removeReq() afterwards.
-     * 
-     * @param sequence Sequence number that was assigned to this request initially.
-     * @param entryId Entry ID in the MIT to request.
-     * @param reqTarget Target robot this request is intended for.
-     */
-    void requeueReq(uint32_t sequence, uint16_t entryId, std::string reqTarget)
-    {
-        size_t counts = 0;
-        {
-            std::lock_guard<std::mutex> lock(mReqTries);
-            counts = reqTries.count(sequence);
-        }
-        if (counts > 0 && counts < MAX_REQUEST_ATTEMPTS)
-        {
-            _queueReq(sequence, entryId, reqTarget, true);
-        }
     }
 };
 

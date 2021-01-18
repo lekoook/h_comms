@@ -9,13 +9,12 @@
 #include <map>
 #include "responders/Responder.hpp"
 #include "ADataAccessor.hpp"
-#include "ARespManager.hpp"
 
 /**
  * @brief A Mediator class that will spawn and manage all the Responders used to service data requests.
  * 
  */
-class RespsMediator : public ARespManager
+class RespsMediator
 {
 private:
     /**
@@ -117,19 +116,6 @@ private:
     std::mutex mRespRecord;
 
     /**
-     * @brief Queue that tracks the Requestor address and sequence number of all Responder that have ended it's life 
-     * and marked for removal.
-     * 
-     */
-    std::queue<std::pair<std::string, uint32_t>> respToRemove;
-
-    /**
-     * @brief Mutex to protect the queue that marks Responders for removal.
-     * 
-     */
-    std::mutex mRespToRemove;
-
-    /**
      * @brief Executes the processing of items in the responses queue.
      * 
      */
@@ -137,15 +123,19 @@ private:
     {
         while(respRunning.load())
         {
-            // Remove all Responders marked for removal.
+            // Remove all Responders that has ended it's life.
             {
-                std::lock_guard<std::mutex> rLock(mRespToRemove);
                 std::lock_guard<std::mutex> qLock(mRespRecord);
-                while (respToRemove.size() > 0)
+                for (auto it = respRecord.begin(); it != respRecord.end();)
                 {
-                    auto key = respToRemove.front();
-                    respRecord.erase(key);
-                    respToRemove.pop();
+                    if (it->second.hasEnded())
+                    {
+                        it = respRecord.erase(it);
+                    }
+                    else
+                    {
+                        it++;
+                    }
                 }
             }
 
@@ -164,7 +154,7 @@ private:
                             std::piecewise_construct, 
                             std::forward_as_tuple(key), 
                             std::forward_as_tuple(qData.target, qData.sequence, qData.entryId, qData.target, 
-                                                    transmitter, dataAccessor, this));
+                                                    transmitter, dataAccessor));
                         ROS_INFO("Response to sequence %u for entry %u from %s", 
                             qData.sequence, qData.entryId, qData.target.c_str());
                     }
@@ -263,18 +253,6 @@ public:
     {
         std::lock_guard<std::mutex> lock(mRespQ);
         respQ.push(RespQueueData(sequence, entryId, respTarget));
-    }
-
-    /**
-     * @brief Mark a Responder for removal from tracking.
-     * 
-     * @param src Source address of request to remove.
-     * @param sequence Sequence number of request to remove.
-     */
-    void removeResp(std::string src, uint32_t sequence)
-    {
-        std::lock_guard<std::mutex> lock(mRespToRemove);
-        respToRemove.push(std::make_pair(src, sequence));
     }
 };
 

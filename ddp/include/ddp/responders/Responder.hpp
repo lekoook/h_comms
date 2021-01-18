@@ -6,7 +6,6 @@
 #include "RespMachine.hpp"
 #include "RespStates.hpp"
 #include "ADataAccessor.hpp"
-#include "ARespManager.hpp"
 
 /**
  * @brief Represents the life time of a Responder in a data exchange.
@@ -52,12 +51,6 @@ private:
     ADataAccessor* dataAccessor;
 
     /**
-     * @brief Interface of Responders manager that owns this Responder.
-     * 
-     */
-    ARespManager* respManager;
-
-    /**
      * @brief Pointer to a Responder state machine.
      * 
      */
@@ -98,7 +91,6 @@ private:
 
         std::lock_guard<std::mutex> lock(mRsm);
         _rsm = nullptr;
-        respManager->removeResp(reqSrc, respSequence);
     }
 
 public:
@@ -111,12 +103,11 @@ public:
      * @param respTarget Intended target address this response is to be made to.
      * @param transmitter Interface used to send messages. 
      * @param dataAccessor Interface used to access data in database.
-     * @param respManager Interface of Responders manager that owns this Responder.
      */
     Responder(std::string reqSrc, uint32_t respSequence, uint16_t respEntryId, std::string respTarget, 
-        ATransmitter* transmitter, ADataAccessor* dataAccessor, ARespManager* respManager)
+        ATransmitter* transmitter, ADataAccessor* dataAccessor)
         : ALifeEntity(), reqSrc(reqSrc), respSequence(respSequence), respEntryId(respEntryId), respTarget(respTarget), 
-            transmitter(transmitter), dataAccessor(dataAccessor), respManager(respManager), _rsm(nullptr) 
+            transmitter(transmitter), dataAccessor(dataAccessor), _rsm(nullptr) 
     {
         lifeRunning.store(true);
         lifeTh = std::thread(&Responder::_life, this);
@@ -181,6 +172,20 @@ public:
         {
             _rsm->recvAck(ackMsg, src);
         }
+    }
+
+    /**
+     * @brief Begins the execution of this Responder's sequence.
+     * 
+     */
+    virtual void start()
+    {
+        if (lifeRunning.load())
+        {
+            return;
+        }
+        lifeRunning = true;
+        lifeTh = std::thread(&Responder::_life, this);
     }
 };
 

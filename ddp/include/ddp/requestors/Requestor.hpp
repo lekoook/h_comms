@@ -6,11 +6,16 @@
 #include "ReqMachine.hpp"
 #include "ReqStates.hpp"
 #include "ADataAccessor.hpp"
-#include "AReqManager.hpp"
 
 class Requestor : public ALifeEntity
 {
 private:
+    /**
+     * @brief Maximum number of times this Requestor can execute it's sequence.
+     * 
+     */
+    int const MAX_LIVE_COUNT = 3;
+
     /**
      * @brief Sequence number of this request.
      * 
@@ -42,12 +47,6 @@ private:
     ADataAccessor* dataAccessor;
 
     /**
-     * @brief Interface of Requestors manager that owns this Requestor.
-     * 
-     */
-    AReqManager* reqManager;
-
-    /**
      * @brief Pointer to a Requestor state machine.
      * 
      */
@@ -60,6 +59,12 @@ private:
     std::mutex mRsm;
 
     /**
+     * @brief Tracks the number of times this Requestor has started it's sequence.
+     * 
+     */
+    int liveCount = 0;
+
+    /**
      * @brief Executes the lifetime of the Requestor state machine.
      * 
      */
@@ -70,6 +75,7 @@ private:
             std::lock_guard<std::mutex> lock(mRsm);
             _rsm = &rsm;
         }
+        liveCount++;
         while(lifeRunning.load())
         {
             rsm.run();
@@ -80,11 +86,10 @@ private:
                 {
                     ROS_WARN("Request sequence %u TIMEOUT for entry %u to %s",
                         reqSequence, reqEntryId, reqTarget.c_str());
-                    // TODO: Disabled requeuing due to bug.
-                    // BUG: Once requeued, the lifeRunning will not set to True and hence not run Request again. 
-                    // We might need a better way to manage the queueing and requeueing of Requests.
-                    // reqManager->requeueReq(reqSequence, reqEntryId, reqTarget);
-                    reqManager->removeReq(reqSequence, reqEntryId, reqTarget);
+                    if (liveCount < MAX_LIVE_COUNT)
+                    {
+                        lifeRelive = true;
+                    }
                 }
                 else if (rsm.hasReceived())
                 {
@@ -92,11 +97,13 @@ private:
                     ROS_INFO("Request sequence %u for entry %u to %s PUSH DATA",
                         reqSequence, reqEntryId, reqTarget.c_str());
                     dataAccessor->pushData(m.entryId, m.timestamp, m.data);
-                    reqManager->removeReq(reqSequence, reqEntryId, reqTarget);
                 }
-                lifeRunning.store(false);
+                lifeRunning = false;
             }
         }
+
+        std::lock_guard<std::mutex> lock(mRsm);
+        _rsm = nullptr;
     }
 
 public:
@@ -108,15 +115,14 @@ public:
      * @param reqTarget Intended target address this request is to be made to.
      * @param transmitter Interface used to send messages. 
      * @param dataAccessor Interface used to access data in database.
-     * @param reqManager Interface of Requestors manager that owns this Requestor.
      */
     Requestor(uint32_t reqSequence, uint16_t reqEntryId, std::string reqTarget, 
-        ATransmitter* transmitter, ADataAccessor* dataAccessor, AReqManager* reqManager)
+        ATransmitter* transmitter, ADataAccessor* dataAccessor)
         : ALifeEntity(), reqSequence(reqSequence), reqEntryId(reqEntryId), reqTarget(reqTarget), 
-            transmitter(transmitter), dataAccessor(dataAccessor), reqManager(reqManager), _rsm(nullptr) 
+            transmitter(transmitter), dataAccessor(dataAccessor), _rsm(nullptr)
     {
-        lifeRunning.store(true);
-        lifeTh = std::thread(&Requestor::_life, this);
+        lifeRunning = false;
+        start();
     }
 
     /**
@@ -186,6 +192,57 @@ public:
         {
             _rsm->recvData(dataMsg, src);
         }
+    }
+
+    /**
+     * @brief Begins the execution of this Requestor's sequence.
+     * 
+     */
+    virtual void start()
+    {
+        if (lifeRunning.load())
+        {
+            return;
+        }
+
+        if (lifeTh.joinable())
+        {
+            lifeTh.join();
+        }
+        
+        lifeRelive = false;
+        lifeRunning = true;
+        lifeTh = std::thread(&Requestor::_life, this);
+    }
+
+    /**
+     * @brief Returns the sequence number associated with this Requestor.
+     * 
+     * @return uint32_t Sequence number.
+     */
+    uint32_t getSequence()
+    {
+        return reqSequence;
+    }
+
+    /**
+     * @brief Returns the entry ID associated with this Requestor.
+     * 
+     * @return uint16_t Entry ID.
+     */
+    uint16_t getEntryId()
+    {
+        return reqEntryId;
+    }
+
+    /**
+     * @brief Returns the target address associated with this Requestor.
+     * 
+     * @return std::string Target address.
+     */
+    std::string getTarget()
+    {
+        return reqTarget;
     }
 };
 

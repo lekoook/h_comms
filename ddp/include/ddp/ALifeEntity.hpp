@@ -21,6 +21,12 @@ protected:
     std::atomic<bool> lifeRunning;
 
     /**
+     * @brief Flag to indicate if this entity needs to be relived.
+     * 
+     */
+    std::atomic<bool> lifeRelive;
+
+    /**
      * @brief Executes the lifetime of the life entity.
      * 
      */
@@ -46,6 +52,23 @@ public:
     {
         return !lifeRunning.load();
     }
+
+    /**
+     * @brief Check if this life entity needs to restart it's entire sequence.
+     * 
+     * @return true If the entity needs to be restarted.
+     * @return false If the entity does not need to be restarted.
+     */
+    bool needRelive()
+    {
+        return lifeRelive.load();
+    }
+
+    /**
+     * @brief Starts the sequence of the life entity.
+     * 
+     */
+    virtual void start() = 0;
 };
 
 #endif // H_LIFE_ENTITY
