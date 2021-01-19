@@ -15,10 +15,10 @@ class AckMsg : public BaseMsg
 private:
     /**
      * @brief Total length of fixed-length fields.
-     * @details Length = Type(1) + ForReq(1) + AckSequence(4) + AckEntryID(2)
+     * @details Length = Type(1) + ForReq(1) + AckSequence(4) + AckEntryID(2) + PayloadSize(4)
      * 
      */
-    const uint8_t FIXED_LEN = 8;
+    const uint8_t FIXED_LEN = 12;
 
 public:
     /**
@@ -42,6 +42,13 @@ public:
     bool forReq = true;
 
     /**
+     * @brief The size of the data payload.
+     * @details Used on the requester side to determine the timeout of the DDP layer.
+     * 
+     */
+    uint32_t payloadSize;
+
+    /**
      * @brief Construct a new Ack Msg object.
      * 
      */
@@ -53,9 +60,15 @@ public:
      * @param sequence The acknowledgement sequence number of this message.
      * @param entryId The entry ID this acknowledgement message is acknowledging to.
      * @param forReq (Optional) If true, this is acknowledgement for request message. Otherwise it is for data message.
+     * @param payloadSize (Optional) Provided by the responder to calculate a timeout on the requester side for each 
+     * transaction.
      */
-    AckMsg(uint32_t sequence, uint16_t entryId, bool forReq=true) 
-        : BaseMsg(MsgType::Acknowledgement), ackSequence(sequence), ackEntryId(entryId), forReq(forReq) {}
+    AckMsg(uint32_t sequence, uint16_t entryId, bool forReq=true, uint64_t payloadSize = 0) 
+        : BaseMsg(MsgType::Acknowledgement)
+        , ackSequence(sequence)
+        , ackEntryId(entryId)
+        , forReq(forReq)
+        , payloadSize(payloadSize) {}
 
     /**
      * @brief Move constructor.
@@ -66,7 +79,8 @@ public:
         : BaseMsg(MsgType::Acknowledgement)
         , ackSequence(other.ackSequence)
         , ackEntryId(other.ackEntryId)
-        , forReq(other.forReq) {}
+        , forReq(other.forReq)
+        , payloadSize(other.payloadSize) {}
 
     /**
      * @brief Copy constructor.
@@ -77,7 +91,8 @@ public:
         : BaseMsg(MsgType::Acknowledgement)
         , ackSequence(other.ackSequence)
         , ackEntryId(other.ackEntryId)
-        , forReq(other.forReq) {}
+        , forReq(other.forReq) 
+        , payloadSize(other.payloadSize) {}
 
     /**
      * @brief Move assignment operator.
@@ -90,6 +105,7 @@ public:
         ackSequence = other.ackSequence;
         ackEntryId = other.ackEntryId;
         forReq = other.forReq;
+        payloadSize = other.payloadSize;
         return *this;
     }
 
@@ -104,6 +120,7 @@ public:
         ackSequence = other.ackSequence;
         ackEntryId = other.ackEntryId;
         forReq = other.forReq;
+        payloadSize = other.payloadSize;
         return *this;
     }
 
@@ -121,6 +138,7 @@ public:
         serialisers::copyU8(&temp[1], (uint8_t)forReq);
         serialisers::copyU32(&temp[2], ackSequence);
         serialisers::copyU16(&temp[6], ackEntryId);
+        serialisers::copyU32(&temp[8], payloadSize);
 
         return std::vector<uint8_t>(temp, temp + FIXED_LEN);
     }
@@ -143,6 +161,7 @@ public:
         forReq = serialisers::getU8(&temp[1]);
         ackSequence = serialisers::getU32(&temp[2]);
         ackEntryId = serialisers::getU16(&temp[6]);
+        payloadSize = serialisers::getU32(&temp[8]);
     }
 };
 
