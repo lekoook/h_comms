@@ -2,6 +2,7 @@
 #include "messages/RreqMsg.hpp"
 #include "messages/RrepMsg.hpp"
 #include "messages/RrerMsg.hpp"
+#include "RouteTable.hpp"
 
 // #define SHOW_MORE
 
@@ -187,22 +188,66 @@ int main(int argc, char** argv)
     // aodv::RrepMsg msg7("X2", 2, "X3", 3, 31, true, true);
     // aodv::RrepMsg msg8("X2", 1, "X3", 3, 31, true, true);
     // aodv::RrepMsg msg9("X2", 1, "X3", 2, 31, true, true);
-    aodv::RrerMsg msg1("X4", 2, 1, true);
-    aodv::RrerMsg msg2("X4", 2, 1, true);
-    aodv::RrerMsg msg3("X4", 2, 1, true);
-    aodv::RrerMsg msg4("X4", 2, 1, true);
-    aodv::RrerMsg msg5("X2", 2, "X1", 1, 31, false);
-    aodv::RrerMsg msg6("X2", 2, "X1", 1, 31, true);
-    aodv::RrerMsg msg7("X2", 2, "X3", 3, 31, true);
-    aodv::RrerMsg msg8("X2", 1, "X3", 3, 31, true);
-    aodv::RrerMsg msg9("X2", 1, "X3", 2, 31, true);
-    test(msg1);
-    test(msg2);
-    test(msg3);
-    test(msg4);
-    test(msg5);
-    test(msg6);
-    test(msg7);
-    test(msg8);
-    test(msg9);
+    // aodv::RrerMsg msg1("X4", 2, 1, true);
+    // aodv::RrerMsg msg2("X4", 2, 1, true);
+    // aodv::RrerMsg msg3("X4", 2, 1, true);
+    // aodv::RrerMsg msg4("X4", 2, 1, true);
+    // aodv::RrerMsg msg5("X2", 2, "X1", 1, 31, false);
+    // aodv::RrerMsg msg6("X2", 2, "X1", 1, 31, true);
+    // aodv::RrerMsg msg7("X2", 2, "X3", 3, 31, true);
+    // aodv::RrerMsg msg8("X2", 1, "X3", 3, 31, true);
+    // aodv::RrerMsg msg9("X2", 1, "X3", 2, 31, true);
+    // test(msg1);
+    // test(msg2);
+    // test(msg3);
+    // test(msg4);
+    // test(msg5);
+    // test(msg6);
+    // test(msg7);
+    // test(msg8);
+    // test(msg9);
+
+    aodv::RouteTable rt;
+    aodv::RouteTableEntry entry;
+
+    entry.destination = "X1";
+    entry.destSequence = 1;
+    entry.nextHop = "X2";
+    entry.hopCount = 1;
+    entry.lifetime = 1000;
+    entry.isValidRoute = true;
+    entry.precursors = {"X2", "X3"};
+    rt.upsertEntry(entry);
+
+    entry.destination = "X2";
+    entry.destSequence = 2;
+    entry.nextHop = "X3";
+    entry.hopCount = 2;
+    entry.lifetime = 10000;
+    entry.isValidRoute = false;
+    entry.precursors = {"X1", "X3"};
+    rt.upsertEntry(entry);
+
+    entry.destination = "X1";
+    entry.destSequence = 1;
+    entry.nextHop = "X2";
+    entry.hopCount = 1;
+    entry.lifetime = 1000;
+    entry.isValidRoute = false;
+    entry.precursors = {"X2", "X3"};
+    rt.upsertEntry(entry);
+
+    // entry.destination = "X1";
+    // entry.destSequence = 1;
+    // entry.nextHop = "X2";
+    // entry.hopCount = 1;
+    // entry.lifetime = 1000;
+    // entry.isValidRoute = true;
+    // entry.precursors = {"X2", "X3"};
+    // rt.upsertEntry(entry);
+
+    std::cout << rt.isValidRoute("X1") << std::endl;
+    std::cout << rt.entryExists("X2") << std::endl;
+    std::cout << rt.entryExists("X3") << std::endl;
+    std::cout << rt.getEntry("X2", &entry) << " " << entry.destination << std::endl;
 }
