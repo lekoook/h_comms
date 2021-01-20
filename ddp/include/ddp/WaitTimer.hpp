@@ -206,6 +206,16 @@ public:
 
         return interrupted;
     }
+
+    /**
+     * @brief Changes the public waitTime variable.
+     * 
+     */
+    void changeWaitTime(double newWaitTime)
+    {
+        waitTime = newWaitTime;
+        return;
+    }
 };
 
 #endif // H_WAIT_TIMER

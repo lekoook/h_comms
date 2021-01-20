@@ -121,7 +121,7 @@ class DbClient {
 
         /** Create table if it does not exist. */
         tl::optional<bool> createTable() {
-            if (!executeSchemas("create table if not exists metadata (id int2 primary key not null, timestamp int8 not null, data text not null);")) { // If call returns nullopt, ...
+            if (!executeSchemas("create table if not exists metadata (id int2 primary key not null, timestamp int8 not null, data blob not null);")) { // If call returns nullopt, ...
                 return tl::nullopt; // ... then function returns nullopt.
             }
             return false;
@@ -138,11 +138,12 @@ class DbClient {
             rc = sqlite3_prepare_v2(db, zSql.c_str(), -1, &stmt, NULL);
             returnNulloptOnError(rc, SQLITE_OK);
             while ((rc = sqlite3_step(stmt)) == SQLITE_ROW) {
-                const char* s = reinterpret_cast<const char*>(sqlite3_column_text(stmt, 2));
+                size_t dataSize = sqlite3_column_bytes(stmt, 2);
+                uint8_t* dataPointer = (uint8_t*)(sqlite3_column_blob(stmt, 2));
                 rows.push_back(Schema{
                         sqlite3_column_int(stmt, 0),
                         sqlite3_column_int64(stmt, 1),
-                        DATA(s, s + strlen(s))
+                        DATA(dataPointer, dataPointer + dataSize)
                         });
             }
 
@@ -183,10 +184,11 @@ class DbClient {
             rc = sqlite3_prepare_v2(db, zSql.c_str(), -1, &stmt, NULL);
             returnNulloptOnError(rc, SQLITE_OK);
             while ((rc = sqlite3_step(stmt)) == SQLITE_ROW) {
-                const char* s = reinterpret_cast<const char*>(sqlite3_column_text(stmt, 2));
+                size_t dataSize = sqlite3_column_bytes(stmt, 2);
+                uint8_t* dataPointer = (uint8_t*)(sqlite3_column_blob(stmt, 2));
                 rows.push_back(ROW_ID_DATA{
                         sqlite3_column_int(stmt, 0),
-                        DATA(s, s + strlen(s))
+                        DATA(dataPointer, dataPointer + dataSize)
                         });
             }
 

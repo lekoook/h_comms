@@ -65,6 +65,7 @@ void WaitAckReqState::recvAck(ReqMachine& machine, AckMsg& ackMsg, std::string s
     if (machine._checkWaitParams(ackMsg.ackSequence, ackMsg.ackEntryId))
     {
         machine.waitTimer.interrupt();
+        machine.waitTimer.changeWaitTime(ackMsg.payloadSize / 6750); 
     }
 }
 

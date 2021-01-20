@@ -37,7 +37,7 @@ SendAckReqRespState::~SendAckReqRespState() {}
 
 void SendAckReqRespState::run(RespMachine& machine)
 {
-    AckMsg msg(machine.respSequence, machine.respEntryId);
+    AckMsg msg(machine.respSequence, machine.respEntryId, true, machine.dataToSend.data.size());
     machine.transmitter->transmit(machine.respTarget, msg);
     setState(machine, new SendDataRespState());
 }
