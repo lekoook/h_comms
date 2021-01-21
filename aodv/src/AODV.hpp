@@ -287,6 +287,10 @@ private:
             {
                 return; // We have seen this RREQ recently, discard it.
             }
+            else
+            {
+                _bufferRreq(msg.rreqId, originator);
+            }
 
             msg.hopCount++;
 
