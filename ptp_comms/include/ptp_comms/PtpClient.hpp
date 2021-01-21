@@ -159,7 +159,10 @@ private:
      */
     void _rxCb(const ptp_comms::RxDataConstPtr& msg)
     {
-        cb(msg->src, msg->port, msg->data);
+        if (cb)
+        {
+            cb(msg->src, msg->port, msg->data);
+        }
     }
 
 public:
