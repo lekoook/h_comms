@@ -1,4 +1,6 @@
+#include "ros/ros.h"
 #include <iostream>
+#include <thread>
 #include "messages/RreqMsg.hpp"
 #include "messages/RrepMsg.hpp"
 #include "messages/RrerMsg.hpp"
@@ -208,35 +210,8 @@ int main(int argc, char** argv)
     // test(msg8);
     // test(msg9);
 
-    aodv::RouteTable rt;
-    aodv::RouteTableEntry entry;
-
-    entry.destination = "X1";
-    entry.destSequence = 1;
-    entry.nextHop = "X2";
-    entry.hopCount = 1;
-    entry.lifetime = 1000;
-    entry.isValidRoute = true;
-    entry.precursors = {"X2", "X3"};
-    rt.upsertEntry(entry);
-
-    entry.destination = "X2";
-    entry.destSequence = 2;
-    entry.nextHop = "X3";
-    entry.hopCount = 2;
-    entry.lifetime = 10000;
-    entry.isValidRoute = false;
-    entry.precursors = {"X1", "X3"};
-    rt.upsertEntry(entry);
-
-    entry.destination = "X1";
-    entry.destSequence = 1;
-    entry.nextHop = "X2";
-    entry.hopCount = 1;
-    entry.lifetime = 1000;
-    entry.isValidRoute = false;
-    entry.precursors = {"X2", "X3"};
-    rt.upsertEntry(entry);
+    // aodv::RouteTable rt;
+    // aodv::RouteTableEntry entry;
 
     // entry.destination = "X1";
     // entry.destSequence = 1;
@@ -247,8 +222,55 @@ int main(int argc, char** argv)
     // entry.precursors = {"X2", "X3"};
     // rt.upsertEntry(entry);
 
-    std::cout << rt.isValidRoute("X1") << std::endl;
-    std::cout << rt.entryExists("X2") << std::endl;
-    std::cout << rt.entryExists("X3") << std::endl;
-    std::cout << rt.getEntry("X2", &entry) << " " << entry.destination << std::endl;
+    // entry.destination = "X2";
+    // entry.destSequence = 2;
+    // entry.nextHop = "X3";
+    // entry.hopCount = 2;
+    // entry.lifetime = 10000;
+    // entry.isValidRoute = false;
+    // entry.precursors = {"X1", "X3"};
+    // rt.upsertEntry(entry);
+
+    // entry.destination = "X1";
+    // entry.destSequence = 1;
+    // entry.nextHop = "X2";
+    // entry.hopCount = 1;
+    // entry.lifetime = 1000;
+    // entry.isValidRoute = false;
+    // entry.precursors = {"X2", "X3"};
+    // rt.upsertEntry(entry);
+
+    // entry.destination = "X1";
+    // entry.destSequence = 1;
+    // entry.nextHop = "X2";
+    // entry.hopCount = 1;
+    // entry.lifetime = 1000;
+    // entry.isValidRoute = true;
+    // entry.precursors = {"X2", "X3"};
+    // rt.upsertEntry(entry);
+
+    // std::cout << rt.isValidRoute("X1") << std::endl;
+    // std::cout << rt.entryExists("X2") << std::endl;
+    // std::cout << rt.entryExists("X3") << std::endl;
+    // std::cout << rt.getEntry("X2", &entry) << " " << entry.destination << std::endl;
+
+    ros::init(argc, argv, "aodv");
+    ros::NodeHandle nh;
+
+    auto th = std::thread([]() 
+        {
+            ros::Duration(1.0).sleep();
+            auto ns = ros::this_node::getNamespace();
+            aodv::AODV aodvNode(ns.substr(1));
+            
+            while (ros::ok())
+            {
+                aodvNode.discoverRoute("X2");
+                ros::Duration(3.0).sleep();
+            }
+        });
+
+    ros::spin();
+
+    th.join();
 }

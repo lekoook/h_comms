@@ -1,5 +1,5 @@
-#ifndef H_AODV_RRER_MSG
-#define H_AODV_RRER_MSG
+#ifndef H_AODV_RREP_ACK_MSG
+#define H_AODV_RREP_ACK_MSG
 
 #include <string>
 #include <cstring>
@@ -62,4 +62,4 @@ public:
 
 }
 
-#endif // H_AODV_RRER_MSG
+#endif // H_AODV_RREP_ACK_MSG

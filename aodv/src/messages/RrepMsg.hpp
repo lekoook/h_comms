@@ -90,15 +90,18 @@ public:
      * @param destAddr The string address of the destination for which a route is supplied.
      * @param destSeq The destination sequence number associated to the route.
      * @param srcAddr The string address of the node which originated the RREQ for which the route is supplied.
+     * @param hopCount The number of hops from the Originator IP Address to the Destination IP Address. For multicast 
+     * route requests this indicates the number of hops to the multicast tree member sending the RREP.
      * @param lifetime The time in milliseconds for which nodes receiving the RREP consider the route to be valid.
      * @param prefixSize If nonzero, the 5-bit Prefix Size specifies that the indicated next hop may be used for any 
      * nodes with the same routing prefix (as defined by the Prefix Size) as the requested destination.
      * @param isRepair Repair flag; reserved for multicast.
      * @param isAckRequired Acknowledgment required.
      */
-    RrepMsg(std::string destAddr, uint32_t destSeq, std::string srcAddr, uint32_t lifetime, uint8_t prefixSize, 
-        bool isRepair=false, bool isAckRequired=false) 
-        : BaseMsg(MsgType::RRep), destSeq(destSeq), lifetime(lifetime), isRepair(isRepair), isAckRequired(isAckRequired)
+    RrepMsg(std::string destAddr, uint32_t destSeq, std::string srcAddr, uint8_t hopCount, uint32_t lifetime, 
+        uint8_t prefixSize, bool isRepair=false, bool isAckRequired=false) 
+        : BaseMsg(MsgType::RRep), destSeq(destSeq), hopCount(hopCount), lifetime(lifetime), isRepair(isRepair), 
+        isAckRequired(isAckRequired)
     {
         setDestAddr(destAddr);
         setSrcAddr(srcAddr);

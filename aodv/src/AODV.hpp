@@ -13,6 +13,8 @@
 #include "messages/RrepMsg.hpp"
 #include "messages/RrerMsg.hpp"
 #include "messages/RrepAckMsg.hpp"
+#include "ARouteObservation.hpp"
+#include "WaitTimer.hpp"
 
 namespace aodv
 {
@@ -21,7 +23,7 @@ namespace aodv
  * @brief Encapsulates all specifications and workings of a Ad Hoc On-Demand Distance Vector (AODV) routing protocol.
  * 
  */
-class AODV
+class AODV : public ARouteObserver
 {
 private:
     /**
@@ -89,6 +91,12 @@ private:
      * 
      */
     std::unique_ptr<ptp_comms::PtpClient> ptpClient = nullptr;
+
+    /**
+     * @brief Timer used to wait in ROS time.
+     * 
+     */
+    WaitTimer waitTimer;
 
     /**
      * @brief Internal method to generate the next available sequence number for this node.
@@ -174,15 +182,6 @@ private:
         return seenRreq.find(std::make_pair(rreqId, originator)) != seenRreq.end();
     }
 
-public:
-    /**
-     * @brief Construct a new AODV object.
-     * 
-     * @param nodeAddr Local address of this node.
-     */
-    AODV(std::string nodeAddr) : nodeAddr(nodeAddr), 
-        ptpClient(std::unique_ptr<ptp_comms::PtpClient>(new ptp_comms::PtpClient(AODV_PORT, true))) {}
-
     /**
      * @brief Attempts to discover a route to destination node by broadcasting RREQ message(s).
      * 
@@ -191,40 +190,246 @@ public:
      * @return true If a route has been found.
      * @return false If a route cannot be found.
      */
-    bool discoverRouteOnce(std::string destination, int waitTime)
+    bool _discoverRouteOnce(std::string destination, int waitTime)
     {
-        std::lock_guard<std::mutex> tLock(mRouteTable);
-        if (routeTable.isValidRoute(destination))
         {
-            return true; // Don't discover if there already exists a route.
+            std::lock_guard<std::mutex> tLock(mRouteTable);
+            if (routeTable.isValidRoute(destination))
+            {
+                return true; // Don't discover if there already exists a route.
+            }
+
+            // Create RREQ message.
+            RreqMsg rreq;
+            bool hasEntry = routeTable.entryExists(destination);
+            if (hasEntry)
+            {
+                RouteTableEntry entry;
+                routeTable.getEntry(destination, &entry);
+                rreq.destSeq = entry.destSequence;
+            }
+            rreq.setDestAddr(destination);
+            rreq.isUnkSequence = !hasEntry;
+            rreq.isGratuitous = true;
+            rreq.setSrcAddr(nodeAddr);
+            rreq.srcSeq = _genSequence();
+            rreq.rreqId = _genRreqId();
+            rreq.hopCount = 0;
+            
+            // Prevent ourselves from processing our own RREQ.
+            _bufferRreq(rreq.rreqId, nodeAddr);
+
+            // We want to be notified when the route we are interested in has become valid.
+            routeTable.subRouteValid(destination, this);
+
+            // Broadcast RREQ.
+            ptpClient->sendTo(ptp_comms::BROADCAST_ADDR, rreq.serialize());
         }
 
-        // Create RREQ message.
-        RreqMsg rreq;
-        bool hasEntry = routeTable.entryExists(destination);
-        if (hasEntry)
+        // Wait for RREP to arrive.
+        waitTimer.setTime((double)(waitTime / 1000.0f));
+        waitTimer.wait();
+
         {
-            RouteTableEntry entry;
-            routeTable.getEntry(destination, &entry);
-            rreq.destSeq = entry.destSequence;
+            std::lock_guard<std::mutex> tLock(mRouteTable);
+            // We no longer care if this route has become valid.
+            routeTable.unsubRouteValid(destination, this);
         }
-        rreq.setDestAddr(destination);
-        rreq.isUnkSequence = !hasEntry;
-        rreq.isGratuitous = true;
-        rreq.setSrcAddr(nodeAddr);
-        rreq.srcSeq = _genSequence();
-        rreq.rreqId = _genRreqId();
-        rreq.hopCount = 0;
-        
-        // Prevent ourselves from processing our own RREQ.
-        _bufferRreq(rreq.rreqId, nodeAddr);
 
-        // TODO: Do we need a way to identify that RREP we receive after this corresponds to the RREQ we sent?
+        return waitTimer.isInterrupted();
+    }
 
-        // Broadcast RREQ.
-        ptpClient->sendTo(ptp_comms::BROADCAST_ADDR, rreq.serialize());
+    void _rxCb(std::string src, uint16_t port, std::vector<uint8_t> data)
+    {
+        BaseMsg bm;
+        bm.deserialize(data);
+        switch (bm.msgType)
+        {
+        case MsgType::RReq:
+            _handleRreq(src, data);
+            break;
+        case MsgType::RRep:
+            _handleRrep(data);
+            break;
+        case MsgType::RRer:
+            _handleRrer(data);
+            break;
+        case MsgType::RRepAck:
+            _handleRrepAck(data);
+            break;
+        default:
+            ROS_ERROR("Unknown AODV message type.");
+        }
+    }
 
-        // TODO: Wait for RREP to arrive.
+    void _handleRreq(std::string sender, std::vector<uint8_t>& data)
+    {
+        RreqMsg msg;
+        msg.deserialize(data);
+        std::string originator = msg.getSrcAddr();
+        std::string destination = msg.getDestAddr();
+        ROS_INFO("Received RREQ from %s", sender.c_str());
+
+        {
+            std::lock_guard<std::mutex> tLock(mRouteTable);
+            routeTable.print();
+            // Create or update an entry to previous hop first.
+            if (routeTable.entryExists(sender))
+            {
+                routeTable[sender].isValidRoute = false;
+            }
+            else
+            {
+                routeTable.upsertEntry(RouteTableEntry(sender, sender, 1, 0, 0, {}, false));
+            }
+
+            if (_hasSeenRreq(msg.rreqId, originator))
+            {
+                return; // We have seen this RREQ recently, discard it.
+            }
+
+            msg.hopCount++;
+
+            // Update the route to Originator accordingly.
+            if (routeTable.entryExists(originator))
+            {
+                auto& currEntry = routeTable[originator];
+                currEntry.destSequence = std::max(msg.srcSeq, currEntry.destSequence);
+                currEntry.isValidRoute = true;
+                currEntry.nextHop = sender;
+                currEntry.hopCount = msg.hopCount;
+                uint32_t currTime = ros::Time::now().toNSec() / 1000000;
+                currEntry.lifetime = std::max(
+                    currEntry.lifetime, 
+                    currTime + (2 * config::NET_TRAVERSAL_TIME) - (2 * msg.hopCount * config::NODE_TRAVERSAL_TIME));
+            }
+            else
+            {
+                uint32_t currTime = ros::Time::now().toNSec() / 1000000;
+                uint32_t lifetime = 
+                    currTime + (2 * config::NET_TRAVERSAL_TIME) - (2 * msg.hopCount * config::NODE_TRAVERSAL_TIME);
+                routeTable.upsertEntry(RouteTableEntry(originator, sender, msg.hopCount, msg.srcSeq, lifetime, {}));
+            }
+
+            bool thisIsDest = destination == nodeAddr;
+            bool toRrep = thisIsDest || (routeTable.isValidRoute(destination));
+            if (toRrep)
+            {
+                if (thisIsDest)
+                {
+                    // Send RREP to Originator.
+                    // TODO: Make the checking and generating of sequence atomic operation.
+                    auto ownSeq = _currSequence();
+                    if (msg.destSeq - ownSeq == 1)
+                    {
+                        ownSeq = _genSequence();
+                    }
+                    RrepMsg rrep(destination, ownSeq, originator, 0, config::MY_ROUTE_TIMEOUT, 0);
+                    ptpClient->sendTo(routeTable[originator].nextHop, rrep.serialize());
+                    // ROS_INFO("[DEST] Replied with RREP for %s to next hop: %s", originator.c_str(), routeTable[originator].nextHop.c_str());
+                }
+                else
+                {
+                    // Send RREP to Originator.
+                    auto& destEntry = routeTable[destination];
+                    auto& origEntry = routeTable[originator];
+                    origEntry.precursors.push_back(destEntry.nextHop);
+                    destEntry.precursors.push_back(sender);
+                    uint32_t currTime = ros::Time::now().toNSec() / 1000000;
+                    uint32_t lifetime = destEntry.lifetime - currTime;
+                    RrepMsg rrep(destination, destEntry.destSequence, originator, destEntry.hopCount, lifetime, 0);
+                    ptpClient->sendTo(origEntry.nextHop, rrep.serialize());
+                    // ROS_INFO("[INTM] Replied with RREP for %s to next hop: %s", originator.c_str(), origEntry.nextHop.c_str());
+                    
+                    // If the RREQ has gratuitous flag set, we need to send RREP to Destination.
+                    if (msg.isGratuitous)
+                    {
+                        RrepMsg grat(originator, msg.srcSeq, destination, origEntry.hopCount, origEntry.lifetime, 0);
+                        ptpClient->sendTo(destEntry.nextHop, grat.serialize());
+                        // ROS_INFO("[GRAT] Replied with RREP for %s to next hop: %s", destination.c_str(), destEntry.nextHop.c_str());
+                    }
+                }
+            }
+            else
+            {
+                // Update the destination sequence in the to-be-rebroadcasted RREQ.
+                if (routeTable.entryExists(destination))
+                {
+                    auto& currEntry = routeTable[destination];
+                    msg.destSeq = std::max(msg.destSeq, currEntry.destSequence);
+                }
+                // Rebroadcast RREQ.
+                ptpClient->sendTo(ptp_comms::BROADCAST_ADDR, msg.serialize());
+                // ROS_INFO("Rebroadcast RREQ for %s.", originator.c_str());
+            }
+        }
+    }
+
+    void _handleRrep(std::vector<uint8_t>& data)
+    {
+        RrepMsg msg;
+        msg.deserialize(data);
+    }
+
+    void _handleRrer(std::vector<uint8_t>& data)
+    {
+        RrerMsg msg;
+        msg.deserialize(data);
+    }
+
+    void _handleRrepAck(std::vector<uint8_t>& data)
+    {
+        RrepAckMsg msg;
+        msg.deserialize(data);
+    }
+
+public:
+    /**
+     * @brief Construct a new AODV object.
+     * 
+     * @param nodeAddr Local address of this node.
+     */
+    AODV(std::string nodeAddr) : nodeAddr(nodeAddr), 
+        ptpClient(std::unique_ptr<ptp_comms::PtpClient>(new ptp_comms::PtpClient(AODV_PORT, true)))
+    {
+        ptpClient->bind(
+            std::bind(&AODV::_rxCb, this, std::placeholders::_1, std::placeholders::_2, std::placeholders::_3));
+    }
+
+    void notifyRouteValid()
+    {
+        waitTimer.interrupt();
+    }
+
+    /**
+     * @brief Begins to conduct discovery of a route to intended destination. Blocking.
+     * @details This call is blocking until a route has been discovered or determined to have failed.
+     * 
+     * @param destination Destination address to discover route to.
+     * @return true If a route was discovered.
+     * @return false If no route can be found.
+     */
+    bool discoverRoute(std::string destination)
+    {
+        if (destination == nodeAddr)
+        {
+            return true; // Don't bother discovering our own self.
+        }
+
+        int tries = 0;
+        while (tries <= config::RREQ_RETRIES)
+        {
+            bool res = _discoverRouteOnce(destination, config::NET_TRAVERSAL_TIME);
+            if (res)
+            {
+                return true;
+            }
+            else
+            {
+                ros::Rate((double)config::RREQ_RATELIMIT).sleep();
+            }
+        }
+        return false;
     }
 };
 

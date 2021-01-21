@@ -7,6 +7,7 @@
 #include <cstdint>
 #include <mutex>
 #include <list>
+#include "ARouteObservation.hpp"
 
 namespace aodv
 {
@@ -90,9 +91,9 @@ public:
  * @brief Represents the AODV routing table.
  * 
  */
-class RouteTable
+class RouteTable : public ARouteSubject
 {
-private:
+public:
     /**
      * @brief Internal class representation of the table entry.
      * 
@@ -116,12 +117,19 @@ private:
         {}
     };
 
+private:
     /**
      * @brief Routing table itself. The key is the destination address, the value is the rest of the entry fields for 
      * the routing table.
      * 
      */
     std::unordered_map<std::string, Entry> table;
+
+    /**
+     * @brief List of observers looking for validity of each route.
+     * 
+     */
+    std::unordered_map<std::string, std::list<ARouteObserver*>> routeValidObservers;
     
     /**
      * @brief Internal method to insert or replace (if already exists) an entry.
@@ -137,7 +145,12 @@ private:
     void _insertEntry(std::string destination, std::string nextHop, uint8_t hopCount, uint32_t destSequence, 
         uint32_t lifetime, std::list<std::string> precursors, bool isValidRoute)
     {
+        bool prevInvalid = (table.find(destination) == table.end()) || !table[destination].isValidRoute;
         table[destination] = Entry(nextHop, hopCount, destSequence, lifetime, precursors, isValidRoute);
+        if (isValidRoute && prevInvalid)
+        {
+            _notifyRouteValid(destination);
+        }
     }
 
     /**
@@ -152,12 +165,39 @@ private:
         return table.find(destination) != table.end();
     }
 
+    /**
+     * @brief Notify all observers looking at the specified destination address.
+     * 
+     * @param destination Destination address to notify for.
+     */
+    void _notifyRouteValid(std::string destination)
+    {
+        if (routeValidObservers.find(destination) != routeValidObservers.end())
+        {
+            for (auto ob : routeValidObservers[destination])
+            {
+                ob->notifyRouteValid();
+            }
+        }
+    }
+
 public:
     /**
      * @brief Construct a new Route Table object.
      * 
      */
     RouteTable() {}
+
+    /**
+     * @brief Overloads the [] operator.
+     * 
+     * @param destination Destination address.
+     * @return Entry& Reference to the entry.
+     */
+    Entry& operator[](std::string destination)
+    {
+        return table[destination];
+    }
 
     /**
      * @brief Queries if a particular entry exists.
@@ -222,6 +262,42 @@ public:
             return entry.isValidRoute;
         }
         return false;
+    }
+
+    /**
+     * @brief Subscribe to be notified of route changing from invalid to valid.
+     * 
+     * @param destination Destination address of route to be notified of.
+     * @param observer Observer interface.
+     */
+    void subRouteValid(std::string destination, ARouteObserver* observer)
+    {
+        routeValidObservers[destination].push_back(observer);
+    }
+
+    /**
+     * @brief Unsubscribe to be notified of route changing from invalid to valid.
+     * 
+     * @param destination Destination address of route to be notified of.
+     * @param observer Observer interface.
+     */
+    void unsubRouteValid(std::string destination, ARouteObserver* observer)
+    {
+        if (routeValidObservers.find(destination) != routeValidObservers.end())
+        {
+            routeValidObservers[destination].remove(observer);
+        }
+    }
+
+    void print()
+    {
+        std::cout << "==== Route Table ====" << std::endl;
+        std::cout << "Dest\tNH\t" << std::endl;
+        for (auto entry : table)
+        {
+            std::cout << entry.first << "\t" << entry.second.nextHop << "\t" << std::endl;
+        }
+        std::cout << "== Route Table End ==" << std::endl;
     }
 };
 

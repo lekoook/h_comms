@@ -1,0 +1,4 @@
+<launch>
+    <arg name="name" />
+    <node pkg="aodv" type="aodv_node" name="aodv_node" output="screen" ns="$(arg name)"/>
+</launch>
