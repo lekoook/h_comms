@@ -121,6 +121,23 @@ private:
     }
 
     /**
+     * @brief Internal method to check current sequence number against a received sequence number and generate one.
+     * 
+     * @param seqToCompare Received sequence number.
+     * @return uint32_t Generated sequence, incremented by one if received sequence is higher than current by one. 
+     * Otherwise, the current sequence number is used.
+     */
+    uint32_t _checkGenSequence(uint32_t seqToCompare)
+    {
+        std::lock_guard<std::mutex> lock(mSequence);
+        if (seqToCompare - sequence == 1)
+        {
+            return ++sequence;
+        }
+        return sequence;
+    }
+
+    /**
      * @brief Internal method to generate the next available RREQ ID for this node.
      * 
      * @return uint32_t New RREQ ID.
@@ -322,12 +339,7 @@ private:
                 if (thisIsDest)
                 {
                     // Send RREP to Originator.
-                    // TODO: Make the checking and generating of sequence atomic operation.
-                    auto ownSeq = _currSequence();
-                    if (msg.destSeq - ownSeq == 1)
-                    {
-                        ownSeq = _genSequence();
-                    }
+                    auto ownSeq = _checkGenSequence(msg.destSeq);
                     RrepMsg rrep(destination, ownSeq, originator, 0, config::MY_ROUTE_TIMEOUT, 0);
                     ptpClient->sendTo(routeTable[originator].nextHop, rrep.serialize());
                     // ROS_INFO("[DEST] Replied with RREP for %s to next hop: %s", originator.c_str(), routeTable[originator].nextHop.c_str());
