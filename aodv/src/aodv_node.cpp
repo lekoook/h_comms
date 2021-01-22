@@ -261,13 +261,19 @@ int main(int argc, char** argv)
         {
             ros::Duration(1.0).sleep();
             auto ns = ros::this_node::getNamespace();
-            aodv::AODV aodvNode(ns.substr(1));
+            ns = ns.substr(1);
+            aodv::AODV aodvNode(ns);
             
-            while (ros::ok())
+            ros::Duration(3.0).sleep();
+            if (ns == "X1")
             {
-                aodvNode.discoverRoute("X2");
-                ros::Duration(3.0).sleep();
+                if(aodvNode.discoverRoute("X3"))
+                {
+                    ROS_INFO("discovered route");
+                }
             }
+
+            while (ros::ok());
         });
 
     ros::spin();

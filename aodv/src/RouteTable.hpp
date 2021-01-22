@@ -52,16 +52,22 @@ public:
     uint32_t lifetime = 0;
 
     /**
-     * @brief List of neighbouring nodes that would want to reach the destination address via this node.
+     * @brief Set of neighbouring nodes that would want to reach the destination address via this node.
      * 
      */
-    std::list<std::string> precursors;
+    std::set<std::string> precursors;
 
     /**
-     * @brief Flag that indicates if this destination sequence and hence route is valid.
+     * @brief Flag that indicates if this destination sequence is valid.
      * 
      */
-    bool isValidRoute = true;
+    bool isValidDestSeq = false;
+
+    /**
+     * @brief Flag that indicates if this route is an active route.
+     * 
+     */
+    bool isActiveRoute = false;
 
     /**
      * @brief Construct a new Route Table Entry object.
@@ -78,12 +84,13 @@ public:
      * @param destSequence The sequence number of the destination node.
      * @param lifetime The lifetime of this entry.
      * @param precursors List of neighbouring nodes that would want to reach the destination address via this node.
-     * @param isValidRoute Flag that indicates if this route is valid.
+     * @param isValidDestSeq Flag that indicates if this destination sequence is valid.
+     * @param isActiveRoute Flag that indicates if this route is active.
      */
     RouteTableEntry(std::string destination, std::string nextHop, uint8_t hopCount, 
-        uint32_t destSequence, uint32_t lifetime, std::list<std::string> precursors, bool isValidDestSequence=true)
+        uint32_t destSequence, uint32_t lifetime, std::set<std::string> precursors, bool isValidDestSeq=false, bool isActiveRoute=false)
         : destination(destination), nextHop(nextHop), hopCount(hopCount), destSequence(destSequence), 
-        lifetime(lifetime), precursors(precursors), isValidRoute(isValidRoute)
+        lifetime(lifetime), precursors(precursors), isValidDestSeq(isValidDestSeq), isActiveRoute(isActiveRoute)
     {}
 };
 
@@ -105,15 +112,16 @@ public:
         uint8_t hopCount = 0;
         uint32_t destSequence = 0;
         uint32_t lifetime = 0;
-        std::list<std::string> precursors;
-        bool isValidRoute = true;
+        std::set<std::string> precursors;
+        bool isValidDestSeq = true;
+        bool isActiveRoute = false;
 
         Entry() {}
 
         Entry(std::string nextHop, uint8_t hopCount, uint32_t destSequence, uint32_t lifetime, 
-            std::list<std::string> precursors, bool isValidRoute) 
+            std::set<std::string> precursors, bool isValidDestSeq, bool isActiveRoute) 
             : nextHop(nextHop), hopCount(hopCount), destSequence(destSequence), lifetime(lifetime), 
-            precursors(precursors), isValidRoute(isValidRoute)
+            precursors(precursors), isValidDestSeq(isValidDestSeq), isActiveRoute(isActiveRoute)
         {}
     };
 
@@ -140,16 +148,18 @@ private:
      * @param destSequence Destination sequence.
      * @param lifetime Lifetime of entry.
      * @param precursors Precursors (immediate neighbours) that would want to reach that destination via this node.
-     * @param isValidRoute Flag that indicates if the destination sequence is valid.
+     * @param isValidDestSeq Flag that indicates if this destination sequence is valid.
+     * @param isActiveRoute Flag that indicates if this route is active.
      */
     void _insertEntry(std::string destination, std::string nextHop, uint8_t hopCount, uint32_t destSequence, 
-        uint32_t lifetime, std::list<std::string> precursors, bool isValidRoute)
+        uint32_t lifetime, std::set<std::string> precursors, bool isValidDestSeq, bool isActiveRoute)
     {
-        bool prevInvalid = (table.find(destination) == table.end()) || !table[destination].isValidRoute;
-        table[destination] = Entry(nextHop, hopCount, destSequence, lifetime, precursors, isValidRoute);
-        if (isValidRoute && prevInvalid)
+        bool prevInvalid = (table.find(destination) == table.end()) || !table[destination].isActiveRoute;
+        table[destination] = Entry(nextHop, hopCount, destSequence, lifetime, precursors, isValidDestSeq, isActiveRoute);
+        if (isActiveRoute && prevInvalid)
         {
-            _notifyRouteValid(destination);
+            ROS_INFO("notifying");
+            _notifyRouteActive(destination);
         }
     }
 
@@ -170,13 +180,13 @@ private:
      * 
      * @param destination Destination address to notify for.
      */
-    void _notifyRouteValid(std::string destination)
+    void _notifyRouteActive(std::string destination)
     {
         if (routeValidObservers.find(destination) != routeValidObservers.end())
         {
             for (auto ob : routeValidObservers[destination])
             {
-                ob->notifyRouteValid();
+                ob->notifyRouteActive();
             }
         }
     }
@@ -219,7 +229,7 @@ public:
     void upsertEntry(RouteTableEntry entry)
     {
         _insertEntry(entry.destination, entry.nextHop, entry.hopCount, entry.destSequence, entry.lifetime, 
-            entry.precursors, entry.isValidRoute);
+            entry.precursors, entry.isValidDestSeq, entry.isActiveRoute);
     }
 
     /**
@@ -241,25 +251,43 @@ public:
             outEntry->destSequence = entry.destSequence;
             outEntry->lifetime = entry.lifetime;
             outEntry->precursors = entry.precursors;
-            outEntry->isValidRoute = entry.isValidRoute;
+            outEntry->isValidDestSeq = entry.isValidDestSeq;
+            outEntry->isActiveRoute = entry.isActiveRoute;
             return true;
         }
         return false;
     }
 
     /**
-     * @brief Queries if a route to the specified destination exists (and is valid).
+     * @brief Queries if a route to the specified destination exists (and is active).
      * 
      * @param destination Destination address to query.
      * @return true If a route exists and is valid.
      * @return false If no route exists or it exists but not valid.
      */
-    bool isValidRoute(std::string destination)
+    bool isActiveRoute(std::string destination)
     {
         if (_exists(destination))
         {
             auto& entry = table[destination];
-            return entry.isValidRoute;
+            return entry.isActiveRoute;
+        }
+        return false;
+    }
+
+    /**
+     * @brief Queries if a route to the specified destination exists has valid destination sequence.
+     * 
+     * @param destination Destination address to query.
+     * @return true If a route exists and destination sequence is valid.
+     * @return false If no route exists or it exists but destination sequence is not valid.
+     */
+    bool isValidDestSeq(std::string destination)
+    {
+        if (_exists(destination))
+        {
+            auto& entry = table[destination];
+            return entry.isValidDestSeq;
         }
         return false;
     }

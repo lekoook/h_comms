@@ -159,6 +159,11 @@ private:
         return rreqId;
     }
 
+    uint32_t _getCurrentTime()
+    {
+        return ros::Time::now().toNSec() / 1000000;
+    }
+
     /**
      * @brief Buffers the RREQ ID and the Originator address to prevent the same RREQ from being re-processed.
      * 
@@ -211,7 +216,7 @@ private:
     {
         {
             std::lock_guard<std::mutex> tLock(mRouteTable);
-            if (routeTable.isValidRoute(destination))
+            if (routeTable.isActiveRoute(destination))
             {
                 return true; // Don't discover if there already exists a route.
             }
@@ -266,7 +271,7 @@ private:
             _handleRreq(src, data);
             break;
         case MsgType::RRep:
-            _handleRrep(data);
+            _handleRrep(src, data);
             break;
         case MsgType::RRer:
             _handleRrer(data);
@@ -293,11 +298,11 @@ private:
             // Create or update an entry to previous hop first.
             if (routeTable.entryExists(sender))
             {
-                routeTable[sender].isValidRoute = false;
+                routeTable[sender].isValidDestSeq = false;
             }
             else
             {
-                routeTable.upsertEntry(RouteTableEntry(sender, sender, 1, 0, 0, {}, false));
+                routeTable.upsertEntry(RouteTableEntry(sender, sender, 1, 0, 0, {}));
             }
 
             if (_hasSeenRreq(msg.rreqId, originator))
@@ -316,7 +321,7 @@ private:
             {
                 auto& currEntry = routeTable[originator];
                 currEntry.destSequence = std::max(msg.srcSeq, currEntry.destSequence);
-                currEntry.isValidRoute = true;
+                currEntry.isValidDestSeq = true;
                 currEntry.nextHop = sender;
                 currEntry.hopCount = msg.hopCount;
                 uint32_t currTime = ros::Time::now().toNSec() / 1000000;
@@ -329,11 +334,16 @@ private:
                 uint32_t currTime = ros::Time::now().toNSec() / 1000000;
                 uint32_t lifetime = 
                     currTime + (2 * config::NET_TRAVERSAL_TIME) - (2 * msg.hopCount * config::NODE_TRAVERSAL_TIME);
-                routeTable.upsertEntry(RouteTableEntry(originator, sender, msg.hopCount, msg.srcSeq, lifetime, {}));
+                routeTable.upsertEntry(RouteTableEntry(originator, sender, msg.hopCount, msg.srcSeq, lifetime, {}, true));
             }
 
             bool thisIsDest = destination == nodeAddr;
-            bool toRrep = thisIsDest || (routeTable.isValidRoute(destination));
+            // RFC 3561 Section 6.6
+            bool toRrep = thisIsDest 
+                || (routeTable.isActiveRoute(destination) 
+                    && routeTable.isValidDestSeq(destination)
+                    && routeTable[destination].destSequence >= msg.destSeq
+                    && !msg.isDestOnly);
             if (toRrep)
             {
                 if (thisIsDest)
@@ -342,27 +352,27 @@ private:
                     auto ownSeq = _checkGenSequence(msg.destSeq);
                     RrepMsg rrep(destination, ownSeq, originator, 0, config::MY_ROUTE_TIMEOUT, 0);
                     ptpClient->sendTo(routeTable[originator].nextHop, rrep.serialize());
-                    // ROS_INFO("[DEST] Replied with RREP for %s to next hop: %s", originator.c_str(), routeTable[originator].nextHop.c_str());
+                    ROS_INFO("[DEST] Replied with RREP for %s to next hop: %s", originator.c_str(), routeTable[originator].nextHop.c_str());
                 }
                 else
                 {
                     // Send RREP to Originator.
                     auto& destEntry = routeTable[destination];
                     auto& origEntry = routeTable[originator];
-                    origEntry.precursors.push_back(destEntry.nextHop);
-                    destEntry.precursors.push_back(sender);
+                    origEntry.precursors.insert(destEntry.nextHop);
+                    destEntry.precursors.insert(sender);
                     uint32_t currTime = ros::Time::now().toNSec() / 1000000;
                     uint32_t lifetime = destEntry.lifetime - currTime;
                     RrepMsg rrep(destination, destEntry.destSequence, originator, destEntry.hopCount, lifetime, 0);
                     ptpClient->sendTo(origEntry.nextHop, rrep.serialize());
-                    // ROS_INFO("[INTM] Replied with RREP for %s to next hop: %s", originator.c_str(), origEntry.nextHop.c_str());
+                    ROS_INFO("[INTM] Replied with RREP for %s to next hop: %s", originator.c_str(), origEntry.nextHop.c_str());
                     
                     // If the RREQ has gratuitous flag set, we need to send RREP to Destination.
                     if (msg.isGratuitous)
                     {
                         RrepMsg grat(originator, msg.srcSeq, destination, origEntry.hopCount, origEntry.lifetime, 0);
                         ptpClient->sendTo(destEntry.nextHop, grat.serialize());
-                        // ROS_INFO("[GRAT] Replied with RREP for %s to next hop: %s", destination.c_str(), destEntry.nextHop.c_str());
+                        ROS_INFO("[GRAT] Replied with RREP for %s to next hop: %s", destination.c_str(), destEntry.nextHop.c_str());
                     }
                 }
             }
@@ -376,15 +386,71 @@ private:
                 }
                 // Rebroadcast RREQ.
                 ptpClient->sendTo(ptp_comms::BROADCAST_ADDR, msg.serialize());
-                // ROS_INFO("Rebroadcast RREQ for %s.", originator.c_str());
+                ROS_INFO("[RE-BROAD] RREQ for %s.", originator.c_str());
             }
         }
     }
 
-    void _handleRrep(std::vector<uint8_t>& data)
+    void _handleRrep(std::string sender, std::vector<uint8_t>& data)
     {
         RrepMsg msg;
         msg.deserialize(data);
+        std::string destination = msg.getDestAddr();
+        std::string originator = msg.getSrcAddr();
+        ROS_INFO("Received RREP from %s", sender.c_str());
+
+        {
+            std::lock_guard<std::mutex> lock(mRouteTable);
+            if (!routeTable.entryExists(sender))
+            {
+                routeTable.upsertEntry(RouteTableEntry(sender, sender, 1, 0, 0, {}));
+            }
+
+            msg.hopCount++;
+
+            // Create or update forward route to Destination.
+            if (routeTable.entryExists(destination))
+            {
+                auto& currEntry = routeTable[destination];
+                // RFC 3561 Section 6.7
+                if (!currEntry.isValidDestSeq 
+                    || (msg.destSeq > currEntry.destSequence && currEntry.isValidDestSeq)
+                    || (msg.destSeq == currEntry.destSequence && !currEntry.isActiveRoute)
+                    || (msg.destSeq == currEntry.destSequence && msg.hopCount < currEntry.hopCount))
+                {
+                    currEntry.isActiveRoute = true;
+                    currEntry.isValidDestSeq = true;
+                    currEntry.nextHop = sender;
+                    currEntry.hopCount = msg.hopCount;
+                    currEntry.lifetime = _getCurrentTime() + msg.lifetime;
+                    currEntry.destSequence = msg.destSeq;
+                    ROS_INFO("Update entry to %s", destination.c_str());
+                }
+            }
+            else
+            {
+                uint32_t lifetime = _getCurrentTime() + msg.lifetime;
+                routeTable.upsertEntry(RouteTableEntry(destination, sender, msg.hopCount, msg.destSeq, lifetime, {}, true, true));
+                ROS_INFO("New entry to %s", destination.c_str());
+            }
+
+            // If we are not the originator, .
+            if (originator != nodeAddr)
+            {
+                // Send the RREP towards the Originator.
+                auto& currOrig = routeTable[originator];
+                auto origNextHop = currOrig.nextHop;
+                ptpClient->sendTo(origNextHop, msg.serialize());
+                routeTable[destination].precursors.insert(origNextHop);
+                currOrig.lifetime = std::max(currOrig.lifetime, (_getCurrentTime() + config::ACTIVE_ROUTE_TIMEOUT));
+                routeTable[routeTable[destination].nextHop].precursors.insert(origNextHop);
+                ROS_INFO("[FWD-RREP] RREP for %s to next hop: %s", destination.c_str(), origNextHop.c_str());
+            }
+            else
+            {
+                ROS_INFO("[RREP] We are the originator!");
+            }
+        }
     }
 
     void _handleRrer(std::vector<uint8_t>& data)
@@ -412,8 +478,9 @@ public:
             std::bind(&AODV::_rxCb, this, std::placeholders::_1, std::placeholders::_2, std::placeholders::_3));
     }
 
-    void notifyRouteValid()
+    void notifyRouteActive()
     {
+        ROS_INFO("interrupt");
         waitTimer.interrupt();
     }
 
