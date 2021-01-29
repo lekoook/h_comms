@@ -37,6 +37,13 @@ private:
      */
     const double WAIT_TIME = 5.0;
 
+    // Highest transmission rate if channel is empty: 6750
+    /**
+     * @brief Factor to multiply to the size of the data payload to estimate timeout duration.
+     * 
+     */
+    const double WAIT_EST_FACTOR = 1.0f / 5625.0f;
+
     /**
      * @brief Sequence number of this request.
      * 

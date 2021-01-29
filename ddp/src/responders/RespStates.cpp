@@ -68,6 +68,7 @@ WaitAckDataRespState::~WaitAckDataRespState() {}
 void WaitAckDataRespState::run(RespMachine& machine)
 {
     machine._setWaitParams(machine.respSequence, machine.respEntryId);
+    machine.waitTimer.waitTime = (double)machine.dataToSend.data.size() * machine.WAIT_EST_FACTOR; 
     machine.waitTimer.wait();
 
     if (machine.waitTimer.isInterrupted() || machine.sendTries >= machine.MAX_SEND_TRIES)
