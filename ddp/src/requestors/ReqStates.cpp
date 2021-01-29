@@ -65,7 +65,8 @@ void WaitAckReqState::recvAck(ReqMachine& machine, AckMsg& ackMsg, std::string s
     if (machine._checkWaitParams(ackMsg.ackSequence, ackMsg.ackEntryId))
     {
         machine.waitTimer.interrupt();
-        machine.waitTimer.changeWaitTime(ackMsg.payloadSize / 6750); 
+        // Highest transmission rate if channel is empty: 6750
+        machine.waitTimer.changeWaitTime(ackMsg.payloadSize / 5625); 
     }
 }
 
