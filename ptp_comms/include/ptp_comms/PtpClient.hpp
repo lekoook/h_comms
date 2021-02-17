@@ -169,7 +169,7 @@ public:
     /**
      * @brief Construct a new Ptp Client object.
      * 
-     * @param port Port number to use.
+     * @param port Port number to use. '100' is reserved for discovery advertisements and should NOT be used.
      * @param autoRetry If set to true, this call will be blocking until registration is successful.
      */
     PtpClient(uint16_t port, bool autoRetry=false) : localPort(port)

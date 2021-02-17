@@ -57,7 +57,7 @@ public:
      * 
      * @return Neighbor_M Map of neighbours.
      */
-    virtual ptp_comms::Neighbor_M neighbors() const = 0;
+    virtual ptp_comms::Neighbor_M neighbors() = 0;
 
     /**
      * @brief Sends a neighbour discovery broadcast.

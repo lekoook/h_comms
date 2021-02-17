@@ -2,6 +2,8 @@
 #define H_CTRANSCEIVER
 
 #include <memory>
+#include <thread>
+#include <functional>
 #include "ATransceiver.hpp"
 #include "subt_communication_broker/subt_communication_client.h"
 
@@ -16,6 +18,24 @@ class CTransceiver : public ATransceiver
 {
 private:
     /**
+     * @brief Message used to identify a broadcasted advertisement.
+     * 
+     */
+    std::string const ADV_MSG = "discovery";
+
+    /**
+     * @brief The address used to broadcast advertisement.
+     * 
+     */
+    std::string const ADV_ADDR = subt::communication_broker::kBroadcast;
+
+    /**
+     * @brief The port used to broadcast advertisement.
+     * 
+     */
+    uint32_t const ADV_PORT = 100;
+
+    /**
      * @brief subt::CommsClient used to transmit and receive data.
      * 
      */
@@ -27,6 +47,74 @@ private:
      */
     const std::string localAddr;
     
+    /**
+     * @brief Thread used to broadcast advertisements as a beacon.
+     * 
+     */
+    std::thread beaconTh;
+
+    /**
+     * @brief Flag that determines if the thread to broadtcast advertisement for discovery should run.
+     * 
+     */
+    std::atomic_bool runBeacon;
+
+    /**
+     * @brief Record of all advertisements received from neighboring nodes.
+     * 
+     */
+    ptp_comms::Neighbor_M neighborsRecord;
+
+    /**
+     * @brief Mutex to protect the neighbors record.
+     * 
+     */
+    std::mutex mNeighbors;
+
+    /**
+     * @brief Function to run for the beacon thread.
+     * 
+     * @param period The time interval between each advertisement broadcast.
+     */
+    void _advertise(ros::Duration period)
+    {
+        if (runBeacon)
+        {
+            _advertiseOnce();
+            period.sleep();
+        }
+    }
+
+    /**
+     * @brief Broadcast a single advertisement message once. 
+     * 
+     */
+    bool _advertiseOnce()
+    {
+        return cc->SendTo(ADV_MSG, ADV_ADDR, ADV_PORT);
+    }
+
+    /**
+     * @brief Callback for receiving advertisement messages.
+     * 
+     * @param srcAddress Source address of advertisement.
+     * @param destAddress Destination address of advertisement, should default to \p ADV_ADDR.
+     * @param dstPort Port number of advertisement, should default to \p ADV_PORT.
+     * @param _data Contains the advertisement message, should default to \p ADV_MSG.
+     */
+    void _advCallback(const std::string& srcAddress, 
+        const std::string& destAddress, 
+        const uint32_t dstPort, 
+        const std::string &_data)
+    {
+        if (_data == ADV_MSG)
+        {
+            double ts = ros::Time::now().toSec();
+            std::lock_guard<std::mutex> lock(mNeighbors);
+            neighborsRecord[srcAddress] = std::make_pair(ts, 0.0); // We can't get RSSI information at the moment, use zero.
+        }
+    }
+    
 public:
     /**
      * @brief Construct a new CTransceiver object.
@@ -35,7 +123,18 @@ public:
      */
     CTransceiver(const std::string& address) 
         : localAddr(address)
-        , cc(std::unique_ptr<subt::CommsClient>(new subt::CommsClient(address))) {}
+        , cc(std::unique_ptr<subt::CommsClient>(new subt::CommsClient(address)))
+    {
+        cc->Bind(std::bind(
+                &CTransceiver::_advCallback, 
+                this, 
+                std::placeholders::_1, 
+                std::placeholders::_2, 
+                std::placeholders::_3, 
+                std::placeholders::_4), 
+            ADV_ADDR, 
+            ADV_PORT);
+    }
 
     /**
      * @brief Returns the local address.
@@ -87,9 +186,10 @@ public:
      * 
      * @return Neighbor_M Map of neighbours.
      */
-    ptp_comms::Neighbor_M neighbors() const
+    ptp_comms::Neighbor_M neighbors()
     {
-        return cc->Neighbors();
+        std::lock_guard<std::mutex> lock(mNeighbors);
+        return neighborsRecord;
     }
 
     /**
@@ -100,7 +200,7 @@ public:
      */
     bool sendBeacon()
     {
-        return cc->SendBeacon();
+        return _advertiseOnce();
     }
 
     /**
@@ -110,7 +210,13 @@ public:
      */
     void startBeaconInterval(ros::Duration period)
     {
-        cc->StartBeaconInterval(period);
+        if (runBeacon && beaconTh.joinable())
+        {
+            runBeacon = false;
+            beaconTh.join();
+        }
+        runBeacon = true;
+        beaconTh = std::thread(&CTransceiver::_advertise, this, period);
     }
 };
 
