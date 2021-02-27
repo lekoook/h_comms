@@ -7,7 +7,7 @@
 
 namespace exchange_graphs {
 
-    /* This robot runs an ExchangeGraphs service. */
+    /** This robot runs an ExchangeGraphs service. */
     class ExchangeGraphs {
     public:
         typedef uint8 ROBOT;
@@ -28,7 +28,7 @@ namespace exchange_graphs {
     public:
         ExchangeGraphs(ROBOT robot, ROBOTS otherRobots) : robot(robot), otherRobots(otherRobots) {}
 
-        /* Merge g with this graph.
+        /** Merge g with this graph.
          * @param g Graph to be merged with this graph.
          */
         void graphMerge(GRAPH g) {
@@ -42,7 +42,7 @@ namespace exchange_graphs {
             this->graph.edges = edges;
         }
 
-        /* Set difference.
+        /** Set difference.
          * g1 - g2.
          * @param g1 First graph.
          * @param g2 Second graph.
@@ -60,7 +60,7 @@ namespace exchange_graphs {
             return graph;
         }
 
-        /* Record that a graph was explored by this->robot.
+        /** Record that a graph was explored by this->robot.
          */
         void recordNewGraph(GRAPH g) {
 
@@ -74,7 +74,7 @@ namespace exchange_graphs {
             }
         }
 
-        /* Teach:
+        /** Teach:
          * 1. That graphs that this robot thinks studentRobot doesn't know about, actually exist.
          * 2. For each such graph, the robots that this robot thinks don't know about that graph.
          * @param studentRobot Robot being taught.
@@ -98,7 +98,7 @@ namespace exchange_graphs {
             this->robotToUnknownGraphs[studentRobot] = {};
         }
 
-        /* Learn:
+        /** Learn:
          * 1. That a graph exists.
          * 2. For that graph, the robots that the teacherRobot thinks don't know about that graph.
          */
