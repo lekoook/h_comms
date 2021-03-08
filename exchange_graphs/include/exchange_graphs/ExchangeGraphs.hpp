@@ -2,8 +2,10 @@
 #include <iterator>
 #include <vector>
 #include <unordered_map>
+#include <algorithm>
+#include <string>
 #include "ros/ros.h"
-#include "exchange_graphs/GeometryGraphStamped.h"
+#include <ptp_comms/PtpClient.hpp>
 
 namespace exchange_graphs {
 
@@ -15,7 +17,8 @@ namespace exchange_graphs {
 
         typedef graph_msgs::GeometryGraph GRAPH;
         typedef std::vector<GRAPH> GRAPHS;
-        typedef exchange_graphs::GeometryGraphStamped GRAPH_STAMPED;
+
+        typedef std::map<Neighbor, ROBOT> NEIGHBOR_TO_ROBOT;
 
     private:
         ROBOT robot; /**< This robot. */
@@ -25,8 +28,32 @@ namespace exchange_graphs {
         std::unordered_map<GRAPH, ROBOTS> graphToUnawareRobots;
         std::unordered_map<ROBOT, GRAPHS> robotToUnknownGraphs;
 
+        std::unique_ptr<ptp_comms::PtpClient> ptpClient;
+
+        NEIGHBOR_TO_ROBOT neighborToRobot; /**< Map from neighbor to robot. */
+
+        const uint16_t PORT = 624785; /**< Port number to use. 624785 looks like "GRAPHS". */
+        const double ADV_INTERVAL = 5.0; /**< Amount of seconds to sleep before advertising again. */
+
     public:
-        ExchangeGraphs(ROBOT robot, ROBOTS otherRobots) : robot(robot), otherRobots(otherRobots) {}
+        ExchangeGraphs(ROBOT robot, ROBOTS neighborToRobot) : robot(robot), neighborToRobot(neighborToRobot) {
+            for (NEIGHBOR_TO_ROBOT::iterator it = neighborToRobot.begin(); it != m.end(); ++it) {
+                if (this->robot != it->second) {
+                    this->otherRobots.insert(it->second);
+                }
+            }
+            this->ptpClient = std::unique_ptr<ptp_comms::PtpClient>(new ptp_comms::PtpClient(this->PORT));
+            this->ptpClient->bind(std::bind(&ExchangeGraphs::handleRx, this, std::placeholders::_1, std::placeholders::_2, std::placeholders::_3));
+            this->advertiseLoop();
+        }
+
+        /**
+         * @brief Destroy the object.
+         *
+         */
+        ~ExchangeGraphs() {
+            this->ptpClient->unregister();
+        }
 
         /** Merge g with this graph.
          * @param g Graph to be merged with this graph.
@@ -85,7 +112,13 @@ namespace exchange_graphs {
                 GRAPH_STAMPED gStamped;
                 gStamped.graph = unknownGraph;
                 gStamped.robots = std::vector(this->graphToUnawareRobots[unknownGraph].begin(), this->graphToUnawareRobots[unknownGraph].end());
-                // TODO send(studentRobot, gStamped);
+                // Find Neighbor corresponding to studentRobot.
+                Neighbor neighbor;
+                for (NEIGHBOR_TO_ROBOT::iterator it = this->neighborToRobot.begin(); it != m.end(); ++it) {
+                    if (studentRobot == it->second) {
+                        this->transmit(it->first, gStamped);
+                    }
+                }
 
                 /* Record that studentRobot knows about unknownGraph. */
                 ROBOTS unawareRobots = this->graphToUnawareRobots[unknownGraph];
@@ -102,11 +135,7 @@ namespace exchange_graphs {
          * 1. That a graph exists.
          * 2. For that graph, the robots that the teacherRobot thinks don't know about that graph.
          */
-        void learn() {
-            // TODO received from ROBOT teacherRobot;
-            GRAPH_STAMPED learntGraphStamped;
-            exchange_graphs::GeometryGraphStamped packed;
-            // TODO receive(teacherRobot, learntGraphStamped);
+        void learn(ROBOT teacherRobot, GRAPH_STAMPED learntGraphStamped) {
             GRAPH learntGraph = learntGraphStamped.graph;
 
             /* Learn that learntGraph exists. */
@@ -139,13 +168,69 @@ namespace exchange_graphs {
             }
         }
 
+        /**
+         * Advertise forever.
+         */
+        void advertiseLoop() {
+            while (true) {
+                AdvMsg msg = AdvMsg();
+                this->transmit(ptp_comms::BROADCAST_ADDR, msg.serialize());
+                ros::Duration(this->ADV_INTERVAL).sleep();
+            }
+        }
+
+        /**
+         * @brief Transmits message by calling the data transmission service.
+         *
+         * @param dest Intended recipient of data.
+         * @param msg Message to transmit.
+         * @return true If call was successful.
+         * @return false If call has failed.
+         */
+        bool transmit(std::string dest, BaseMsg& msg)
+        {
+            std::vector<uint8_t> data = msg.serialize();
+            return this->ptpClient->sendTo(dest, data);
+        }
+
+        /**
+         * @brief Peeks at the type of message the bytes vector contains.
+         *
+         * @param data Bytes vector.
+         * @return MsgType Type of message.
+         */
+        MsgType peekType(std::vector<uint8_t>& data) {
+            return (MsgType)data.data()[0];
+        }
+
+        /**
+         * Handle received messages by dispatching to the correct handler.
+         */
+        void handleRx(Neighbor neighbor, uint16_t port, std::vector<uint8_t> data) {
+            ROBOT robot = this->neighborToRobot[neighbor];
+            MsgType t = this->peekType(data);
+            switch (t) {
+                case MsgType::Graph:
+                    {
+                        GraphMsg msg;
+                        msg.deserialize(data);
+                        this->learn(robot, msg.learntGraphStamped);
+                        break;
+                    }
+                case MsgType::Advertisement:
+                    {
+                        this->teach(robot);
+                        break;
+                    }
+                case default:
+                    {
+                        ostringstream oss;
+                        oss << "Unknown message type: " << t << std::endl;
+                        ROS_ERROR("%s", oss.str().c_str());
+                        break;
+                    }
+        }
+
     }
 
-}
-
-int main(int argc, char **argv) {
-    ros::init(argc, argv, "exchange_graphs");
-    ros::NodeHandle n;
-    ros::spin();
-    return 0;
 }
