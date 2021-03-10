@@ -14,7 +14,7 @@
 enum MsgType
 {
     Advertisement = 0,
-    Data = 1
+    Graph = 1
 };
 
 /**

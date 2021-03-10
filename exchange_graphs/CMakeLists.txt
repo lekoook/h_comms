@@ -13,6 +13,7 @@ find_package(catkin REQUIRED COMPONENTS
   ptp_comms
   rosmsg_compressor
   graph_msgs
+  geometry_msgs
 )
 
 ## System dependencies are found with CMake's conventions
@@ -52,7 +53,6 @@ find_package(catkin REQUIRED COMPONENTS
 add_message_files(
   FILES
   GeometryGraphStamped.msg
-  Robot.msg
 )
 
 ## Generate services in the 'srv' folder
@@ -108,7 +108,7 @@ generate_messages(
 catkin_package(
   INCLUDE_DIRS include
   LIBRARIES exchange_graphs
-  CATKIN_DEPENDS roscpp std_msgs ptp_comms rosmsg_compressor graph_msgs
+  CATKIN_DEPENDS roscpp std_msgs ptp_comms rosmsg_compressor graph_msgs geometry_msgs
 #  DEPENDS system_lib
 )
 

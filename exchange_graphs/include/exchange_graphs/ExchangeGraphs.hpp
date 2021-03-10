@@ -4,33 +4,43 @@
 #include <unordered_map>
 #include <algorithm>
 #include <string>
-#include "ros/ros.h"
+#include <ros/ros.h>
 #include <ptp_comms/PtpClient.hpp>
 #include <ptp_comms/Neighbors.h>
 #include <graph_msgs/GeometryGraph.h>
-#include "messages/GraphMsg.hpp"
+#include <geometry_msgs/Point.h>
 #include <rosmsg_compressor/rosmsg_serializer.h>
+#include "messages/GraphMsg.hpp"
+#include "messages/AdvMsg.hpp"
 
 namespace exchange_graphs {
 
+    template <typename Container> // we can make this generic for any container [1]
+        struct container_hash {
+            std::size_t operator()(Container const& c) const {
+                return boost::hash_range(c.begin(), c.end());
+            }
+        };
+
+    typedef uint8_t ROBOT;
+    typedef std::set<ROBOT> ROBOTS;
+
+    typedef graph_msgs::GeometryGraph GRAPH;
+    typedef std::vector<geometry_msgs::Point> NODES;
+    typedef std::vector<graph_msgs::Edges> EDGES;
+    typedef std::vector<GRAPH> GRAPHS;
+
+    typedef std::map<ptp_comms::Neighbor, ROBOT> NEIGHBOR_TO_ROBOT;
+
     /** This robot runs an ExchangeGraphs service. */
     class ExchangeGraphs {
-    public:
-        typedef uint8_t ROBOT;
-        typedef std::set<ROBOT> ROBOTS;
-
-        typedef graph_msgs::GeometryGraph GRAPH;
-        typedef std::vector<GRAPH> GRAPHS;
-
-        typedef std::map<ptp_comms::Neighbor, ROBOT> NEIGHBOR_TO_ROBOT;
-
     private:
         ROBOT robot; /**< This robot. */
         ROBOTS otherRobots; /**< All other robots (not including this->robot). */
         GRAPH graph; /**< Graph that this->robot knows. */
 
-        std::unordered_map<GRAPH, ROBOTS> graphToUnawareRobots;
-        std::unordered_map<ROBOT, GRAPHS> robotToUnknownGraphs;
+        std::unordered_map<GRAPH, ROBOTS, container_hash<GRAPH>> graphToUnawareRobots;
+        std::unordered_map<ROBOT, GRAPHS, container_hash<ROBOT>> robotToUnknownGraphs;
 
         std::unique_ptr<ptp_comms::PtpClient> ptpClient;
 
@@ -40,8 +50,8 @@ namespace exchange_graphs {
         const double ADV_INTERVAL = 5.0; /**< Amount of seconds to sleep before advertising again. */
 
     public:
-        ExchangeGraphs(ROBOT robot, ROBOTS neighborToRobot) : robot(robot), neighborToRobot(neighborToRobot) {
-            for (NEIGHBOR_TO_ROBOT::iterator it = neighborToRobot.begin(); it != m.end(); ++it) {
+        ExchangeGraphs(ROBOT robot, NEIGHBOR_TO_ROBOT neighborToRobot) : robot(robot), neighborToRobot(neighborToRobot) {
+            for (NEIGHBOR_TO_ROBOT::iterator it = this->neighborToRobot.begin(); it != this->neighborToRobot.end(); ++it) {
                 if (this->robot != it->second) {
                     this->otherRobots.insert(it->second);
                 }
@@ -63,8 +73,8 @@ namespace exchange_graphs {
          * @param g Graph to be merged with this graph.
          */
         void graphMerge(GRAPH g) {
-            std::vector<NODE> nodes;
-            std::vector<EDGE> edges;
+            NODES nodes;
+            EDGES edges;
 
             std::set_union(this->graph.nodes.begin(), this->graph.nodes.end(), g.nodes.begin(), g.nodes.end(), std::back_inserter(nodes));
             std::set_union(this->graph.edges.begin(), this->graph.edges.end(), g.edges.begin(), g.edges.end(), std::back_inserter(edges));
@@ -79,8 +89,8 @@ namespace exchange_graphs {
          * @param g2 Second graph.
          */
         GRAPH graphDifference(GRAPH g1, GRAPH g2) {
-            std::vector<NODE> nodes;
-            std::vector<EDGE> edges;
+            NODES nodes;
+            EDGES edges;
 
             std::set_difference(g1.nodes.begin(), g1.nodes.end(), g2.nodes.begin(), g2.nodes.end(), std::back_inserter(nodes));
             std::set_difference(g1.edges.begin(), g1.edges.end(), g2.edges.begin(), g2.edges.end(), std::back_inserter(edges));
@@ -101,7 +111,7 @@ namespace exchange_graphs {
             /* otherRobots don't (yet) know about g. */
             this->graphToUnawareRobots[g] = this->otherRobots;
             for (ROBOT otherRobot : this->otherRobots) {
-                this->robotToUnknownGraphs[otherRobot].insert(g);
+                this->robotToUnknownGraphs[otherRobot].push_back(g);
             }
         }
 
@@ -112,15 +122,17 @@ namespace exchange_graphs {
          */
         void teach(ROBOT studentRobot) {
             for (GRAPH unknownGraph : this->robotToUnknownGraphs[studentRobot]) {
+                std::vector<ROBOT> robots(this->graphToUnawareRobots[unknownGraph].begin(), this->graphToUnawareRobots[unknownGraph].end());
                 /* Teach studentRobot. */
-                GRAPH_STAMPED gStamped;
+                GraphMsg::GRAPH_STAMPED gStamped;
                 gStamped.graph = unknownGraph;
-                gStamped.robots = std::vector(this->graphToUnawareRobots[unknownGraph].begin(), this->graphToUnawareRobots[unknownGraph].end());
+                gStamped.robots = robots;
                 // Find Neighbor corresponding to studentRobot.
                 ptp_comms::Neighbor neighbor;
-                for (NEIGHBOR_TO_ROBOT::iterator it = this->neighborToRobot.begin(); it != m.end(); ++it) {
+                GraphMsg msg = GraphMsg(gStamped);
+                for (NEIGHBOR_TO_ROBOT::iterator it = this->neighborToRobot.begin(); it != this->neighborToRobot.end(); ++it) {
                     if (studentRobot == it->second) {
-                        this->transmit(it->first, gStamped);
+                        this->transmit(it->first, msg);
                     }
                 }
 
@@ -139,7 +151,7 @@ namespace exchange_graphs {
          * 1. That a graph exists.
          * 2. For that graph, the robots that the teacherRobot thinks don't know about that graph.
          */
-        void learn(ROBOT teacherRobot, GRAPH_STAMPED learntGraphStamped) {
+        void learn(ROBOT teacherRobot, GraphMsg::GRAPH_STAMPED learntGraphStamped) {
             GRAPH learntGraph = learntGraphStamped.graph;
 
             /* Learn that learntGraph exists. */
@@ -158,7 +170,7 @@ namespace exchange_graphs {
              * This means: Learn that awareRobots know about learntGraph.
              * Only awareRobots change their knowledge state.
              */
-            ROBOTS unawareRobots = learntGraphStamped.robots;
+            std::vector<ROBOT> unawareRobots = learntGraphStamped.robots;
             ROBOTS awareRobots;
             std::set_difference(this->otherRobots.begin(), this->otherRobots.end(), unawareRobots.begin(), unawareRobots.end(), std::back_inserter(awareRobots));
             for (ROBOT awareRobot : unawareRobots) {
@@ -178,7 +190,7 @@ namespace exchange_graphs {
         void advertiseLoop() {
             while (true) {
                 AdvMsg msg = AdvMsg();
-                this->transmit(ptp_comms::BROADCAST_ADDR, msg.serialize());
+                this->transmit(ptp_comms::BROADCAST_ADDR, msg);
                 ros::Duration(this->ADV_INTERVAL).sleep();
             }
         }
@@ -226,15 +238,16 @@ namespace exchange_graphs {
                         this->teach(robot);
                         break;
                     }
-                case default:
+                default:
                     {
-                        ostringstream oss;
+                        std::ostringstream oss;
                         oss << "Unknown message type: " << t << std::endl;
                         ROS_ERROR("%s", oss.str().c_str());
                         break;
                     }
+            }
         }
 
-    }
+    };
 
 }

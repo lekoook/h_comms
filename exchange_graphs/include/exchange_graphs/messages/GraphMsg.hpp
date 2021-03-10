@@ -43,7 +43,7 @@ public:
      * 
      * @param graph The graph.
      */
-    GraphMsg(GRAPH_STAMPED learntGraphStamped) : BaseMsg(MsgType::graph), learntGraphStamped(learntGraphStamped) {}
+    GraphMsg(GRAPH_STAMPED learntGraphStamped) : BaseMsg(MsgType::Graph), learntGraphStamped(learntGraphStamped) {}
 
     /**
      * @brief Serializes the graph message into a bytes vector.
@@ -54,13 +54,13 @@ public:
     {
         std::vector<uint8_t> buffer;
         RosMsgCompressor::serialize_to_byte_array(this->learntGraphStamped, buffer);
-        uint32_t len = buffer.size() + FIXED_LEN;
+        uint32_t len = buffer.size() + this->FIXED_LEN;
         uint8_t temp[len];
 
         serialisers::copyU8(temp, type);
-        temp.insert(std::end(temp), std::begin(buffer), std::end(buffer));
+        memcpy(&temp[this->FIXED_LEN], buffer.data(), buffer.size());
 
-        return temp;
+        return std::vector<uint8_t>(temp, temp + len);
     }
 
     /**
@@ -77,7 +77,8 @@ public:
         {
             throw std::invalid_argument("Message is not of MsgType::Graph!");
         }
-        RosMsgCompressor::deserialize_from_byte_array(this->learntGraphStamped, &temp[1]);
+        std::vector<uint8_t> bytesTail(bytes.begin() + this->FIXED_LEN, bytes.end());
+        RosMsgCompressor::deserialize_from_byte_array(bytesTail, this->learntGraphStamped);
     }
 };
 
