@@ -6,6 +6,7 @@ find_package(catkin REQUIRED COMPONENTS
   ptp_comms
   std_msgs
   rosmsg_compressor
+  graph_msgs
 )
 
 add_message_files(
@@ -22,12 +23,14 @@ add_message_files(
 catkin_package(
   INCLUDE_DIRS include
   LIBRARIES exchange_graphs
-  CATKIN_DEPENDS roscpp std_msgs rosmsg_compressor ptp_comms
+  CATKIN_DEPENDS roscpp std_msgs rosmsg_compressor ptp_comms graph_msgs
 #  DEPENDS system_lib
 )
 
 include_directories(
   include
+  include/${PROJECT_NAME}
+  include/${PROJECT_NAME}/messages
   ${catkin_INCLUDE_DIRS}
 )
 
