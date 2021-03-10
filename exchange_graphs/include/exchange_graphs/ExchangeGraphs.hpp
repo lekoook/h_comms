@@ -6,19 +6,23 @@
 #include <string>
 #include "ros/ros.h"
 #include <ptp_comms/PtpClient.hpp>
+#include <ptp_comms/Neighbors.h>
+#include <graph_msgs/GeometryGraph.h>
+#include "messages/GraphMsg.hpp"
+#include <rosmsg_compressor/rosmsg_serializer.h>
 
 namespace exchange_graphs {
 
     /** This robot runs an ExchangeGraphs service. */
     class ExchangeGraphs {
     public:
-        typedef uint8 ROBOT;
+        typedef uint8_t ROBOT;
         typedef std::set<ROBOT> ROBOTS;
 
         typedef graph_msgs::GeometryGraph GRAPH;
         typedef std::vector<GRAPH> GRAPHS;
 
-        typedef std::map<Neighbor, ROBOT> NEIGHBOR_TO_ROBOT;
+        typedef std::map<ptp_comms::Neighbor, ROBOT> NEIGHBOR_TO_ROBOT;
 
     private:
         ROBOT robot; /**< This robot. */
@@ -32,7 +36,7 @@ namespace exchange_graphs {
 
         NEIGHBOR_TO_ROBOT neighborToRobot; /**< Map from neighbor to robot. */
 
-        const uint16_t PORT = 624785; /**< Port number to use. 624785 looks like "GRAPHS". */
+        const uint16_t PORT = 62478; /**< Port number to use. 62478 looks like "GRAPH". */
         const double ADV_INTERVAL = 5.0; /**< Amount of seconds to sleep before advertising again. */
 
     public:
@@ -113,7 +117,7 @@ namespace exchange_graphs {
                 gStamped.graph = unknownGraph;
                 gStamped.robots = std::vector(this->graphToUnawareRobots[unknownGraph].begin(), this->graphToUnawareRobots[unknownGraph].end());
                 // Find Neighbor corresponding to studentRobot.
-                Neighbor neighbor;
+                ptp_comms::Neighbor neighbor;
                 for (NEIGHBOR_TO_ROBOT::iterator it = this->neighborToRobot.begin(); it != m.end(); ++it) {
                     if (studentRobot == it->second) {
                         this->transmit(it->first, gStamped);
@@ -206,7 +210,7 @@ namespace exchange_graphs {
         /**
          * Handle received messages by dispatching to the correct handler.
          */
-        void handleRx(Neighbor neighbor, uint16_t port, std::vector<uint8_t> data) {
+        void handleRx(ptp_comms::Neighbor neighbor, uint16_t port, std::vector<uint8_t> data) {
             ROBOT robot = this->neighborToRobot[neighbor];
             MsgType t = this->peekType(data);
             switch (t) {
