@@ -104,7 +104,7 @@ add_message_files(
 catkin_package(
   INCLUDE_DIRS include
   LIBRARIES exchange_graphs
-  CATKIN_DEPENDS roscpp std_msgs
+  CATKIN_DEPENDS roscpp std_msgs ptp_comms
 #  DEPENDS system_lib
 )
 
