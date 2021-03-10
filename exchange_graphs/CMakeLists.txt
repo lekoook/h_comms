@@ -9,8 +9,9 @@ project(exchange_graphs)
 ## is used, also find other catkin packages
 find_package(catkin REQUIRED COMPONENTS
   roscpp
-  ptp_comms
   std_msgs
+  ptp_comms
+  rosmsg_compressor
 )
 
 ## System dependencies are found with CMake's conventions
@@ -104,7 +105,7 @@ add_message_files(
 catkin_package(
   INCLUDE_DIRS include
   LIBRARIES exchange_graphs
-  CATKIN_DEPENDS roscpp std_msgs ptp_comms
+  CATKIN_DEPENDS roscpp std_msgs ptp_comms rosmsg_compressor
 #  DEPENDS system_lib
 )
 
