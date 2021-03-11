@@ -59,6 +59,7 @@
   <build_export_depend>std_msgs</build_export_depend>
   <build_export_depend>ptp_comms</build_export_depend>
   <build_export_depend>rosmsg_compressor</build_export_depend>
+  <build_export_depend>graph_msgs</build_export_depend>
   <exec_depend>roscpp</exec_depend>
   <exec_depend>std_msgs</exec_depend>
   <exec_depend>ptp_comms</exec_depend>

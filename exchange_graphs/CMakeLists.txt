@@ -120,6 +120,8 @@ catkin_package(
 ## Your package locations should be listed before other locations
 include_directories(
   include
+  include/${PROJECT_NAME}
+  include/${PROJECT_NAME}/messages
   ${catkin_INCLUDE_DIRS}
 )
 
