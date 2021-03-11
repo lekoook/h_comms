@@ -15,20 +15,15 @@
 
 namespace exchange_graphs {
 
-    template <typename Container> // we can make this generic for any container [1]
-        struct container_hash {
-            std::size_t operator()(Container const& c) const {
-                return boost::hash_range(c.begin(), c.end());
-            }
-        };
-
     typedef uint8_t ROBOT;
     typedef std::set<ROBOT> ROBOTS;
 
     typedef graph_msgs::GeometryGraph GRAPH;
-    typedef std::vector<geometry_msgs::Point> NODES;
-    typedef std::vector<graph_msgs::Edges> EDGES;
+    typedef geometry_msgs::Point NODE;
+    typedef graph_msgs::Edges EDGE;
     typedef std::vector<GRAPH> GRAPHS;
+    typedef std::vector<NODE> NODES;
+    typedef std::vector<EDGE> EDGES;
 
     typedef std::map<ptp_comms::Neighbor, ROBOT> NEIGHBOR_TO_ROBOT;
 
@@ -39,8 +34,18 @@ namespace exchange_graphs {
         ROBOTS otherRobots; /**< All other robots (not including this->robot). */
         GRAPH graph; /**< Graph that this->robot knows. */
 
-        std::unordered_map<GRAPH, ROBOTS, container_hash<GRAPH>> graphToUnawareRobots;
-        std::unordered_map<ROBOT, GRAPHS, container_hash<ROBOT>> robotToUnknownGraphs;
+        struct GraphComparator {
+            bool operator()(GRAPH a, GRAPH b) {
+                NODES A = a.nodes;
+                NODES B = b.nodes;
+                auto nodesComparator = [](NODE a, NODE b){return a.x<b.x && a.y<b.y && a.z<b.z;};
+                std::sort(A.begin(), A.end(), nodesComparator);
+                std::sort(B.begin(), B.end(), nodesComparator);
+                return std::includes(A.begin(), A.end(), B.begin(), B.end(), nodesComparator);
+            }
+        };
+        std::map<GRAPH, ROBOTS, GraphComparator> graphToUnawareRobots;
+        std::unordered_map<ROBOT, GRAPHS> robotToUnknownGraphs;
 
         std::unique_ptr<ptp_comms::PtpClient> ptpClient;
 
@@ -73,17 +78,22 @@ namespace exchange_graphs {
          * @param g Graph to be merged with this graph.
          */
         void graphMerge(GRAPH g) {
-            NODES nodes;
-            EDGES edges;
+            // Increase each index of each edge in g.edges.
+            for (size_t i = 0; i < g.edges.size(); ++i) {
+                EDGE e = g.edges[i];
+                std::vector<uint32_t> node_ids = e.node_ids;
+                for (size_t j = 0; j < node_ids.size(); ++j) {
+                    node_ids[j] += this->graph.nodes.size();
+                }
+                e.node_ids = node_ids;
+                g.edges[i] = e;
+            }
 
-            std::set_union(this->graph.nodes.begin(), this->graph.nodes.end(), g.nodes.begin(), g.nodes.end(), std::back_inserter(nodes));
-            std::set_union(this->graph.edges.begin(), this->graph.edges.end(), g.edges.begin(), g.edges.end(), std::back_inserter(edges));
-
-            this->graph.nodes = nodes;
-            this->graph.edges = edges;
+            this->graph.nodes.insert(this->graph.nodes.end(), g.nodes.begin(), g.nodes.end());
+            this->graph.edges.insert(this->graph.edges.end(), g.edges.begin(), g.edges.end());
         }
 
-        /** Set difference.
+        /** Graph difference.
          * g1 - g2.
          * @param g1 First graph.
          * @param g2 Second graph.
@@ -92,8 +102,22 @@ namespace exchange_graphs {
             NODES nodes;
             EDGES edges;
 
-            std::set_difference(g1.nodes.begin(), g1.nodes.end(), g2.nodes.begin(), g2.nodes.end(), std::back_inserter(nodes));
-            std::set_difference(g1.edges.begin(), g1.edges.end(), g2.edges.begin(), g2.edges.end(), std::back_inserter(edges));
+            EDGES::iterator edgesIt = g1.edges.begin();
+            for (NODES::iterator nodesIt = g1.nodes.begin(); nodesIt != g1.nodes.end(); ) {
+                bool found = false;
+                for (NODE n : g2.nodes) {
+                    if ((*nodesIt).x == n.x && (*nodesIt).y == n.y && (*nodesIt).z == n.z) {
+                        found = true;
+                    }
+                }
+                if (found) {
+                    nodesIt = g1.nodes.erase(nodesIt);
+                    edgesIt = g1.edges.erase(edgesIt);
+                } else {
+                    ++nodesIt;
+                    ++edgesIt;
+                }
+            }
 
             GRAPH graph;
             graph.nodes = nodes;
@@ -106,7 +130,7 @@ namespace exchange_graphs {
         void recordNewGraph(GRAPH g) {
 
             /* Learn that graph g exists. */
-            graphMerge(g);
+            this->graphMerge(g);
 
             /* otherRobots don't (yet) know about g. */
             this->graphToUnawareRobots[g] = this->otherRobots;
@@ -155,7 +179,7 @@ namespace exchange_graphs {
             GRAPH learntGraph = learntGraphStamped.graph;
 
             /* Learn that learntGraph exists. */
-            graphMerge(learntGraph);
+            this->graphMerge(learntGraph);
 
             /* Learn that teacherRobot knows learntGraph.
              * For each unknownGraph that this robot thinks teacherRobot doesn't know,
@@ -163,7 +187,7 @@ namespace exchange_graphs {
              */
             GRAPHS unknownGraphs = this->robotToUnknownGraphs[teacherRobot];
             for (size_t i = 0; i < unknownGraphs.size(); ++i) {
-                unknownGraphs[i] = graphDifference(unknownGraphs[i], learntGraph);
+                unknownGraphs[i] = this->graphDifference(unknownGraphs[i], learntGraph);
             }
 
             /* Learn that unawareRobots don't know about learntGraph.
@@ -171,12 +195,12 @@ namespace exchange_graphs {
              * Only awareRobots change their knowledge state.
              */
             std::vector<ROBOT> unawareRobots = learntGraphStamped.robots;
-            ROBOTS awareRobots;
+            std::vector<ROBOT> awareRobots;
             std::set_difference(this->otherRobots.begin(), this->otherRobots.end(), unawareRobots.begin(), unawareRobots.end(), std::back_inserter(awareRobots));
-            for (ROBOT awareRobot : unawareRobots) {
+            for (ROBOT awareRobot : awareRobots) {
                 GRAPHS unknownGraphs = this->robotToUnknownGraphs[awareRobot];
                 for (size_t i = 0; i < unknownGraphs.size(); ++i) {
-                    GRAPH graphThatRemainsUnknown = graphDifference(unknownGraphs[i], learntGraph);
+                    GRAPH graphThatRemainsUnknown = this->graphDifference(unknownGraphs[i], learntGraph);
                     this->graphToUnawareRobots[unknownGraphs[i]].erase(awareRobot); // awareRobot no longer not-knows about unknownGraphs[i].
                     this->graphToUnawareRobots[graphThatRemainsUnknown].insert(awareRobot); // awareRobot now doesn't know about graphThatRemainsUnknown.
                     unknownGraphs[i] = graphThatRemainsUnknown;
