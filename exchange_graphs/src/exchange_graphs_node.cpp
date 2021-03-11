@@ -1,5 +1,5 @@
+#include <ros/ros.h>
 #include <exchange_graphs/ExchangeGraphs.hpp>
-#include <exchange_graphs/Robot.h>
 
 int main(int argc, char **argv) {
     exchange_graphs::NEIGHBOR_TO_ROBOT neighborToRobot = {{"X1", 1}, {"X2", 2}, {"X3", 3}};

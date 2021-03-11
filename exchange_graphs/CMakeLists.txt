@@ -15,6 +15,7 @@ find_package(catkin REQUIRED COMPONENTS
   graph_msgs
   geometry_msgs
 )
+find_package(ZLIB)
 
 ## System dependencies are found with CMake's conventions
 # find_package(Boost REQUIRED COMPONENTS system)
