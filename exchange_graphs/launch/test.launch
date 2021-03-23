@@ -3,7 +3,7 @@
 
     <!-- ptp_comms -->
     <include file="$(find ptp_comms)/launch/node.launch">
-        <arg name="name" value="$(arg name1)"/>
+        <arg name="name" value="$(arg name)"/>
     </include>
 
     <!-- exchange_graphs -->
