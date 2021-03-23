@@ -1,0 +1,11 @@
+<launch>
+    <arg name="name" />
+
+    <!-- ptp_comms -->
+    <include file="$(find ptp_comms)/launch/node.launch">
+        <arg name="name" value="$(arg name1)"/>
+    </include>
+
+    <!-- exchange_graphs -->
+    <node pkg="exchange_graphs" type="exchange_graphs_node" name="exchange_graphs_node" output="screen" ns="$(arg name)"/>
+</launch>
