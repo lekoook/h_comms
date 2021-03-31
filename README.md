@@ -1,6 +1,6 @@
 # h_comms
 
-High level communications for team NUS SEDS.
+High level communications for DARPA SubT Team NUS SEDS.
 
 ## Install these prerequisites for ROS message conversion
 sudo apt-get install python3-pip python3-yaml
