@@ -3,9 +3,11 @@
 High level communications for DARPA SubT Team NUS SEDS.
 
 ## Branches
-Point-To-Point Communication: `ptp-comms`
-Data Distribution Protocol: `ddp`
-Graphs Exchange: `exchange_graphs`
+Point-To-Point Communication: `ptp-comms` 
+
+Data Distribution Protocol: `ddp` 
+
+Graphs Exchange: `exchange_graphs` 
 
 ## Install these prerequisites for ROS message conversion
 sudo apt-get install python3-pip python3-yaml
