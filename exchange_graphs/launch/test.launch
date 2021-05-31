@@ -7,5 +7,5 @@
     </include>
 
     <!-- exchange_graphs -->
-    <node pkg="exchange_graphs" type="exchange_graphs_node" name="exchange_graphs_node" output="screen" ns="$(arg name)"/>
+    <node pkg="exchange_graphs" type="exchange_graphs_node-X1" name="exchange_graphs_node-X1" output="screen" ns="$(arg name)"/>
 </launch>
