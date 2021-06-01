@@ -61,7 +61,7 @@ namespace exchange_graphs {
                     this->otherRobots.insert(it->second);
                 }
             }
-            this->ptpClient = std::unique_ptr<ptp_comms::PtpClient>(new ptp_comms::PtpClient(this->PORT));
+            this->ptpClient = std::unique_ptr<ptp_comms::PtpClient>(new ptp_comms::PtpClient(this->PORT, true));
             this->ptpClient->bind(std::bind(&ExchangeGraphs::handleRx, this, std::placeholders::_1, std::placeholders::_2, std::placeholders::_3));
             this->advertiseLoop();
         }
