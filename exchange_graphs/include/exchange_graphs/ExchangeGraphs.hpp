@@ -5,6 +5,7 @@
 #include <algorithm>
 #include <string>
 #include <ros/ros.h>
+#include <ros/console.h>
 #include <ptp_comms/PtpClient.hpp>
 #include <ptp_comms/Neighbors.h>
 #include <graph_msgs/GeometryGraph.h>
@@ -176,6 +177,8 @@ namespace exchange_graphs {
          * 2. For that graph, the robots that the teacherRobot thinks don't know about that graph.
          */
         void learn(ROBOT teacherRobot, GraphMsg::GRAPH_STAMPED learntGraphStamped) {
+            ROS_INFO("# Learnt graph stamped");
+            this->ros_info_GRAPH_STAMPED(learntGraphStamped);
             GRAPH learntGraph = learntGraphStamped.graph;
 
             /* Learn that learntGraph exists. */
@@ -249,9 +252,11 @@ namespace exchange_graphs {
         void handleRx(ptp_comms::Neighbor neighbor, uint16_t port, std::vector<uint8_t> data) {
             ROBOT robot = this->neighborToRobot[neighbor];
             MsgType t = this->peekType(data);
+            ROS_INFO("# handleRx");
             switch (t) {
                 case MsgType::Graph:
                     {
+                        ROS_INFO("- Graph");
                         GraphMsg msg;
                         msg.deserialize(data);
                         this->learn(robot, msg.learntGraphStamped);
@@ -259,6 +264,7 @@ namespace exchange_graphs {
                     }
                 case MsgType::Advertisement:
                     {
+                        ROS_INFO("- Advertisement");
                         this->teach(robot);
                         break;
                     }
@@ -269,6 +275,37 @@ namespace exchange_graphs {
                         ROS_ERROR("%s", oss.str().c_str());
                         break;
                     }
+            }
+        }
+
+        /**
+         * Print graphStamped in markdown format using ROS_INFO.
+         */
+        void ros_info_GRAPH_STAMPED(GraphMsg::GRAPH_STAMPED graphStamped) {
+            ROS_INFO("## GeometryGraph");
+            graph_msgs::GeometryGraph graph = graphStamped.graph;
+            ROS_INFO("### Nodes");
+            for (geometry_msgs::Point node : graph.nodes) {
+                ROS_INFO("- %f %f %f", node.x, node.y, node.z);
+            }
+            ROS_INFO("### Edges");
+            for (graph_msgs::Edges edge : graph.edges) {
+                ROS_INFO("#### Node IDs");
+                for (uint32_t node_id : edge.node_ids) {
+                    ROS_INFO("- %d", node_id);
+                }
+                ROS_INFO("#### Weights");
+                for (float weight : edge.weights) {
+                    ROS_INFO("- %f", weight);
+                }
+            }
+            ROS_INFO("### Explored");
+            for (uint8_t explored : graph.explored) {
+                ROS_INFO("- %d", explored);
+            }
+            ROS_INFO("## Robots");
+            for (uint8_t robot : graphStamped.robots) {
+                ROS_INFO("- %d", robot);
             }
         }
 
