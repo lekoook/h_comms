@@ -146,6 +146,7 @@ namespace exchange_graphs {
          * @param studentRobot Robot being taught.
          */
         void teach(ROBOT studentRobot) {
+            ROS_INFO("# Teach %d", studentRobot);
             for (GRAPH unknownGraph : this->robotToUnknownGraphs[studentRobot]) {
                 std::vector<ROBOT> robots(this->graphToUnawareRobots[unknownGraph].begin(), this->graphToUnawareRobots[unknownGraph].end());
                 /* Teach studentRobot. */
@@ -232,6 +233,7 @@ namespace exchange_graphs {
          */
         bool transmit(std::string dest, BaseMsg& msg)
         {
+            ROS_INFO("# Transmitting...");
             std::vector<uint8_t> data = msg.serialize();
             return this->ptpClient->sendTo(dest, data);
         }
