@@ -204,10 +204,13 @@ private:
             while (tries < MAX_SEGMENT_TRIES)
             {
                 _setWait(txData.seqNum, s, txData.dest, txData.port);
-                transceiver->sendTo(
-                    Packet(txData.seqNum, s, dSize, std::vector<uint8_t>(ptr + i, ptr + last)).serialize(), 
-                    txData.dest, 
-                    txData.port);
+                if (transceiver->sendTo(
+                            Packet(txData.seqNum, s, dSize, std::vector<uint8_t>(ptr + i, ptr + last)).serialize(), 
+                            txData.dest, 
+                            txData.port))
+                {
+                    ROS_INFO("Sent data for sequence %u to destination %s with port %u", txData.seqNum, txData.dest.c_str(), txData.port);
+                }
                 bool recvAck = _waitAck(timeout);
                 tries++;
                 
