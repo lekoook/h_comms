@@ -221,6 +221,7 @@ namespace exchange_graphs {
                 AdvMsg msg = AdvMsg();
                 this->transmit(ptp_comms::BROADCAST_ADDR, msg);
                 ros::Duration(this->ADV_INTERVAL).sleep();
+                ros::spinOnce();
             }
         }
 
