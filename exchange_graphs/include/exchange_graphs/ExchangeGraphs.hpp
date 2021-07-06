@@ -147,7 +147,7 @@ namespace exchange_graphs {
          * @param studentRobot Robot being taught.
          */
         void teach(ROBOT studentRobot) {
-            printf("# Teach %d", studentRobot);
+            printf("# Teach %d\n", studentRobot);
             for (GRAPH unknownGraph : this->robotToUnknownGraphs[studentRobot]) {
                 std::vector<ROBOT> robots(this->graphToUnawareRobots[unknownGraph].begin(), this->graphToUnawareRobots[unknownGraph].end());
                 /* Teach studentRobot. */
@@ -179,7 +179,7 @@ namespace exchange_graphs {
          * 2. For that graph, the robots that the teacherRobot thinks don't know about that graph.
          */
         void learn(ROBOT teacherRobot, GraphMsg::GRAPH_STAMPED learntGraphStamped) {
-            printf("# Learnt graph stamped");
+            printf("# Learnt graph stamped\n");
             this->ros_info_GRAPH_STAMPED(learntGraphStamped);
             GRAPH learntGraph = learntGraphStamped.graph;
 
@@ -234,7 +234,7 @@ namespace exchange_graphs {
          */
         bool transmit(std::string dest, BaseMsg& msg)
         {
-            printf("# Transmitting...");
+            printf("# Transmitting...\n");
             std::vector<uint8_t> data = msg.serialize();
             return this->ptpClient->sendTo(dest, data);
         }
@@ -255,11 +255,11 @@ namespace exchange_graphs {
         void handleRx(ptp_comms::Neighbor neighbor, uint16_t port, std::vector<uint8_t> data) {
             ROBOT robot = this->neighborToRobot[neighbor];
             MsgType t = this->peekType(data);
-            printf("# handleRx");
+            printf("# handleRx\n");
             switch (t) {
                 case MsgType::Graph:
                     {
-                        printf("- Graph");
+                        printf("- Graph\n");
                         GraphMsg msg;
                         msg.deserialize(data);
                         this->learn(robot, msg.learntGraphStamped);
@@ -267,7 +267,7 @@ namespace exchange_graphs {
                     }
                 case MsgType::Advertisement:
                     {
-                        printf("- Advertisement");
+                        printf("- Advertisement\n");
                         this->teach(robot);
                         break;
                     }
@@ -285,30 +285,30 @@ namespace exchange_graphs {
          * Print graphStamped in markdown format using printf.
          */
         void ros_info_GRAPH_STAMPED(GraphMsg::GRAPH_STAMPED graphStamped) {
-            printf("## GeometryGraph");
+            printf("## GeometryGraph\n");
             graph_msgs::GeometryGraph graph = graphStamped.graph;
-            printf("### Nodes");
+            printf("### Nodes\n");
             for (geometry_msgs::Point node : graph.nodes) {
-                printf("- %f %f %f", node.x, node.y, node.z);
+                printf("- %f %f %f\n", node.x, node.y, node.z);
             }
-            printf("### Edges");
+            printf("### Edges\n");
             for (graph_msgs::Edges edge : graph.edges) {
-                printf("#### Node IDs");
+                printf("#### Node IDs\n");
                 for (uint32_t node_id : edge.node_ids) {
-                    printf("- %d", node_id);
+                    printf("- %d\n", node_id);
                 }
-                printf("#### Weights");
+                printf("#### Weights\n");
                 for (float weight : edge.weights) {
-                    printf("- %f", weight);
+                    printf("- %f\n", weight);
                 }
             }
-            printf("### Explored");
+            printf("### Explored\n");
             for (uint8_t explored : graph.explored) {
-                printf("- %d", explored);
+                printf("- %d\n", explored);
             }
-            printf("## Robots");
+            printf("## Robots\n");
             for (uint8_t robot : graphStamped.robots) {
-                printf("- %d", robot);
+                printf("- %d\n", robot);
             }
         }
 
