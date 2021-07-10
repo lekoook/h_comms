@@ -252,37 +252,6 @@ namespace exchange_graphs {
             }
         }
 
-        /**
-         * Print graphStamped in markdown format using printf.
-         */
-        void ros_info_GRAPH_STAMPED(GraphMsg::GRAPH_STAMPED graphStamped) {
-            printf("## GeometryGraph\n");
-            graph_msgs::GeometryGraph graph = graphStamped.graph;
-            printf("### Nodes\n");
-            for (geometry_msgs::Point node : graph.nodes) {
-                printf("- %f %f %f\n", node.x, node.y, node.z);
-            }
-            printf("### Edges\n");
-            for (graph_msgs::Edges edge : graph.edges) {
-                printf("#### Node IDs\n");
-                for (uint32_t node_id : edge.node_ids) {
-                    printf("- %d\n", node_id);
-                }
-                printf("#### Weights\n");
-                for (float weight : edge.weights) {
-                    printf("- %f\n", weight);
-                }
-            }
-            printf("### Explored\n");
-            for (uint8_t explored : graph.explored) {
-                printf("- %d\n", explored);
-            }
-            printf("## Robots\n");
-            for (uint8_t robot : graphStamped.robots) {
-                printf("- %d\n", robot);
-            }
-        }
-
     public:
         ExchangeGraphs(ROBOT robot, NEIGHBOR_TO_ROBOT neighborToRobot) : robot(robot), neighborToRobot(neighborToRobot) {
             for (NEIGHBOR_TO_ROBOT::iterator it = this->neighborToRobot.begin(); it != this->neighborToRobot.end(); ++it) {
@@ -314,6 +283,44 @@ namespace exchange_graphs {
             this->graphToUnawareRobots[g] = this->otherRobots;
             for (ROBOT otherRobot : this->otherRobots) {
                 this->robotToUnknownGraphs[otherRobot].push_back(g);
+            }
+        }
+
+        /**
+         * Print graph in markdown format using printf.
+         */
+        void ros_info_GRAPH(GRAPH graph) {
+            printf("## GeometryGraph\n");
+            printf("### Nodes\n");
+            for (geometry_msgs::Point node : graph.nodes) {
+                printf("- %f %f %f\n", node.x, node.y, node.z);
+            }
+            printf("### Edges\n");
+            for (graph_msgs::Edges edge : graph.edges) {
+                printf("#### Node IDs\n");
+                for (uint32_t node_id : edge.node_ids) {
+                    printf("- %d\n", node_id);
+                }
+                printf("#### Weights\n");
+                for (float weight : edge.weights) {
+                    printf("- %f\n", weight);
+                }
+            }
+            printf("### Explored\n");
+            for (uint8_t explored : graph.explored) {
+                printf("- %d\n", explored);
+            }
+        }
+
+        /**
+         * Print graphStamped in markdown format using printf.
+         */
+        void ros_info_GRAPH_STAMPED(GraphMsg::GRAPH_STAMPED graphStamped) {
+            graph_msgs::GeometryGraph graph = graphStamped.graph;
+            this->ros_info_GRAPH(graph);
+            printf("## Robots\n");
+            for (uint8_t robot : graphStamped.robots) {
+                printf("- %d\n", robot);
             }
         }
 
