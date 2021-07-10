@@ -31,10 +31,12 @@ namespace exchange_graphs {
 
     /** This robot runs an ExchangeGraphs service. */
     class ExchangeGraphs {
+    public:
+        GRAPH graph; /**< Graph that this->robot knows. */
+
     private:
         ROBOT robot; /**< This robot. */
         ROBOTS otherRobots; /**< All other robots (not including this->robot). */
-        GRAPH graph; /**< Graph that this->robot knows. */
 
         struct GraphComparator {
             bool operator()(GRAPH a, GRAPH b) {
@@ -55,26 +57,6 @@ namespace exchange_graphs {
 
         const uint16_t PORT = 62478; /**< Port number to use. 62478 looks like "GRAPH". */
         const double ADV_INTERVAL = 5.0; /**< Amount of seconds to sleep before advertising again. */
-
-    public:
-        ExchangeGraphs(ROBOT robot, NEIGHBOR_TO_ROBOT neighborToRobot) : robot(robot), neighborToRobot(neighborToRobot) {
-            for (NEIGHBOR_TO_ROBOT::iterator it = this->neighborToRobot.begin(); it != this->neighborToRobot.end(); ++it) {
-                if (this->robot != it->second) {
-                    this->otherRobots.insert(it->second);
-                }
-            }
-            this->ptpClient = std::unique_ptr<ptp_comms::PtpClient>(new ptp_comms::PtpClient(this->PORT, true));
-            this->ptpClient->bind(std::bind(&ExchangeGraphs::handleRx, this, std::placeholders::_1, std::placeholders::_2, std::placeholders::_3));
-            this->advertiseLoop();
-        }
-
-        /**
-         * @brief Destroy the object.
-         *
-         */
-        ~ExchangeGraphs() {
-            this->ptpClient->unregister();
-        }
 
         /** Merge g with this graph.
          * @param g Graph to be merged with this graph.
@@ -125,20 +107,6 @@ namespace exchange_graphs {
             graph.nodes = nodes;
             graph.edges = edges;
             return graph;
-        }
-
-        /** Record that a graph was explored by this->robot.
-         */
-        void recordNewGraph(GRAPH g) {
-
-            /* Learn that graph g exists. */
-            this->graphMerge(g);
-
-            /* otherRobots don't (yet) know about g. */
-            this->graphToUnawareRobots[g] = this->otherRobots;
-            for (ROBOT otherRobot : this->otherRobots) {
-                this->robotToUnknownGraphs[otherRobot].push_back(g);
-            }
         }
 
         /** Teach:
@@ -310,6 +278,40 @@ namespace exchange_graphs {
             printf("## Robots\n");
             for (uint8_t robot : graphStamped.robots) {
                 printf("- %d\n", robot);
+            }
+        }
+
+    public:
+        ExchangeGraphs(ROBOT robot, NEIGHBOR_TO_ROBOT neighborToRobot) : robot(robot), neighborToRobot(neighborToRobot) {
+            for (NEIGHBOR_TO_ROBOT::iterator it = this->neighborToRobot.begin(); it != this->neighborToRobot.end(); ++it) {
+                if (this->robot != it->second) {
+                    this->otherRobots.insert(it->second);
+                }
+            }
+            this->ptpClient = std::unique_ptr<ptp_comms::PtpClient>(new ptp_comms::PtpClient(this->PORT, true));
+            this->ptpClient->bind(std::bind(&ExchangeGraphs::handleRx, this, std::placeholders::_1, std::placeholders::_2, std::placeholders::_3));
+            this->advertiseLoop();
+        }
+
+        /**
+         * @brief Destroy the object.
+         *
+         */
+        ~ExchangeGraphs() {
+            this->ptpClient->unregister();
+        }
+
+        /** Record that a graph was explored by this->robot.
+         */
+        void recordNewGraph(GRAPH g) {
+
+            /* Learn that graph g exists. */
+            this->graphMerge(g);
+
+            /* otherRobots don't (yet) know about g. */
+            this->graphToUnawareRobots[g] = this->otherRobots;
+            for (ROBOT otherRobot : this->otherRobots) {
+                this->robotToUnknownGraphs[otherRobot].push_back(g);
             }
         }
 
