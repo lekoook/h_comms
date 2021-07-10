@@ -117,7 +117,10 @@ namespace exchange_graphs {
         void teach(ROBOT studentRobot) {
             printf("# Teach %d\n", studentRobot);
             for (GRAPH unknownGraph : this->robotToUnknownGraphs[studentRobot]) {
-                std::vector<ROBOT> robots(this->graphToUnawareRobots[unknownGraph].begin(), this->graphToUnawareRobots[unknownGraph].end());
+                std::vector<ROBOT> robots;
+                for (ROBOT robot : this->graphToUnawareRobots[unknownGraph]) {
+                    robots.push_back(robot);
+                }
                 /* Teach studentRobot. */
                 GraphMsg::GRAPH_STAMPED gStamped;
                 gStamped.graph = unknownGraph;
