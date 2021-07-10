@@ -5,6 +5,7 @@
 #include <algorithm>
 #include <string>
 #include <stdio.h>
+#include <thread>
 #include <ros/ros.h>
 #include <ros/console.h>
 #include <ptp_comms/PtpClient.hpp>
@@ -57,6 +58,7 @@ namespace exchange_graphs {
 
         const uint16_t PORT = 62478; /**< Port number to use. 62478 looks like "GRAPH". */
         const double ADV_INTERVAL = 5.0; /**< Amount of seconds to sleep before advertising again. */
+        std::thread advertiseTh; /**< Thread that advertises forever. */
 
         /** Merge g with this graph.
          * @param g Graph to be merged with this graph.
@@ -262,7 +264,7 @@ namespace exchange_graphs {
             }
             this->ptpClient = std::unique_ptr<ptp_comms::PtpClient>(new ptp_comms::PtpClient(this->PORT, true));
             this->ptpClient->bind(std::bind(&ExchangeGraphs::handleRx, this, std::placeholders::_1, std::placeholders::_2, std::placeholders::_3));
-            this->advertiseLoop();
+            this->advertiseTh = std::thread(&ExchangeGraphs::advertiseLoop, this);
         }
 
         /**
@@ -271,6 +273,9 @@ namespace exchange_graphs {
          */
         ~ExchangeGraphs() {
             this->ptpClient->unregister();
+            if (advertiseTh.joinable()) {
+                advertiseTh.join();
+            }
         }
 
         /** Record that a graph was explored by this->robot.
