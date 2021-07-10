@@ -115,7 +115,6 @@ namespace exchange_graphs {
          * @param studentRobot Robot being taught.
          */
         void teach(ROBOT studentRobot) {
-            printf("# Teach %d\n", studentRobot);
             for (GRAPH unknownGraph : this->robotToUnknownGraphs[studentRobot]) {
                 std::vector<ROBOT> robots;
                 for (ROBOT robot : this->graphToUnawareRobots[unknownGraph]) {
@@ -130,6 +129,8 @@ namespace exchange_graphs {
                 GraphMsg msg = GraphMsg(gStamped);
                 for (NEIGHBOR_TO_ROBOT::iterator it = this->neighborToRobot.begin(); it != this->neighborToRobot.end(); ++it) {
                     if (studentRobot == it->second) {
+                        printf("# Teach %d\n", studentRobot);
+                        this->ros_info_GRAPH_STAMPED(gStamped);
                         this->transmit(it->first, msg);
                     }
                 }
