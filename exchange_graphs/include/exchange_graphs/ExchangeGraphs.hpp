@@ -76,12 +76,6 @@ namespace exchange_graphs {
                 }
                 e.node_ids = node_ids;
 
-                // Force optional field EDGE::weights to be non-optional (i.e. pad with 1s if empty).
-                if (e.weights.empty()) {
-                    std::vector<float> weights(node_ids.size(), 1.0);
-                    e.weights = weights;
-                }
-
                 g.edges[i] = e;
             }
 
