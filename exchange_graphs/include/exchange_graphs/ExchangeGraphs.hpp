@@ -64,19 +64,30 @@ namespace exchange_graphs {
          * @param g Graph to be merged with this graph.
          */
         void graphMerge(GRAPH g) {
-            // Increase each index of each edge in g.edges.
+
+            // For each edge in g.edges.
             for (size_t i = 0; i < g.edges.size(); ++i) {
+
+                // Increase each index of each edge.edges.
                 EDGE e = g.edges[i];
                 std::vector<uint32_t> node_ids = e.node_ids;
                 for (size_t j = 0; j < node_ids.size(); ++j) {
                     node_ids[j] += this->graph.nodes.size();
                 }
                 e.node_ids = node_ids;
+
+                // Force optional field EDGE::weights to be non-optional (i.e. pad with 1s if empty).
+                if (e.weights.empty()) {
+                    std::vector<float> weights(node_ids.size(), 1.0);
+                    e.weights = weights;
+                }
+
                 g.edges[i] = e;
             }
 
             this->graph.nodes.insert(this->graph.nodes.end(), g.nodes.begin(), g.nodes.end());
             this->graph.edges.insert(this->graph.edges.end(), g.edges.begin(), g.edges.end());
+            this->graph.explored.insert(this->graph.explored.end(), g.explored.begin(), g.explored.end());
         }
 
         /** Graph difference.
